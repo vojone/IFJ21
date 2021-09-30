@@ -7,6 +7,7 @@ insert_final_newline = true
 
 [Makefile]
 indent_style = tab
+indent_size = 4
 
 [*.{c,h}]
 indent_style = space
