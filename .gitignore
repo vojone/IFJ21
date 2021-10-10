@@ -1,5 +1,48 @@
+scanner-test
+
+#ignore .o files
+*.o
+*.pdf
+*.out
+#ignore temp file created by VSC
 .vscode
 
+*.pc
+*.cmake
+CMakeCache.txt
+*~
+*.autosave
+*.a
+*.core
+*.moc
 *.o
 *.obj
+*.orig
+*.rej
+*.so
+*.so.*
+*_pch.h.cpp
+*_resource.rc
+*.qm
+.#*
+*.*#
+core
+!core/
+tags
+.DS_Store
+.directory
+*.debug
+#Makefile*
+*.prl
+*.app
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+Thumbs.db
+*.res
+*.rc
+/.qmake.cache
+/.qmake.stash
 
+*.dll
+*.exe
