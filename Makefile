@@ -22,7 +22,7 @@ SCAN_TEST_BIN = $(SCAN_TEST_NAME)
 OBJS = $(SCANNER).o
 EXES = $(EXECUTABLE) $(SCAN_TEST_BIN)
 
-.PHONY: all clean scanner_test
+.PHONY: all clean unit_tests
 
 all :  $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXECUTABLE) $^
@@ -31,7 +31,7 @@ clean:
 	rm -f *.o $(EXES)
 	
 
-scanner_test: $(SCAN_TEST_BIN)
+unit_tests: $(SCAN_TEST_BIN)
 	./$(SCAN_TEST_BIN)
 
 
@@ -39,12 +39,12 @@ scanner_test: $(SCAN_TEST_BIN)
 #------------------------------SCANNER TESTS-----------------------------------
 
 #linking binary with test
-$(SCAN_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread
+$(SCAN_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(SCAN_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
-$(SCAN_TEST_BIN) : $(SCANNER).o $(SCAN_TEST_NAME).o
+$(SCAN_TEST_BIN) : $(SCANNER).o $(SCAN_TEST_BIN).o
 
 #compilation of obj file with test
-$(SCAN_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
+$(SCAN_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include 
 $(SCAN_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 
 $(TEST_DIR)lib/%.a :
