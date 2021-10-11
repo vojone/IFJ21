@@ -42,6 +42,7 @@ FILE * create_input_file(std::string *name, std::string *content) {
         return NULL;
     }
     
+    //printf("%s\n", content->c_str());
     fprintf(input_file, "%s", content->c_str());
 
     return input_file;
@@ -62,18 +63,22 @@ bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut) {
     return true;
 }
 
-class random_tokens : public ::testing::Test {
+class test_fixture : public ::testing::Test {
     protected:
         std::string inp_filename = TMP_FILE_NAME;
-        std::string scanner_input = "abc number 45 1231.456 12311e2 ( ) \"s\"";
-        std::vector<token_type_t> exp_types = {IDENTIFIER, KEYWORD, INTEGER, 
-                                               NUMBER, NUMBER, SEPARATOR, 
-                                               SEPARATOR, STRING, EOF_TYPE};
+        std::string scanner_input;
+        std::vector<token_type_t> exp_types;
 
         scanner_t dut;
         bool init_success;
 
+        virtual void setData() {
+            scanner_input = "";
+            exp_types = {EOF_TYPE};
+        }
+
         virtual void SetUp() {
+            setData(); 
             init_success = prepare_tests(&inp_filename, &scanner_input, &dut);
         }
 
@@ -84,9 +89,19 @@ class random_tokens : public ::testing::Test {
         }
 };
 
+class random_tokens : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = "abc number 45 1231.456 12311e2 ( ) \"s\"";
+            exp_types = {IDENTIFIER, KEYWORD, INTEGER, 
+                         NUMBER, NUMBER, SEPARATOR, 
+                         SEPARATOR, STRING, EOF_TYPE};
+        };
+};
 
 
-TEST_F(random_tokens, basics) {
+
+TEST_F(random_tokens, types) {
     token_t temp;
 
     for(size_t i = 0; i < exp_types.size(); i++) {
@@ -97,28 +112,20 @@ TEST_F(random_tokens, basics) {
 }
 
 
-class whitespaces : public ::testing::Test {
+class whitespaces : public test_fixture {
     protected:
-        std::string inp_filename = TMP_FILE_NAME;
-        std::string scanner_input = "\t\r\n\n\n             42    \n \n 56\n";
-        std::vector<token_type_t> exp_types = {INTEGER, INTEGER, EOF_TYPE};
+        void setData() override {
+            scanner_input = 
+            R"(\t\r\n\n\n             42    \n \n 56\n
+            --[[\n\n\n\\n\\n
+            ]]")";
 
-        scanner_t dut;
-        bool init_success;
-
-        virtual void SetUp() {
-            init_success = prepare_tests(&inp_filename, &scanner_input, &dut);
-        }
-
-        virtual void TearDown() {
-            if(init_success) {
-                remove(inp_filename.c_str());
-            }
+            exp_types = {INTEGER, INTEGER, EOF_TYPE};
         }
 };
 
 
-TEST_F(whitespaces, basics) {
+TEST_F(whitespaces, types) {
     token_t temp;
 
     for(size_t i = 0; i < exp_types.size(); i++) {
@@ -130,31 +137,20 @@ TEST_F(whitespaces, basics) {
 
 
 
-class errors : public ::testing::Test {
+class errors : public test_fixture {
     protected:
-        std::string inp_filename = TMP_FILE_NAME;
-        std::string scanner_input = "; ; ; \n 656abc \n 1110a11 \"";
-        std::vector<token_type_t> exp_types = {ERROR_TYPE, ERROR_TYPE, 
-                                               ERROR_TYPE, ERROR_TYPE,
-                                               ERROR_TYPE, ERROR_TYPE,
-                                               EOF_TYPE};
-
-        scanner_t dut;
-        bool init_success;
-
-        virtual void SetUp() {
-            init_success = prepare_tests(&inp_filename, &scanner_input, &dut);
-        }
-
-        virtual void TearDown() {
-            if(init_success) {
-                remove(inp_filename.c_str());
-            }
+        void setData() override {
+            scanner_input = 
+            R"(; ; 656abc   1110a11 "afad\"  ===)";
+            exp_types = {ERROR_TYPE, ERROR_TYPE, 
+                         ERROR_TYPE, ERROR_TYPE,
+                         ERROR_TYPE, ERROR_TYPE,
+                         EOF_TYPE};
         }
 };
 
 
-TEST_F(errors, basics) {
+TEST_F(errors, types) {
     token_t temp;
 
     for(size_t i = 0; i < exp_types.size(); i++) {
@@ -163,6 +159,53 @@ TEST_F(errors, basics) {
         ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
     }
 }
+
+
+class code_sample : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(-- Program 1: Vypocet faktorialu (iterativne)
+            require "ifj21"
+            function main() -- uzivatelska funkce bez parametru
+                local a : integer
+                local vysl : integer = 0
+                write("Zadejte cislo pro vypocet faktorialu\n")
+                a = readi()
+                if a == nil then
+                    write("a je nil\n") return
+                else
+                end
+                if a < 0 then
+                    write("Faktorial nelze spocitat\n")
+                else
+                    vysl = 1
+                    while a > 0 do
+                        vysl = vysl * a a = a - 1 -- dva prikazy
+                    end
+                    write("Vysledek je: ", vysl,"\n")
+                end
+            end)";
+
+            exp_types = {
+            KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, 
+            KEYWORD,  IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, 
+            IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR, INTEGER, 
+            IDENTIFIER, SEPARATOR, STRING, SEPARATOR}; //write(\"Zadejte cislo pro vypocet faktorialu\\n\")
+        }
+};
+
+
+TEST_F(code_sample, types) {
+    token_t temp;
+
+    for(size_t i = 0; i < exp_types.size(); i++) {
+        temp.token_type = exp_types[i];
+
+        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
+    }
+}
+
 
 
 int main(int argc, char **argv) {
