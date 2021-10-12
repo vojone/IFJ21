@@ -89,17 +89,26 @@ class test_fixture : public ::testing::Test {
         }
 };
 
+TEST_F(test_fixture, types) {
+    token_t temp;
+
+    for(size_t i = 0; i < exp_types.size(); i++) {
+        temp.token_type = exp_types[i];
+
+        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
+    }
+}
+
+
 class random_tokens : public test_fixture {
     protected:
         void setData() override {
-            scanner_input = "abc number 45 1231.456 12311e2 ( ) \"s\"";
-            exp_types = {IDENTIFIER, KEYWORD, INTEGER, 
+            scanner_input = "abc hi 45 1231.456 12311e2 ( ) \"s\"";
+            exp_types = {IDENTIFIER, IDENTIFIER, INTEGER, 
                          NUMBER, NUMBER, SEPARATOR, 
                          SEPARATOR, STRING, EOF_TYPE};
         };
 };
-
-
 
 TEST_F(random_tokens, types) {
     token_t temp;
@@ -116,11 +125,9 @@ class whitespaces : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(\t\r\n\n\n             42    \n \n 56\n
-            --[[\n\n\n\\n\\n
-            ]]")";
+            R"(--[[]])";
 
-            exp_types = {INTEGER, INTEGER, EOF_TYPE};
+            exp_types = {EOF_TYPE};
         }
 };
 
@@ -141,11 +148,9 @@ class errors : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(; ; 656abc   1110a11 "afad\"  ===)";
-            exp_types = {ERROR_TYPE, ERROR_TYPE, 
-                         ERROR_TYPE, ERROR_TYPE,
-                         ERROR_TYPE, ERROR_TYPE,
-                         EOF_TYPE};
+            R"(  ; ; ; ; === ")";
+            exp_types = {ERROR_TYPE, ERROR_TYPE, ERROR_TYPE, ERROR_TYPE,
+                         OPERATOR, OPERATOR, ERROR_TYPE, EOF_TYPE};
         }
 };
 
@@ -191,7 +196,8 @@ class code_sample : public test_fixture {
             KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, 
             KEYWORD,  IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, 
             IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR, INTEGER, 
-            IDENTIFIER, SEPARATOR, STRING, SEPARATOR}; //write(\"Zadejte cislo pro vypocet faktorialu\\n\")
+            IDENTIFIER, SEPARATOR, STRING, SEPARATOR, IDENTIFIER, 
+            OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR}; //a = readi()
         }
 };
 

@@ -21,8 +21,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <string.h>
+
+#define STR_ALOWED_ASCII_START 31
 
 typedef enum token_type {
+    UNKNOWN,
     IDENTIFIER, 
     KEYWORD,
     INTEGER, 
@@ -39,15 +44,17 @@ typedef enum fsm_state {
     ID_F,
     INT_F,
     NUM_1, NUM_2, NUM_3, NUM_F,
-    NUM_COM_1,
     COM_1, COM_2, COM_3, COM_4, COM_F,
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
-    OP_F
+    OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
+    EOF_F
 } fsm_state_t;
 
 typedef struct token {
     token_type_t token_type;
+    size_t attr_size;
+    size_t allocated;
     void * attr;
 } token_t;
 
