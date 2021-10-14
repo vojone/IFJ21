@@ -51,6 +51,8 @@ typedef enum fsm_state {
     EOF_F
 } fsm_state_t;
 
+
+
 typedef struct token {
     token_type_t token_type;
     size_t attr_size;
@@ -59,6 +61,7 @@ typedef struct token {
 } token_t;
 
 typedef struct scanner {
+    char input_buffer;
     fsm_state_t state;
 } scanner_t;
 

@@ -52,26 +52,9 @@ int add_char(char c, token_t *token) {
  */
 void scanner_init(scanner_t *scanner) {
     scanner->state = INIT;
+    scanner->input_buffer = '\0';
 }
 
-/**
- * Searches for the first occurence of character in string
- * @param c character, that will be searched
- * @param str string, in which will be char. searched (it should end with \0)
- * @return true, if is character in string
- */ 
-bool is_in_str(char c, char * str) {
-    int i = 0;
-    while(str[i] != '\0') {
-        if(str[i] == c) {
-            return true;
-        }
-
-        i++;
-    }
-
-    return false;
-}
 
 bool is_keyword(token_t *token) {
     static char * keyword_table[] = {"do", "else", "end", "function", "global", 
@@ -88,10 +71,30 @@ bool is_keyword(token_t *token) {
     return false;
 }
 
+void ungetchar(char c, scanner_t *scanner) {
+    scanner->input_buffer = c;
+}
+
+char next_char(scanner_t *scanner) {
+    char next;
+    if(scanner->input_buffer != '\0') {
+        next = scanner->input_buffer;
+        scanner->input_buffer = '\0';
+    }
+    else {
+        next = getchar();    
+    }
+
+    return next;
+}
+
 void got_token(token_type_t type, char c, token_t *token, scanner_t *scanner) {
+    if(scanner->state != INIT) {
+        ungetchar(c, scanner);
+    }
+    
     scanner->state = INIT;
     token->token_type = type;
-    ungetc(c, stdin);
 }
 
 void from_init_state(char c, token_t * token, scanner_t *scanner) {
@@ -103,7 +106,7 @@ void from_init_state(char c, token_t * token, scanner_t *scanner) {
         scanner->state = INT_F;
     }
     else if(c == '-') {
-        scanner->state = OP_F4;
+        scanner->state = OP_F3;
     }
     else if(isspace(c)) {
         scanner->state = INIT; 
@@ -111,14 +114,20 @@ void from_init_state(char c, token_t * token, scanner_t *scanner) {
     else if(c == '"') {
         scanner->state = STR_1; 
     }
-    else if(is_in_str(c, ",:()\0")) {
+    else if(strchr(",:()", c)) {
         scanner->state = SEP_F; 
     }
-    else if(is_in_str(c, "<>~\0")) {
+    else if(strchr("<>~", c)) {
         scanner->state = OP_1; 
     }
-    else if(is_in_str(c, "+*#/=\0")) {
+    else if(strchr("+*#", c)) {
         scanner->state = OP_F1;  
+    }
+    else if(c == '/') {
+        scanner->state = OP_F2;
+    }
+    else if(c == '=') {
+        scanner->state = OP_F4;
     }
     else if(c == '.') {
         scanner->state = OP_2;
@@ -128,7 +137,6 @@ void from_init_state(char c, token_t * token, scanner_t *scanner) {
     }
     else {
         got_token(ERROR_TYPE, c, token, scanner);
-        getchar();
     }
 }
 
@@ -141,7 +149,7 @@ token_t get_next_token(scanner_t *scanner) {
     
     char c;
     while(result.token_type == UNKNOWN) {
-        c = getchar();
+        c = next_char(scanner);
        
         switch (scanner->state)
         {
@@ -169,14 +177,14 @@ token_t get_next_token(scanner_t *scanner) {
             else if(c == '.') {
                 scanner->state = NUM_1;
             }
-            else if(is_in_str(c, "eE\0")) {
+            else if(strchr("eE", c)) {
                 scanner->state = NUM_2;
             }
             else {
                 got_token(INTEGER, c, &result, scanner);
             }
             break;
-        case OP_F4:
+        case OP_F3:
             if(isdigit(c)) {
                 scanner->state = INT_F;
             }
@@ -199,7 +207,7 @@ token_t get_next_token(scanner_t *scanner) {
             if(isdigit(c)) {
                 scanner->state = NUM_F;
             }
-            else if(is_in_str(c, "+-\0")) {
+            else if(strchr("+-", c)) {
                 scanner->state = NUM_3;
             }   
             else {
@@ -261,7 +269,7 @@ token_t get_next_token(scanner_t *scanner) {
             scanner->state = INIT; //Just ignore comments
             break;
         case STR_1:
-            if(c > STR_ALOWED_ASCII_START && c != '\\' && c != '"') {
+            if(!iscntrl(c) && c != '\\' && c != '"' && c != EOF) {
                 scanner->state = STR_1;
             }
             else if(c == '\\') {
@@ -275,7 +283,7 @@ token_t get_next_token(scanner_t *scanner) {
             }
             break;
         case STR_2:
-            if(is_in_str(c, "\",n,t,\\")) {
+            if(strchr("\",n,t,\\", c)) {
                 scanner->state = STR_1;
             }
             else if(isdigit(c)) {
@@ -311,7 +319,7 @@ token_t get_next_token(scanner_t *scanner) {
             got_token(EOF_TYPE, c, &result, scanner);
             break;
         case OP_1:
-            if(c == '.') {
+            if(c == '=') {
                 scanner->state = OP_F1;
             }
             else {
@@ -319,7 +327,7 @@ token_t get_next_token(scanner_t *scanner) {
             }
             break;
         case OP_2:
-            if(c == '=') {
+            if(c == '.') {
                 scanner->state = OP_F1;
             }
             else {
@@ -327,21 +335,23 @@ token_t get_next_token(scanner_t *scanner) {
             }
             break;
         case OP_F1:
-            if(c == '=') {
-                scanner->state = OP_F2;
-            }
-            else if(c == '/') {
-                scanner->state = OP_F3;
+            got_token(OPERATOR, c, &result, scanner);
+            break;
+        case OP_F2:
+            if(c == '/') {
+                scanner->state = OP_F1;
             }
             else {
                 got_token(OPERATOR, c, &result, scanner);
             }
             break;
-        case OP_F2:
-            got_token(OPERATOR, c, &result, scanner);
-            break;
-         case OP_F3:
-            got_token(OPERATOR, c, &result, scanner);
+        case OP_F4:
+            if(c == '=') {
+                scanner->state = OP_F1;
+            }
+            else {
+                got_token(OPERATOR, c, &result, scanner);
+            }
             break;
         }
     }

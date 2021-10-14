@@ -77,6 +77,18 @@ class test_fixture : public ::testing::Test {
             exp_types = {EOF_TYPE};
         }
 
+        virtual void testTypes() {
+            token_t temp;
+
+            printf("\nI\tGot.\tExp.\n");
+            for(size_t i = 0; i < exp_types.size(); i++) {
+                temp = get_next_token(&dut);
+
+                printf("[%ld]\t%d\t%d\n", i, temp.token_type, exp_types[i]);
+                ASSERT_EQ(exp_types[i], temp.token_type);
+            }
+        }
+
         virtual void SetUp() {
             setData(); 
             init_success = prepare_tests(&inp_filename, &scanner_input, &dut);
@@ -90,34 +102,28 @@ class test_fixture : public ::testing::Test {
 };
 
 TEST_F(test_fixture, types) {
-    token_t temp;
-
-    for(size_t i = 0; i < exp_types.size(); i++) {
-        temp.token_type = exp_types[i];
-
-        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
-    }
+    testTypes();
 }
 
 
 class random_tokens : public test_fixture {
     protected:
         void setData() override {
-            scanner_input = "abc hi 45 1231.456 12311e2 ( ) \"s\"";
+            scanner_input = 
+            R"(abc hi 45 1231.456 12311e2 ( ) "s" ===- * + <= >= .. 
+            // /
+            #"length")";
             exp_types = {IDENTIFIER, IDENTIFIER, INTEGER, 
                          NUMBER, NUMBER, SEPARATOR, 
-                         SEPARATOR, STRING, EOF_TYPE};
+                         SEPARATOR, STRING, OPERATOR, OPERATOR, 
+                         OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
+                         OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
+                         OPERATOR, STRING, EOF_TYPE};
         };
 };
 
 TEST_F(random_tokens, types) {
-    token_t temp;
-
-    for(size_t i = 0; i < exp_types.size(); i++) {
-        temp.token_type = exp_types[i];
-
-        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
-    }
+    testTypes();
 }
 
 
@@ -133,13 +139,7 @@ class whitespaces : public test_fixture {
 
 
 TEST_F(whitespaces, types) {
-    token_t temp;
-
-    for(size_t i = 0; i < exp_types.size(); i++) {
-        temp.token_type = exp_types[i];
-
-        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
-    }
+    testTypes();
 }
 
 
@@ -156,13 +156,7 @@ class errors : public test_fixture {
 
 
 TEST_F(errors, types) {
-    token_t temp;
-
-    for(size_t i = 0; i < exp_types.size(); i++) {
-        temp.token_type = exp_types[i];
-
-        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
-    }
+    testTypes();
 }
 
 
@@ -197,19 +191,15 @@ class code_sample : public test_fixture {
             KEYWORD,  IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, 
             IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR, INTEGER, 
             IDENTIFIER, SEPARATOR, STRING, SEPARATOR, IDENTIFIER, 
-            OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR}; //a = readi()
+            OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR, KEYWORD, 
+            IDENTIFIER, OPERATOR, KEYWORD, KEYWORD, IDENTIFIER, 
+            SEPARATOR, STRING, SEPARATOR, KEYWORD}; //write("a je nil\n") return
         }
 };
 
 
 TEST_F(code_sample, types) {
-    token_t temp;
-
-    for(size_t i = 0; i < exp_types.size(); i++) {
-        temp.token_type = exp_types[i];
-
-        ASSERT_EQ(temp.token_type, get_next_token(&dut).token_type);
-    }
+    testTypes();
 }
 
 
