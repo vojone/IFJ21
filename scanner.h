@@ -22,8 +22,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "dstring.h"
-
-#define INIT_SPACE 4
+#include "tables.h"
 
 typedef enum token_type {
     UNKNOWN,

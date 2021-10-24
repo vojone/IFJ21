@@ -23,7 +23,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define INIT_SPACE 4 /**< Initial allocated size for string */
+#define STR_INIT_SPACE 8 /**< Initial allocated size for string */
 
 //Return codes of string processing functions
 #define STR_SUCCESS 0
@@ -72,12 +72,6 @@ void str_dtor(string_t *string);
  * @brief Returns pointer to array of characters
  */ 
 char * to_str(string_t *string);
-
-/**
- * @brief Compares two strings
- * @return true if strings are same otherwise false
- */
-bool str_cmp(const char *str1, const char *str2);
 
 /**
  * @brief Tries to find character in string

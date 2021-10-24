@@ -18,13 +18,13 @@
 #include "dstring.h"
 
 int str_init(string_t *string) {
-    string->str = (char *)malloc(sizeof(char)*INIT_SPACE);
+    string->str = (char *)malloc(sizeof(char)*STR_INIT_SPACE);
     if(!string->str) {
         fprintf(stderr, "dstring: str_init: Cannot allocate memory!");
         return STR_FAILURE;
     }
 
-    string->alloc_size = INIT_SPACE;
+    string->alloc_size = STR_INIT_SPACE;
     string->str[0] = '\0';
     string->length = 0;
 
@@ -66,16 +66,6 @@ void str_dtor(string_t *string) {
 
 char * to_str(string_t *string) {
     return string->str;
-}
-
-
-bool str_cmp(const char *str1, const char *str2) {
-    if(strcmp(str1, str2) == 0) {
-        return true;
-    }
-    else {
-        return false;
-    }
 }
 
 

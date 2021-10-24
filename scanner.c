@@ -35,22 +35,6 @@ void scanner_dtor(scanner_t *sc) {
     str_dtor(&sc->str_buffer);
 }
 
-bool is_keyword(string_t *cur_string) {
-    static char * keyword_table[] = {"do", "else", "end", "function", "global",
-                                     "if", "local", "nil", "require", "return",
-                                     "then", "while", "integer", "number", 
-                                     "string", NULL};
-    
-    char * cur_str_ptr = to_str(cur_string);
-    for(int i = 0; keyword_table[i]; i++) {
-        if(str_cmp(keyword_table[i], cur_str_ptr)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 /**
  * @brief Fills input buffer with character from argument
  */
@@ -161,7 +145,10 @@ token_t get_next_token(scanner_t *sc) {
                 app_char(c, &sc->str_buffer);
             }
             else {
-                if(is_keyword(&sc->str_buffer)) {
+                char * keyword_p = match(to_str(&sc->str_buffer), get_keyword);
+                if(keyword_p) {
+                    str_clear(&sc->str_buffer);
+                    result.attr = keyword_p; 
                     got_token(KEYWORD, c, &result, sc);
                 }
                 else {

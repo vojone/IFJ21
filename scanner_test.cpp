@@ -86,8 +86,6 @@ class test_fixture : public ::testing::Test {
             
                 printf("[%ld]\t%d\t%d\n", i, temp.token_type, exp_types[i]);
                 ASSERT_EQ(exp_types[i], temp.token_type);
-
-                free(temp.attr);
             }
         }
 
