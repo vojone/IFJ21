@@ -17,53 +17,33 @@
 
 #include "scanner.h"
 
-#define INIT_SPACE 1
-
-int add_char(char c, token_t *token) {
-    if(token->attr == NULL) {
-        token->attr = malloc(sizeof(char)*INIT_SPACE);
-        if(token->attr == NULL) {
-            fprintf(stderr, "Cannot allocate memory!");
-            return EXIT_FAILURE;
-        }
-
-        token->allocated = INIT_SPACE;
-        ((char *)token->attr)[token->attr_size++] = c;
-    }
-    else {
-        if(token->attr_size + 1 > token->allocated) {
-            token->attr = realloc(token->attr, sizeof(char)*token->allocated*2);
-            if(token->attr == NULL) {
-                fprintf(stderr, "Cannot allocate memory!");
-                return EXIT_FAILURE;
-            }
-
-            token->allocated *= 2;
-        }
-
-        ((char *)token->attr)[token->attr_size++] = c;
-    }
-
-    return EXIT_SUCCESS;
-}
 
 /**
  * Prepares scanner structure and sets its attributes to initial values
  */
-void scanner_init(scanner_t *scanner) {
-    scanner->state = INIT;
-    scanner->input_buffer = '\0';
+void scanner_init(scanner_t *sc) {
+    sc->state = INIT;
+    sc->is_input_buffer_full = false;
+    
+    int ret = str_init(&sc->str_buffer);
+    if(ret == STR_FAILURE) {
+        return;
+    }
 }
 
+void scanner_dtor(scanner_t *sc) {
+    str_dtor(&sc->str_buffer);
+}
 
-bool is_keyword(token_t *token) {
-    static char * keyword_table[] = {"do", "else", "end", "function", "global", 
-                                     "if", "local", "nil", "require", "return", 
+bool is_keyword(string_t *cur_string) {
+    static char * keyword_table[] = {"do", "else", "end", "function", "global",
+                                     "if", "local", "nil", "require", "return",
                                      "then", "while", "integer", "number", 
                                      "string", NULL};
     
+    char * cur_str_ptr = to_str(cur_string);
     for(int i = 0; keyword_table[i]; i++) {
-        if(strcmp(keyword_table[i], (char *)token->attr) == 0) {
+        if(str_cmp(keyword_table[i], cur_str_ptr)) {
             return true;
         }
     }
@@ -71,15 +51,22 @@ bool is_keyword(token_t *token) {
     return false;
 }
 
-void ungetchar(char c, scanner_t *scanner) {
-    scanner->input_buffer = c;
+/**
+ * @brief Fills input buffer with character from argument
+ */
+void ungetchar(char c, scanner_t *sc) {
+    sc->input_buffer = c;
+    sc->is_input_buffer_full = true;
 }
 
-char next_char(scanner_t *scanner) {
+/**
+ * @brief Returns next char from stdin or from input buffer
+ */
+char next_char(scanner_t *sc) {
     char next;
-    if(scanner->input_buffer != '\0') {
-        next = scanner->input_buffer;
-        scanner->input_buffer = '\0';
+    if(sc->is_input_buffer_full == true) {
+        next = sc->input_buffer;
+        sc->is_input_buffer_full = false;
     }
     else {
         next = getchar();    
@@ -88,269 +75,281 @@ char next_char(scanner_t *scanner) {
     return next;
 }
 
-void got_token(token_type_t type, char c, token_t *token, scanner_t *scanner) {
-    if(scanner->state != INIT) {
-        ungetchar(c, scanner);
+void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
+    if(sc->state != INIT) {
+        ungetchar(c, sc);
+    }
+
+    if(sc->str_buffer.length != 0) {
+        str_cpy((char **)&token->attr, 
+                to_str(&sc->str_buffer), 
+                sc->str_buffer.length);
+
+        str_clear(&sc->str_buffer);
     }
     
-    scanner->state = INIT;
     token->token_type = type;
+
+    sc->state = INIT; //Reset automata state
 }
 
-void from_init_state(char c, token_t * token, scanner_t *scanner) {
-    if(isalpha(c) || c == '_') {
-        scanner->state = ID_F;
-        add_char(c, token);
+void init_token(token_t *token) {
+    token->token_type = UNKNOWN;
+    token->attr = NULL;
+}
+
+void from_init_state(char c, token_t * token, scanner_t *sc) {
+    if(get_chtype(c) == ALPHA || c == '_') {
+        sc->state = ID_F;
+        app_char(c, &sc->str_buffer);
     }
-    else if(isdigit(c)) {
-        scanner->state = INT_F;
+    else if(get_chtype(c) == DIGIT) {
+        sc->state = INT_F;
     }
     else if(c == '-') {
-        scanner->state = OP_F3;
+        sc->state = OP_F3;
     }
-    else if(isspace(c)) {
-        scanner->state = INIT; 
+    else if(get_chtype(c) == WHITESPACE) {
+        sc->state = INIT; 
     }
     else if(c == '"') {
-        scanner->state = STR_1; 
+        sc->state = STR_1; 
     }
-    else if(strchr(",:()", c)) {
-        scanner->state = SEP_F; 
+    else if(str_search(c, ",:()")) {
+        sc->state = SEP_F; 
     }
-    else if(strchr("<>~", c)) {
-        scanner->state = OP_1; 
+    else if(str_search(c, "<>~")) {
+        sc->state = OP_1; 
     }
-    else if(strchr("+*#", c)) {
-        scanner->state = OP_F1;  
+    else if(str_search(c, "+*#")) {
+        sc->state = OP_F1;  
     }
     else if(c == '/') {
-        scanner->state = OP_F2;
+        sc->state = OP_F2;
     }
     else if(c == '=') {
-        scanner->state = OP_F4;
+        sc->state = OP_F4;
     }
     else if(c == '.') {
-        scanner->state = OP_2;
+        sc->state = OP_2;
     }
     else if(c == EOF) {
-        scanner->state = EOF_F;
+        sc->state = EOF_F;
     }
     else {
-        got_token(ERROR_TYPE, c, token, scanner);
+        got_token(ERROR_TYPE, c, token, sc);
     }
 }
 
-token_t get_next_token(scanner_t *scanner) {
+token_t get_next_token(scanner_t *sc) {
     token_t result;
-    result.attr = NULL;
-    result.attr_size = 0;
-    result.allocated = 0;
-    result.token_type = UNKNOWN;
-    
+    init_token(&result);
+
     char c;
     while(result.token_type == UNKNOWN) {
-        c = next_char(scanner);
+        c = next_char(sc);
        
-        switch (scanner->state)
+        switch (sc->state)
         {
         case INIT:
-            from_init_state(c, &result, scanner);
+            from_init_state(c, &result, sc);
             break;
             
         case ID_F:
-            if(isalpha(c) || c == '_' || isdigit(c)) {
-                scanner->state = ID_F;
-                add_char(c, &result);
+            if(get_chtype(c) == ALPHA || get_chtype(c) == DIGIT || c == '_') {
+                sc->state = ID_F;
+                app_char(c, &sc->str_buffer);
             }
             else {
-                got_token(IDENTIFIER, c, &result, scanner);
-                add_char('\0', &result);
-                if(is_keyword(&result)) {
-                    got_token(KEYWORD, c, &result, scanner);
-                }   
+                if(is_keyword(&sc->str_buffer)) {
+                    got_token(KEYWORD, c, &result, sc);
+                }
+                else {
+                    got_token(IDENTIFIER, c, &result, sc);
+                }
             }
             break;
         case INT_F:
-            if(isdigit(c)) {
-                scanner->state = INT_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = INT_F;
             }
             else if(c == '.') {
-                scanner->state = NUM_1;
+                sc->state = NUM_1;
             }
-            else if(strchr("eE", c)) {
-                scanner->state = NUM_2;
+            else if(str_search(c, "eE")) {
+                sc->state = NUM_2;
             }
             else {
-                got_token(INTEGER, c, &result, scanner);
+                got_token(INTEGER, c, &result, sc);
             }
             break;
         case OP_F3:
-            if(isdigit(c)) {
-                scanner->state = INT_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = INT_F;
             }
             else if(c == '-') {
-                scanner->state = COM_1;
+                sc->state = COM_1;
             }
             else {
-                got_token(OPERATOR, c, &result, scanner);
+                got_token(OPERATOR, c, &result, sc);
             }
             break;
         case NUM_1:
-            if(isdigit(c)) {
-                scanner->state = NUM_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = NUM_F;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case NUM_2:
-            if(isdigit(c)) {
-                scanner->state = NUM_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = NUM_F;
             }
-            else if(strchr("+-", c)) {
-                scanner->state = NUM_3;
+            else if(str_search(c, "+-")) {
+                sc->state = NUM_3;
             }   
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case NUM_3:
-            if(isdigit(c)) {
-                scanner->state = NUM_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = NUM_F;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case NUM_F:
-            if(isdigit(c)) {
-                scanner->state = NUM_F;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = NUM_F;
             }
             else {
-                got_token(NUMBER, c, &result, scanner);
+                got_token(NUMBER, c, &result, sc);
             }
             break;
         case COM_1:
             if(c == '[') {
-                scanner->state = COM_2;
+                sc->state = COM_2;
             }
             else if(c == '\n') {
-                scanner->state = COM_F;
+                sc->state = COM_F;
             }
             else {
-                scanner->state = COM_1;
+                sc->state = COM_1;
             }
             break;
         case COM_2:
             if(c == '[') {
-                scanner->state = COM_3;
+                sc->state = COM_3;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case COM_3:
             if(c != ']') {
-                scanner->state = COM_3;
+                sc->state = COM_3;
             }
             else {
-                scanner->state = COM_4;
+                sc->state = COM_4;
             }
             break;
         case COM_4:
             if(c == ']') {
-                scanner->state = COM_F;
+                sc->state = COM_F;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case COM_F:
-            scanner->state = INIT; //Just ignore comments
+            sc->state = INIT; //Just ignore comments
             break;
         case STR_1:
-            if(!iscntrl(c) && c != '\\' && c != '"' && c != EOF) {
-                scanner->state = STR_1;
+            if(get_chtype(c) != CONTROL && c != '\\' && c != '"' && c != EOF) {
+                sc->state = STR_1;
             }
             else if(c == '\\') {
-                scanner->state = STR_2;
+                sc->state = STR_2;
             }
             else if(c == '"') {
-                scanner->state = STR_F;
+                sc->state = STR_F;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case STR_2:
-            if(strchr("\",n,t,\\", c)) {
-                scanner->state = STR_1;
+            if(str_search(c, "\",n,t,\\")) {
+                sc->state = STR_1;
             }
-            else if(isdigit(c)) {
-                scanner->state = STR_3;
+            else if(get_chtype(c) == DIGIT) {
+                sc->state = STR_3;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case STR_3:
-            if(isdigit(c)) {
-                scanner->state = STR_4;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = STR_4;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case STR_4:
-            if(isdigit(c)) {
-                scanner->state = STR_1;
+            if(get_chtype(c) == DIGIT) {
+                sc->state = STR_1;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case STR_F:
-            got_token(STRING, c, &result, scanner);
+            got_token(STRING, c, &result, sc);
             break;
         case SEP_F:
-            got_token(SEPARATOR, c, &result, scanner);
+            got_token(SEPARATOR, c, &result, sc);
             break;
         case EOF_F:
-            got_token(EOF_TYPE, c, &result, scanner);
+            got_token(EOF_TYPE, c, &result, sc);
             break;
         case OP_1:
             if(c == '=') {
-                scanner->state = OP_F1;
+                sc->state = OP_F1;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case OP_2:
             if(c == '.') {
-                scanner->state = OP_F1;
+                sc->state = OP_F1;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, scanner);
+                got_token(ERROR_TYPE, c, &result, sc);
             }
             break;
         case OP_F1:
-            got_token(OPERATOR, c, &result, scanner);
+            got_token(OPERATOR, c, &result, sc);
             break;
         case OP_F2:
             if(c == '/') {
-                scanner->state = OP_F1;
+                sc->state = OP_F1;
             }
             else {
-                got_token(OPERATOR, c, &result, scanner);
+                got_token(OPERATOR, c, &result, sc);
             }
             break;
         case OP_F4:
             if(c == '=') {
-                scanner->state = OP_F1;
+                sc->state = OP_F1;
             }
             else {
-                got_token(OPERATOR, c, &result, scanner);
+                got_token(OPERATOR, c, &result, sc);
             }
             break;
         }

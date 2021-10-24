@@ -3,7 +3,7 @@
  *                                scanner.h
  * 
  *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *   Purposer: File, that contains declarations of lexer (scanner) functions
+ *   Purpose: File, that contains declarations of lexer (scanner) functions
  * 
  *                    Last change: 
  *****************************************************************************/ 
@@ -21,10 +21,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <ctype.h>
-#include <string.h>
+#include "dstring.h"
 
-#define STR_ALOWED_ASCII_START 31
+#define INIT_SPACE 4
 
 typedef enum token_type {
     UNKNOWN,
@@ -51,17 +50,15 @@ typedef enum fsm_state {
     EOF_F
 } fsm_state_t;
 
-
-
 typedef struct token {
     token_type_t token_type;
-    size_t attr_size;
-    size_t allocated;
     void * attr;
 } token_t;
 
 typedef struct scanner {
     char input_buffer;
+    bool is_input_buffer_full;
+    string_t str_buffer;
     fsm_state_t state;
 } scanner_t;
 
@@ -69,6 +66,8 @@ typedef struct scanner {
 token_t get_next_token(scanner_t *scanner);
 
 void scanner_init(scanner_t *scanner);
+
+void scanner_dtor(scanner_t *scanner);
 
 
 #endif

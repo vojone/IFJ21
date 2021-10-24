@@ -69,7 +69,7 @@ class test_fixture : public ::testing::Test {
         std::string scanner_input;
         std::vector<token_type_t> exp_types;
 
-        scanner_t dut;
+        scanner_t uut;
         bool init_success;
 
         virtual void setData() {
@@ -82,21 +82,24 @@ class test_fixture : public ::testing::Test {
 
             printf("\nI\tGot.\tExp.\n");
             for(size_t i = 0; i < exp_types.size(); i++) {
-                temp = get_next_token(&dut);
-
+                temp = get_next_token(&uut);
+            
                 printf("[%ld]\t%d\t%d\n", i, temp.token_type, exp_types[i]);
                 ASSERT_EQ(exp_types[i], temp.token_type);
+
+                free(temp.attr);
             }
         }
 
         virtual void SetUp() {
             setData(); 
-            init_success = prepare_tests(&inp_filename, &scanner_input, &dut);
+            init_success = prepare_tests(&inp_filename, &scanner_input, &uut);
         }
 
         virtual void TearDown() {
             if(init_success) {
                 remove(inp_filename.c_str());
+                scanner_dtor(&uut);
             }
         }
 };
@@ -111,14 +114,14 @@ class random_tokens : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(abc hi 45 1231.456 12311e2 ( ) "s" ===- * + <= >= .. 
-            // /
+            abcdefghchijklmnopqrstu // /
             #"length")";
             exp_types = {IDENTIFIER, IDENTIFIER, INTEGER, 
                          NUMBER, NUMBER, SEPARATOR, 
                          SEPARATOR, STRING, OPERATOR, OPERATOR, 
                          OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
-                         OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
-                         OPERATOR, STRING, EOF_TYPE};
+                         OPERATOR, OPERATOR, IDENTIFIER, 
+                         OPERATOR, OPERATOR, OPERATOR, STRING, EOF_TYPE};
         };
 };
 
