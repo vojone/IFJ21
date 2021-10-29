@@ -20,7 +20,7 @@
 char * get_keyword(unsigned int index) {
     static char * keyword_table[] = {"do", "else", "end", "function", 
                                      "global", "if", "local", "nil", 
-                                     "require", "return","then", "while",
+                                     "require", "return", "then", "while",
                                      "integer", "number", "string",
                                      NULL};
     return keyword_table[index];
@@ -45,7 +45,6 @@ char * get_separator(unsigned int index) {
 }
 
 
-
 char * get_bfunc(unsigned int index) {
     return NULL;
 }
@@ -54,10 +53,12 @@ char * get_bfunc(unsigned int index) {
 char * match(char * str, char * (*table_func)(unsigned int)) {
     int i = 0;
     char * cur_keyword = NULL;
-    while((cur_keyword = (*table_func)(i++)) != NULL) {
+    while((cur_keyword = (*table_func)(i)) != NULL) {
         if(!strcmp(cur_keyword, str)) {
             return get_keyword(i);
         }
+
+        i++;
     }
 
     return NULL;

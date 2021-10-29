@@ -103,19 +103,24 @@ void from_init_state(char c, token_t * token, scanner_t *sc) {
         sc->state = SEP_F; 
     }
     else if(str_search(c, "<>~")) {
-        sc->state = OP_1; 
+        sc->state = OP_1;
+        app_char(c, &sc->str_buffer);
     }
     else if(str_search(c, "+*#")) {
-        sc->state = OP_F1;  
+        sc->state = OP_F1; 
+        app_char(c, &sc->str_buffer); 
     }
     else if(c == '/') {
         sc->state = OP_F2;
+        app_char(c, &sc->str_buffer);
     }
     else if(c == '=') {
         sc->state = OP_F4;
+        app_char(c, &sc->str_buffer);
     }
     else if(c == '.') {
         sc->state = OP_2;
+        app_char(c, &sc->str_buffer);
     }
     else if(c == EOF) {
         sc->state = EOF_F;
@@ -132,6 +137,7 @@ token_t get_next_token(scanner_t *sc) {
     char c;
     while(result.token_type == UNKNOWN) {
         c = next_char(sc);
+        //fprintf(stderr, "%c", c);
        
         switch (sc->state)
         {
@@ -309,7 +315,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                got_token(ERROR_TYPE, c, &result, sc);
+                got_token(OPERATOR, c, &result, sc);
             }
             break;
         case OP_2:

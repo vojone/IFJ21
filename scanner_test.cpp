@@ -16,7 +16,7 @@
  */ 
 
 
-#define TMP_FILE_NAME "tmp.inp" 
+#define TMP_FILE_NAME "tmp.inp" /**< Temporary file for testing inputs (stream from this file is redirected to stdin)*/
 
 extern "C" {
     #include "scanner.h"
@@ -27,12 +27,19 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 
-FILE * create_input_file(std::string *name, std::string *content) {
-    FILE * test_file = fopen(name->c_str(), "r");
-    if(test_file) {
-        fprintf(stderr, "Scanner test: Err: File %s exists!\n", name->c_str());
+bool verbose_mode = false; /**< Tests prints only test cases with differences between expected result and got */
+bool force_mode = false; /**< Tests automatically prevents overwriting files, if is set to false */
 
-        return NULL;
+FILE * create_input_file(std::string *name, std::string *content) {
+    if(!force_mode) {
+        FILE * test_file = fopen(name->c_str(), "r");
+        if(test_file) {
+            fprintf(stderr, "Scanner test:");
+            fprintf(stderr, "Err: File %s exists!\n", name->c_str());
+            fclose(test_file);
+
+            return NULL;
+        }
     }
 
     FILE * input_file = fopen(name->c_str(), "w");
@@ -68,6 +75,7 @@ class test_fixture : public ::testing::Test {
         std::string inp_filename = TMP_FILE_NAME;
         std::string scanner_input;
         std::vector<token_type_t> exp_types;
+        std::vector<char *> exp_attributes; 
 
         scanner_t uut;
         bool init_success;
@@ -80,11 +88,17 @@ class test_fixture : public ::testing::Test {
         virtual void testTypes() {
             token_t temp;
 
-            printf("\nI\tGot.\tExp.\n");
+            if(verbose_mode) {
+                printf("\nI\tGot.\tExp.\tAttr.\n");
+            }
             for(size_t i = 0; i < exp_types.size(); i++) {
                 temp = get_next_token(&uut);
             
-                printf("[%ld]\t%d\t%d\n", i, temp.token_type, exp_types[i]);
+                if(verbose_mode) {
+                    printf("[%ld]\t%d\t%d", i, temp.token_type, exp_types[i]);
+                    printf("\t%s\n", (char *)temp.attr);
+                }
+            
                 ASSERT_EQ(exp_types[i], temp.token_type);
             }
         }
@@ -92,13 +106,15 @@ class test_fixture : public ::testing::Test {
         virtual void SetUp() {
             setData(); 
             init_success = prepare_tests(&inp_filename, &scanner_input, &uut);
+            if(!init_success) {
+                scanner_dtor(&uut);
+                exit(EXIT_FAILURE);
+            }
         }
 
         virtual void TearDown() {
-            if(init_success) {
-                remove(inp_filename.c_str());
-                scanner_dtor(&uut);
-            }
+            remove(inp_filename.c_str());
+            scanner_dtor(&uut);
         }
 };
 
@@ -113,13 +129,14 @@ class random_tokens : public test_fixture {
             scanner_input = 
             R"(abc hi 45 1231.456 12311e2 ( ) "s" ===- * + <= >= .. 
             abcdefghchijklmnopqrstu // /
-            #"length")";
+            #"length" "Ahoj\n\"Sve'te \\\034")";
             exp_types = {IDENTIFIER, IDENTIFIER, INTEGER, 
                          NUMBER, NUMBER, SEPARATOR, 
                          SEPARATOR, STRING, OPERATOR, OPERATOR, 
                          OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
                          OPERATOR, OPERATOR, IDENTIFIER, 
-                         OPERATOR, OPERATOR, OPERATOR, STRING, EOF_TYPE};
+                         OPERATOR, OPERATOR, OPERATOR, STRING, 
+                         STRING, EOF_TYPE};
         };
 };
 
@@ -132,9 +149,22 @@ class whitespaces : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(--[[]])";
+            R"(--[[]]
+            
+            --dzktdtzdztktdjjtdz
+            ---
+            a
+            ---[[safddasfdfs
+            asdffdsa
+            adsfdsaf
+            dsaffdsa
+            
+            ]]
+            b
 
-            exp_types = {EOF_TYPE};
+            )";
+
+            exp_types = {IDENTIFIER, IDENTIFIER, EOF_TYPE};
         }
 };
 
@@ -145,23 +175,25 @@ TEST_F(whitespaces, types) {
 
 
 
-class errors : public test_fixture {
+class lexical_errors : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(  ; ; ; ; === ")";
+            R"(  ; ; ; ; === -200end"
+            )";
             exp_types = {ERROR_TYPE, ERROR_TYPE, ERROR_TYPE, ERROR_TYPE,
-                         OPERATOR, OPERATOR, ERROR_TYPE, EOF_TYPE};
+                        OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
+                        EOF_TYPE};
         }
 };
 
 
-TEST_F(errors, types) {
+TEST_F(lexical_errors, types) {
     testTypes();
 }
 
 
-class code_sample : public test_fixture {
+class code_sample1 : public test_fixture {
     protected:
         void setData() override {
             scanner_input =
@@ -188,18 +220,254 @@ class code_sample : public test_fixture {
             end)";
 
             exp_types = {
-            KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, 
-            KEYWORD,  IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, 
-            IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR, INTEGER, 
-            IDENTIFIER, SEPARATOR, STRING, SEPARATOR, IDENTIFIER, 
-            OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR, KEYWORD, 
-            IDENTIFIER, OPERATOR, KEYWORD, KEYWORD, IDENTIFIER, 
-            SEPARATOR, STRING, SEPARATOR, KEYWORD}; //write("a je nil\n") return
+            KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR, 
+            SEPARATOR, KEYWORD,  IDENTIFIER, SEPARATOR, KEYWORD,
+            KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR, 
+            INTEGER, IDENTIFIER, SEPARATOR, STRING, SEPARATOR, 
+            IDENTIFIER, OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR, 
+            KEYWORD, IDENTIFIER, OPERATOR, KEYWORD, KEYWORD, 
+            IDENTIFIER, SEPARATOR, STRING, SEPARATOR, KEYWORD, 
+            KEYWORD, KEYWORD,KEYWORD, IDENTIFIER, OPERATOR, 
+            INTEGER, KEYWORD, IDENTIFIER,SEPARATOR, STRING,
+            SEPARATOR, KEYWORD, IDENTIFIER, OPERATOR,INTEGER, 
+            KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD,
+            IDENTIFIER, OPERATOR, IDENTIFIER, OPERATOR, IDENTIFIER, 
+            IDENTIFIER,OPERATOR, IDENTIFIER, OPERATOR, INTEGER, 
+            KEYWORD, IDENTIFIER,SEPARATOR, STRING, SEPARATOR, 
+            IDENTIFIER, SEPARATOR, STRING, SEPARATOR, KEYWORD, 
+            KEYWORD, EOF_TYPE};
         }
 };
 
 
-TEST_F(code_sample, types) {
+TEST_F(code_sample1, types) {
+    testTypes();
+}
+
+
+class code_sample2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            require "ifj21"
+
+            global g : function (integer) : integer -- deklarace funkce
+            function f(x : integer) : integer
+                if x > 0then return x-1
+                else
+                    write("calling g with ", x)
+                return g(x)
+                end
+            end
+
+            function g(x : integer) : integer
+                if x > 0 then
+                    write("calling f with ", x)
+                    return f(x)
+                else return -200 end -- proč musí být před end bílý znak?
+            end
+
+            function main()
+                local res : integer = g(10)
+                write(res)
+            end main()
+            )";
+
+            exp_types = {
+                KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR,
+                KEYWORD, SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, 
+                KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, KEYWORD,
+                KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD, 
+                KEYWORD, IDENTIFIER, INTEGER, KEYWORD, IDENTIFIER, 
+                SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR, 
+                KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, 
+                KEYWORD, KEYWORD, 
+                KEYWORD, IDENTIFIER,
+                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, SEPARATOR,
+                SEPARATOR, KEYWORD, KEYWORD, IDENTIFIER, OPERATOR,
+                INTEGER, KEYWORD, IDENTIFIER, SEPARATOR, STRING,
+                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER,
+                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD,
+                INTEGER, KEYWORD, KEYWORD, KEYWORD, IDENTIFIER,
+                SEPARATOR, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR,
+                KEYWORD, OPERATOR, IDENTIFIER, SEPARATOR, INTEGER,
+                SEPARATOR, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR,
+                KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
+            };
+        }
+};
+
+
+TEST_F(code_sample2, types) {
+    testTypes();
+}
+
+
+class code_sample3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            require "ifj21"
+            function foo(x : integer, y : integer) : integer, integer
+                local i : integer = x
+                local j : integer = (y + 2) * 3
+                i, j = j+1, i+1 -- vyhodnocuj zprava a přiřazuj později
+                return i, j
+            end
+            function main()
+                local a : integer = 1
+                local b : integer = 2
+                a, b = foo(a, b) -- returns 13, 2
+                if a < b then
+                    print(a, "<", b, "\n")
+                else
+                    print(a, ">=", b, "\n")
+                    local a : integer = 666
+                end
+                print(a) --[[ prints 13 ]]
+            end
+            main()
+            )";
+
+            exp_types = {
+                KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR,
+                IDENTIFIER, SEPARATOR, KEYWORD, SEPARATOR, IDENTIFIER,
+                SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, KEYWORD,
+                SEPARATOR, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR,
+                KEYWORD, OPERATOR, IDENTIFIER, KEYWORD, IDENTIFIER,
+                SEPARATOR, KEYWORD, OPERATOR, SEPARATOR, IDENTIFIER,
+                OPERATOR, INTEGER, SEPARATOR, OPERATOR, INTEGER,
+                IDENTIFIER, SEPARATOR, IDENTIFIER, OPERATOR, IDENTIFIER,
+                OPERATOR, INTEGER, SEPARATOR, IDENTIFIER, OPERATOR,
+                INTEGER, KEYWORD, IDENTIFIER, SEPARATOR,IDENTIFIER,
+                KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR,
+                KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR,
+                INTEGER, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, 
+                OPERATOR, INTEGER, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                OPERATOR, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR,
+                IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER, OPERATOR,
+                IDENTIFIER, KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR,
+                STRING, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, 
+                IDENTIFIER, SEPARATOR, STRING, SEPARATOR, IDENTIFIER, 
+                SEPARATOR, STRING, SEPARATOR, KEYWORD, IDENTIFIER,
+                SEPARATOR, KEYWORD, OPERATOR, INTEGER, KEYWORD,
+                IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD,
+                IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
+                };
+        }
+};
+
+
+TEST_F(code_sample3, types) {
+    testTypes();
+}
+
+
+class code_sample4 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            require "ifj21"
+            function whitespaces
+            ()
+            local
+            s
+            :
+            string
+            =
+            "\150"write(s, "\n")
+            s = "a\255b"
+            write(s
+            ,
+            "\n")x=0
+            -
+            1write(x)
+            end whitespaces()
+            )";
+
+            exp_types = {
+                KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR,
+                SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD,
+                OPERATOR, STRING, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                SEPARATOR, STRING, SEPARATOR, IDENTIFIER, OPERATOR,
+                STRING, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR,
+                STRING, SEPARATOR, IDENTIFIER, OPERATOR, INTEGER,
+                OPERATOR, INTEGER, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR,
+                EOF_TYPE
+            };
+        }
+};
+
+
+TEST_F(code_sample4, types) {
+    testTypes();
+}
+
+
+class code_sample5 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            -- Program 3: Prace s retezci a vestavenymi funkcemi
+            require "ifj21"
+            function main()
+            local s1 : string = "Toto je nejaky text"
+            local s2 : string = s1 .. ", ktery jeste trochu obohatime"
+            write(s1, "\010", s2)local s1len:integer=#s1 local s1len4: integer=s1len
+            s1len = s1len - 4 s1 = substr(s2, s1len, s1len4) s1len = s1len + 1
+            write("4 znaky od", s1len, ". znaku v \"", s2, "\":", s1, "\n")
+            write("Zadejte serazenou posloupnost vsech malych pismen a-h, ")
+            write("pricemz se pismena nesmeji v posloupnosti opakovat: ")
+            s1 = reads()
+            if s1 ~= nil then
+            while s1 ~= "abcdefgh" do
+            write("\n", "Spatne zadana posloupnost, zkuste znovu:")
+            s1 = reads()
+            end
+            else
+            end
+            end
+            main()
+            )";
+
+            exp_types = {
+                KEYWORD, STRING, KEYWORD, IDENTIFIER, SEPARATOR,
+                SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD,
+                OPERATOR, STRING, KEYWORD, IDENTIFIER, SEPARATOR,
+                KEYWORD, OPERATOR, IDENTIFIER, OPERATOR, STRING,
+                IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, STRING,
+                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER,
+                SEPARATOR, KEYWORD, OPERATOR, OPERATOR, IDENTIFIER,
+                KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, OPERATOR,
+                IDENTIFIER, IDENTIFIER, OPERATOR, IDENTIFIER, OPERATOR,
+                INTEGER, IDENTIFIER, OPERATOR, IDENTIFIER, SEPARATOR,
+                IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, IDENTIFIER,
+                SEPARATOR, IDENTIFIER, OPERATOR, IDENTIFIER, OPERATOR,
+                INTEGER, IDENTIFIER, SEPARATOR, STRING, SEPARATOR,
+                IDENTIFIER, SEPARATOR, STRING, SEPARATOR, IDENTIFIER,
+                SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR,
+                STRING, SEPARATOR, IDENTIFIER, SEPARATOR, STRING,
+                SEPARATOR, IDENTIFIER, SEPARATOR, STRING, SEPARATOR,
+                IDENTIFIER, OPERATOR, IDENTIFIER, SEPARATOR, SEPARATOR,
+                KEYWORD, IDENTIFIER, OPERATOR, KEYWORD, KEYWORD,
+                KEYWORD, IDENTIFIER, OPERATOR, STRING, KEYWORD,
+                IDENTIFIER, SEPARATOR, STRING, SEPARATOR, STRING,
+                SEPARATOR, IDENTIFIER, OPERATOR, IDENTIFIER, SEPARATOR,
+                SEPARATOR, KEYWORD, KEYWORD, KEYWORD, KEYWORD,
+                IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
+            };
+        }
+};
+
+
+TEST_F(code_sample5, types) {
     testTypes();
 }
 
@@ -207,6 +475,15 @@ TEST_F(code_sample, types) {
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
+
+  for(int i = 0; i < argc; i++) {
+      if(strcmp(argv[i], "-f") == 0) {
+          force_mode = true;
+      }
+      else if(strcmp(argv[i], "-v") == 0) {
+          verbose_mode = true;
+      }
+  }
 
   return RUN_ALL_TESTS();
 }
