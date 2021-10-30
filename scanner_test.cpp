@@ -3,9 +3,9 @@
  *                             scanner_test.cpp
  * 
  *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *           Purpose: Unit tests for scanner
+ *                 Purpose: Unit tests for scanner
  * 
- *                  Last change: 
+ *                      Last change: 30. 10. 2021
  *****************************************************************************/ 
 
 /**
@@ -89,17 +89,25 @@ class test_fixture : public ::testing::Test {
             token_t temp;
 
             if(verbose_mode) {
-                printf("\nI\tGot.\tExp.\tAttr.\n");
+                printf("\nI\tGot.\tExp.\tPos.\tAttr.\n");
             }
             for(size_t i = 0; i < exp_types.size(); i++) {
                 temp = get_next_token(&uut);
             
                 if(verbose_mode) {
                     printf("[%ld]\t%d\t%d", i, temp.token_type, exp_types[i]);
-                    printf("\t%s\n", (char *)temp.attr);
+                    //printf("\t%lu %lu", uut.cursor_pos[ROW], uut.cursor_pos[COL]);
+                    printf("\t%s", (char *)temp.attr);
+                    printf("\n");
                 }
-            
+
                 ASSERT_EQ(exp_types[i], temp.token_type);
+
+                if(temp.token_type != KEYWORD && 
+                   temp.token_type != OPERATOR && 
+                   temp.token_type != SEPARATOR) {
+                    free(temp.attr);
+                }
             }
         }
 
@@ -283,18 +291,17 @@ class code_sample2 : public test_fixture {
                 KEYWORD, IDENTIFIER, INTEGER, KEYWORD, IDENTIFIER, 
                 SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR, 
                 KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, 
-                KEYWORD, KEYWORD, 
-                KEYWORD, IDENTIFIER,
-                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, SEPARATOR,
-                SEPARATOR, KEYWORD, KEYWORD, IDENTIFIER, OPERATOR,
-                INTEGER, KEYWORD, IDENTIFIER, SEPARATOR, STRING,
-                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER,
-                SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD,
-                INTEGER, KEYWORD, KEYWORD, KEYWORD, IDENTIFIER,
-                SEPARATOR, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR,
-                KEYWORD, OPERATOR, IDENTIFIER, SEPARATOR, INTEGER,
-                SEPARATOR, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR,
-                KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
+                KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
+                IDENTIFIER, SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, 
+                KEYWORD, KEYWORD, IDENTIFIER, OPERATOR, INTEGER, 
+                KEYWORD, IDENTIFIER, SEPARATOR, STRING, SEPARATOR, 
+                IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, 
+                IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, INTEGER, 
+                KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
+                SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, 
+                OPERATOR, IDENTIFIER, SEPARATOR, INTEGER, SEPARATOR, 
+                IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, KEYWORD, 
+                IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
             };
         }
 };

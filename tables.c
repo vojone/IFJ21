@@ -17,45 +17,59 @@
 
 #include "tables.h"
 
+/**
+ * @brief Contains static array of allowed keywords in IFJ21 (sorted by ASCII value - alphabetically)
+ * @return Pointer to keyword with index from argument    
+ */ 
 char * get_keyword(unsigned int index) {
     static char * keyword_table[] = {"do", "else", "end", "function", 
-                                     "global", "if", "local", "nil", 
-                                     "require", "return", "then", "while",
-                                     "integer", "number", "string",
-                                     NULL};
+                                     "global", "if", "integer", "local", 
+                                     "nil", "number", "require", "return", 
+                                     "string", "then", "while", NULL};
+
     return keyword_table[index];
 }
 
-
+/**
+ * @brief Contains static array of allowed operators in IFJ21 (sorted by ASCII value)
+ * @return Pointer to operator with index from argument    
+ */ 
 char * get_operator(unsigned int index) {
-    static char * keyword_table[] = {"=", "#", "*", "/", 
-                                     "//", "+", "-", "..", 
-                                     "<", "<=",">", ">=",
-                                     "==", "~=", NULL};
+    static char * operator_table[] = {"#", "*", "+", "-", "..", 
+                                      "/", "//", "<", "<=", "=", 
+                                      "==", ">", ">=", "~=", NULL};
 
-    return keyword_table[index];
+    return operator_table[index];
 }
 
-
+/**
+ * @brief Contains static array of allowed separators in IFJ21 (sorted by ASCII value)
+ * @return Pointer to separators with index from argument    
+ */ 
 char * get_separator(unsigned int index) {
-    static char * keyword_table[] = {",", ":", "(", ")", 
-                                     NULL};
+    static char * separator_table[] = {",", ":", "(", ")", NULL};
                                      
-    return keyword_table[index];
+    return separator_table[index];
 }
 
 
-char * get_bfunc(unsigned int index) {
+char * get_builtin(unsigned int index) {
     return NULL;
 }
 
-
+/**
+ * @brief Tries to find string in table
+ * @param str string to be found
+ * @param table_func pointer to function, that contains static array
+ * @return pointer to found string in static array or NULL
+ */ 
 char * match(char * str, char * (*table_func)(unsigned int)) {
+
     int i = 0;
     char * cur_keyword = NULL;
     while((cur_keyword = (*table_func)(i)) != NULL) {
         if(!strcmp(cur_keyword, str)) {
-            return get_keyword(i);
+            return cur_keyword;
         }
 
         i++;

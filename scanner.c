@@ -24,6 +24,11 @@
 void scanner_init(scanner_t *sc) {
     sc->state = INIT;
     sc->is_input_buffer_full = false;
+
+    sc->is_tok_buffer_full = false;
+
+    sc->cursor_pos[ROW] = 1;
+    sc->cursor_pos[COL] = 1;
     
     int ret = str_init(&sc->str_buffer);
     if(ret == STR_FAILURE) {
@@ -37,10 +42,26 @@ void scanner_dtor(scanner_t *sc) {
 
 /**
  * @brief Fills input buffer with character from argument
+ * @note Returns scanner cursor position one column back
  */
 void ungetchar(char c, scanner_t *sc) {
     sc->input_buffer = c;
     sc->is_input_buffer_full = true;
+
+    sc->cursor_pos[COL]--;
+}
+
+/**
+ * @brief Updates position of cursor due to given character
+ */
+void update_cursor_pos(char c, scanner_t *sc) {
+    if(c == '\n') {
+        sc->cursor_pos[ROW]++;
+        sc->cursor_pos[COL] = 1;
+    }
+    else {
+        sc->cursor_pos[COL]++;
+    }
 }
 
 /**
@@ -53,8 +74,10 @@ char next_char(scanner_t *sc) {
         sc->is_input_buffer_full = false;
     }
     else {
-        next = getchar();    
+        next = getchar();
     }
+
+    update_cursor_pos(next, sc);
 
     return next;
 }
@@ -77,15 +100,20 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
     sc->state = INIT; //Reset automata state
 }
 
+/**
+ * Sets initial values to token
+ */ 
 void init_token(token_t *token) {
     token->token_type = UNKNOWN;
     token->attr = NULL;
 }
 
+/**
+ * Transitions from intial state of FSM
+ */ 
 void from_init_state(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == ALPHA || c == '_') {
         sc->state = ID_F;
-        app_char(c, &sc->str_buffer);
     }
     else if(get_chtype(c) == DIGIT) {
         sc->state = INT_F;
@@ -104,28 +132,24 @@ void from_init_state(char c, token_t * token, scanner_t *sc) {
     }
     else if(c == '~') {
         sc->state = OP_1;
-        app_char(c, &sc->str_buffer);
     }
     else if(str_search(c, "+*#")) {
         sc->state = OP_F1; 
-        app_char(c, &sc->str_buffer); 
     }
     else if(c == '/') {
         sc->state = OP_F2;
-        app_char(c, &sc->str_buffer);
     }
     else if(str_search(c, "<>=")) {
         sc->state = OP_F4;
-        app_char(c, &sc->str_buffer);
     }
     else if(c == '.') {
         sc->state = OP_2;
-        app_char(c, &sc->str_buffer);
     }
     else if(c == EOF) {
         sc->state = EOF_F;
     }
     else {
+        app_char(c, &sc->str_buffer);
         got_token(ERROR_TYPE, c, token, sc);
     }
 }
@@ -134,7 +158,13 @@ token_t get_next_token(scanner_t *sc) {
     token_t result;
     init_token(&result);
 
+    if(sc->is_tok_buffer_full) {
+       result = sc->tok_buffer;
+       sc->is_tok_buffer_full = false; 
+    }
+
     char c;
+    char * table_token = NULL;
     while(result.token_type == UNKNOWN) {
         c = next_char(sc);
         //fprintf(stderr, "%c", c);
@@ -148,13 +178,12 @@ token_t get_next_token(scanner_t *sc) {
         case ID_F:
             if(get_chtype(c) == ALPHA || get_chtype(c) == DIGIT || c == '_') {
                 sc->state = ID_F;
-                app_char(c, &sc->str_buffer);
             }
             else {
-                char * keyword_p = match(to_str(&sc->str_buffer), get_keyword);
-                if(keyword_p) {
+                table_token = match(to_str(&sc->str_buffer), get_keyword);
+                if(table_token) {
                     str_clear(&sc->str_buffer);
-                    result.attr = keyword_p; 
+                    result.attr = table_token; 
                     got_token(KEYWORD, c, &result, sc);
                 }
                 else {
@@ -184,7 +213,15 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = COM_1;
             }
             else {
-                got_token(OPERATOR, c, &result, sc);
+                table_token = match(to_str(&sc->str_buffer), get_operator);
+                if(table_token) {
+                    str_clear(&sc->str_buffer);
+                    result.attr = table_token; 
+                    got_token(OPERATOR, c, &result, sc);
+                }
+                else {
+                    got_token(ERROR_TYPE, c, &result, sc);
+                }
             }
             break;
         case NUM_1:
@@ -258,6 +295,7 @@ token_t get_next_token(scanner_t *sc) {
             }
             break;
         case COM_F:
+            str_clear(&sc->str_buffer);
             sc->state = INIT; //Just ignore comments
             break;
         case STR_1:
@@ -305,7 +343,15 @@ token_t get_next_token(scanner_t *sc) {
             got_token(STRING, c, &result, sc);
             break;
         case SEP_F:
-            got_token(SEPARATOR, c, &result, sc);
+            table_token = match(to_str(&sc->str_buffer), get_separator);
+            if(table_token) {
+                str_clear(&sc->str_buffer);
+                result.attr = table_token; 
+                got_token(SEPARATOR, c, &result, sc);
+            }
+            else {
+                got_token(ERROR_TYPE, c, &result, sc);
+            }
             break;
         case EOF_F:
             got_token(EOF_TYPE, c, &result, sc);
@@ -327,14 +373,30 @@ token_t get_next_token(scanner_t *sc) {
             }
             break;
         case OP_F1:
-            got_token(OPERATOR, c, &result, sc);
+            table_token = match(to_str(&sc->str_buffer), get_operator);
+            if(table_token) {
+                str_clear(&sc->str_buffer);
+                result.attr = table_token; 
+                got_token(OPERATOR, c, &result, sc);
+            }
+            else {
+                got_token(ERROR_TYPE, c, &result, sc);
+            }
             break;
         case OP_F2:
             if(c == '/') {
                 sc->state = OP_F1;
             }
             else {
-                got_token(OPERATOR, c, &result, sc);
+                table_token = match(to_str(&sc->str_buffer), get_operator);
+                if(table_token) {
+                    str_clear(&sc->str_buffer);
+                    result.attr = table_token; 
+                    got_token(OPERATOR, c, &result, sc);
+                }
+                else {
+                    got_token(ERROR_TYPE, c, &result, sc);
+                }
             }
             break;
         case OP_F4:
@@ -342,10 +404,41 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                got_token(OPERATOR, c, &result, sc);
+                table_token = match(to_str(&sc->str_buffer), get_operator);
+                if(table_token) {
+                    str_clear(&sc->str_buffer);
+                    result.attr = table_token; 
+                    got_token(OPERATOR, c, &result, sc);
+                }
+                else {
+                    got_token(ERROR_TYPE, c, &result, sc);
+                }
             }
             break;
+
+        } //switch (sc->state)
+
+        if(sc->state != INIT) {
+            app_char(c, &sc->str_buffer);
         }
+
+    } //while(result.token_type == UNKNOWN)
+
+    return result;
+}
+
+
+token_t lookahead(scanner_t *sc) {
+    token_t result;
+    init_token(&result);
+
+    if(sc->is_tok_buffer_full) {
+        result = sc->tok_buffer;
+    }
+    else {
+        result = get_next_token(sc);
+        sc->tok_buffer = result;
+        sc->is_tok_buffer_full = true;
     }
 
     return result;
