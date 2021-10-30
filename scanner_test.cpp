@@ -75,7 +75,7 @@ class test_fixture : public ::testing::Test {
         std::string inp_filename = TMP_FILE_NAME;
         std::string scanner_input;
         std::vector<token_type_t> exp_types;
-        std::vector<char *> exp_attributes; 
+        std::vector<std::string> exp_attrs; 
 
         scanner_t uut;
         bool init_success;
@@ -111,6 +111,33 @@ class test_fixture : public ::testing::Test {
             }
         }
 
+        virtual void testAttributes() {
+            token_t temp;
+
+            if(verbose_mode) {
+                printf("\nI\tGot.\tExp.\tPos.\tAttr.\n");
+            }
+            for(size_t i = 0; i < exp_attrs.size(); i++) {
+                temp = get_next_token(&uut);
+            
+                if(verbose_mode) {
+                    printf("[%ld]\t%d\t%s", i, temp.token_type, exp_attrs[i].c_str());
+                    //printf("\t%lu %lu", uut.cursor_pos[ROW], uut.cursor_pos[COL]);
+                    printf("\t%s", (char *)temp.attr);
+                    printf("\n");
+                }
+
+                std::string tmp_str((char *)temp.attr);
+                ASSERT_EQ(exp_attrs[i], tmp_str);
+
+                if(temp.token_type != KEYWORD && 
+                   temp.token_type != OPERATOR && 
+                   temp.token_type != SEPARATOR) {
+                    free(temp.attr);
+                }
+            }
+        }
+
         virtual void SetUp() {
             setData(); 
             init_success = prepare_tests(&inp_filename, &scanner_input, &uut);
@@ -137,19 +164,29 @@ class random_tokens : public test_fixture {
             scanner_input = 
             R"(abc hi 45 1231.456 12311e2 ( ) "s" ===- * + <= >= .. 
             abcdefghchijklmnopqrstu // /
-            #"length" "Ahoj\n\"Sve'te \\\034")";
+            #"length" "Ahoj\n\"Sve'te \\\034" 100e+10 10E-5)";
             exp_types = {IDENTIFIER, IDENTIFIER, INTEGER, 
                          NUMBER, NUMBER, SEPARATOR, 
                          SEPARATOR, STRING, OPERATOR, OPERATOR, 
                          OPERATOR, OPERATOR, OPERATOR, OPERATOR, 
                          OPERATOR, OPERATOR, IDENTIFIER, 
                          OPERATOR, OPERATOR, OPERATOR, STRING, 
-                         STRING, EOF_TYPE};
+                         STRING, NUMBER, NUMBER, EOF_TYPE};
+
+            exp_attrs = {"abc", "hi", "45", "1231.456", "12311e2", "(", ")",
+                         "\"s\"", "==", "=", "-", "*", "+", "<=", ">=", "..",
+                         "abcdefghchijklmnopqrstu", "//", "/", "#", "\"length\"",
+                         "\"Ahoj\\n\\\"Sve'te \\\\\\034\"", "100e+10", "10E-5"};
         };
 };
 
 TEST_F(random_tokens, types) {
     testTypes();
+}
+
+
+TEST_F(random_tokens, attributes) {
+    testAttributes();
 }
 
 
@@ -192,12 +229,18 @@ class lexical_errors : public test_fixture {
             exp_types = {ERROR_TYPE, ERROR_TYPE, ERROR_TYPE, ERROR_TYPE,
                         OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
                         EOF_TYPE};
+
+            exp_attrs = {";", ";", ";", ";", "==", "=", "-200e", "nd"};
         }
 };
 
 
 TEST_F(lexical_errors, types) {
     testTypes();
+}
+
+TEST_F(lexical_errors, attributes) {
+    testAttributes();
 }
 
 
@@ -470,11 +513,98 @@ class code_sample5 : public test_fixture {
                 SEPARATOR, KEYWORD, KEYWORD, KEYWORD, KEYWORD,
                 IDENTIFIER, SEPARATOR, SEPARATOR, EOF_TYPE
             };
+
+            exp_attrs = {
+                "require", "\"ifj21\"", "function", "main", "(", ")", "local",
+                "s1", ":", "string", "=", "\"Toto je nejaky text\"",
+                "local", "s2", ":", "string", "=", "s1", "..",
+                "\", ktery jeste trochu obohatime\"", "write",
+                "(", "s1", "," , "\"\010\"", "s2", ")", "local",
+                "s1len", ":", "integer", "=", "#", "s1", "local", "s1len4",
+                ":", "integer", "=", "s1len"
+            };
         }
 };
 
 
 TEST_F(code_sample5, types) {
+    testTypes();
+}
+
+TEST_F(code_sample5, attributes) {
+    testTypes();
+}
+
+class scanning_with_lookahead : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            -- Program 3: Prace s retezci a vestavenymi funkcemi
+            require "ifj21"
+            function main()
+            local s1 : string = "Toto je nejaky text"
+            local s2 : string = s1 .. ", ktery jeste trochu obohatime"
+            end
+            end
+            main()
+            )";
+
+            exp_types = {
+                KEYWORD, KEYWORD, STRING, KEYWORD, KEYWORD, 
+                IDENTIFIER, SEPARATOR, SEPARATOR, SEPARATOR, KEYWORD,
+                KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR, KEYWORD,
+                OPERATOR, OPERATOR, STRING, KEYWORD, KEYWORD,
+                IDENTIFIER, SEPARATOR, SEPARATOR, KEYWORD, OPERATOR,
+                OPERATOR, IDENTIFIER, OPERATOR, OPERATOR, STRING,
+                KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, IDENTIFIER,
+                SEPARATOR, SEPARATOR, SEPARATOR, EOF_TYPE
+            };
+        }
+
+        void printRow(size_t index, token_t *token) {
+            if(verbose_mode) {
+                if(index % 3 == 0) {
+                    printf("*");
+                }
+
+                printf("[%ld]\t%d\t%d", index, token->token_type, exp_types[index]);
+                //printf("\t%lu %lu", uut.cursor_pos[ROW], uut.cursor_pos[COL]);
+                printf("\t%s", (char *)token->attr);
+                printf("\n");
+            }
+        }
+
+        virtual void testTypes() override {
+            token_t temp;
+
+            if(verbose_mode) {
+                printf("\nI\tGot.\tExp.\tPos.\tAttr.\n");
+            }
+
+            for(size_t token_i = 0; token_i < exp_types.size(); token_i++) {
+                if(token_i % 3 == 0) {
+                    temp = lookahead(&uut);
+                }
+                else {
+                    temp = get_next_token(&uut);
+                }
+
+                printRow(token_i, &temp);
+                ASSERT_EQ(temp.token_type, exp_types[token_i]);
+
+                if(temp.token_type != KEYWORD && 
+                   temp.token_type != OPERATOR && 
+                   temp.token_type != SEPARATOR && 
+                   token_i % 3 != 0) {
+                    free(temp.attr);
+                }
+            }
+        }
+};
+
+
+TEST_F(scanning_with_lookahead, types) {
     testTypes();
 }
 

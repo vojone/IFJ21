@@ -92,6 +92,7 @@ token_t get_next_token(scanner_t *scanner);
  * @brief Reads token from stdin (or from buffer) AND RETURNS IT TO SCANNER BUFFER
  * @param scanner Structure that contains necessary buffers and variables to scan input correctly
  * @return Token structure with type of token and its attribute 
+ * @note Is important NOT TO FREE token attribute when token is got by lookahead
  * @note If type of returned token is ERROR_TYPE, that means a lexical error occurence
  */
 token_t lookahead(scanner_t *scanner);
