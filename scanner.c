@@ -102,7 +102,7 @@ void from_init_state(char c, token_t * token, scanner_t *sc) {
     else if(str_search(c, ",:()")) {
         sc->state = SEP_F; 
     }
-    else if(str_search(c, "<>~")) {
+    else if(c == '~') {
         sc->state = OP_1;
         app_char(c, &sc->str_buffer);
     }
@@ -114,7 +114,7 @@ void from_init_state(char c, token_t * token, scanner_t *sc) {
         sc->state = OP_F2;
         app_char(c, &sc->str_buffer);
     }
-    else if(c == '=') {
+    else if(str_search(c, "<>=")) {
         sc->state = OP_F4;
         app_char(c, &sc->str_buffer);
     }
