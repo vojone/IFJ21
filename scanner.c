@@ -295,6 +295,7 @@ token_t get_next_token(scanner_t *sc) {
             }
             break;
         case COM_F:
+            ungetchar(c, sc);
             str_clear(&sc->str_buffer);
             sc->state = INIT; //Just ignore comments
             break;
