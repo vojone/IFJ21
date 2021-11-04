@@ -74,14 +74,14 @@ void init_tab(symtab_t *tab);
  * @param tab destination table
  * @param key key of new element
  */ 
-void insert_sym(symtab_t *tab, char *key);
+void insert_sym(symtab_t *tab, const char *key);
 
 /**
  * @brief Deletes element with specific key and frees all its resources
  * @param tab destination table
  * @param key key of element to be deleted
  */ 
-void delete_sym(symtab_t *tab, char *key);
+void delete_sym(symtab_t *tab, const char *key);
 
 /**
  * @brief Deletetes whole symbol table and correctly frees its resources
@@ -95,7 +95,7 @@ void destroy_tab(symtab_t *tab);
  * @param key key of element that should be found
  * @return Pointer to found symbol or NULL
  */ 
-tree_node_t *search(symtab_t *tab, char *key);
+tree_node_t *search(symtab_t *tab, const char *key);
 
 /**
  * @brief Changes data of element with given key (if it exists)
@@ -103,7 +103,7 @@ tree_node_t *search(symtab_t *tab, char *key);
  * @param key key, that specifies element to be changed
  * @param new_data new data of symbol
  */ 
-void set_sym(symtab_t *tab, char *key, sym_data_t new_data);
+void set_sym(symtab_t *tab, const char *key, sym_data_t new_data);
 
 #endif
 

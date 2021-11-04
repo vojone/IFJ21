@@ -67,26 +67,30 @@ class empty_symtable : public ::testing::Test {
     }
 
     virtual void TearDown() {
+        if(verbose_mode) {
+            print_tab(uut);
+        }
+
         destroy_tab(&uut);
     }
 };
 
 TEST_F(empty_symtable, insert) {
-    ASSERT_EQ(uut, NULL);
+    ASSERT_EQ(uut, (void *)NULL);
 
     insert_sym(&uut, "new");
     ASSERT_EQ(uut->key, "new");
-    ASSERT_EQ(uut->lPtr, NULL);
-    ASSERT_EQ(uut->rPtr, NULL);
+    ASSERT_EQ(uut->lPtr, (void *)NULL);
+    ASSERT_EQ(uut->rPtr, (void *)NULL);
 }
 
 TEST_F(empty_symtable, search) {
-    ASSERT_EQ(NULL, search(&uut, "inserted"));
+    ASSERT_EQ((void *)NULL, search(&uut, "inserted"));
     insert_sym(&uut, "inserted");
     ASSERT_EQ(uut, search(&uut, "inserted"));
 
     insert_sym(&uut, "a");
-    ASSERT_NE(NULL, search(&uut, "a"));
+    ASSERT_NE((void *)NULL, search(&uut, "a"));
 }
 
 TEST_F(empty_symtable, delete_s) {
@@ -95,19 +99,57 @@ TEST_F(empty_symtable, delete_s) {
     insert_sym(&uut, "inserted");
     ASSERT_EQ(uut->key, "inserted");
     delete_sym(&uut, "inserted");
-    ASSERT_EQ(uut, NULL);
+    ASSERT_EQ(uut, (void *)NULL);
 }
 
 TEST_F(empty_symtable, set) {
     insert_sym(&uut, "new");
-    sym_data_t new_symbol_data = {"new", VAR, NUMBER, DECLARED};
+    sym_data_t new_symbol_data = {(char *)"new", VAR, NUMBER, DECLARED};
     set_sym(&uut, "new", new_symbol_data);
-    
     ASSERT_EQ(uut->data.name, "new");
     ASSERT_EQ(uut->data.dtype, NUMBER);
     ASSERT_EQ(uut->data.type, VAR);
     ASSERT_EQ(uut->data.status, DECLARED);
 }
+
+
+class normal_tests : public ::testing::Test {
+    protected:
+        symtab_t uut;
+        std::vector<sym_data_t> symbols = {
+            {(char *)"Car", FUNC, INTEGER, DECLARED},
+            {(char *)"Cat", VAR, INTEGER, DECLARED},
+            {(char *)"Can", VAR, INTEGER, DEFINED},
+            {(char *)"Dog", VAR, NUMBER, DECLARED},
+            {(char *)"Fish", VAR, STRING, USED},
+        };
+
+    virtual void SetUp() {
+        init_tab(&uut);
+
+        for(size_t i = 0; i < symbols.size(); i++) {
+            insert_sym(&uut, symbols[i].name);
+            set_sym(&uut, symbols[i].name, symbols[i]);
+        }
+    }
+
+    virtual void TearDown() {
+        if(verbose_mode) {
+            print_tab(uut);
+        }
+
+        destroy_tab(&uut);
+    }
+};
+
+
+TEST_F(normal_tests, search) {
+    for(size_t i = 0; i < symbols.size(); i++) {
+        tree_node_t* current = search(&uut, symbols[i]. name);
+        ASSERT_EQ(current->key, symbols[i].name);
+    }
+}
+
 
 
 int main(int argc, char **argv) {

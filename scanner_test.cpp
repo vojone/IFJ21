@@ -611,18 +611,18 @@ TEST_F(scanning_with_lookahead, types) {
 
 
 int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
+    ::testing::InitGoogleTest(&argc, argv);
 
-  for(int i = 0; i < argc; i++) {
-      if(strcmp(argv[i], "-f") == 0) {
-          force_mode = true;
-      }
-      else if(strcmp(argv[i], "-v") == 0) {
-          verbose_mode = true;
-      }
-  }
+    for(int i = 0; i < argc; i++) {
+        if(strcmp(argv[i], "-f") == 0) {
+            force_mode = true;
+        }
+        else if(strcmp(argv[i], "-v") == 0) {
+            verbose_mode = true;
+        }
+    }
 
-  return RUN_ALL_TESTS();
+    return RUN_ALL_TESTS();
 }
 
 
