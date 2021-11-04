@@ -609,6 +609,33 @@ TEST_F(scanning_with_lookahead, types) {
 }
 
 
+class comments : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            --[[Comment comment comment]]abc--def
+require--abc
+--[[
+asdfdsaf
+]]
+integer
+            )";
+
+            exp_types = {
+                IDENTIFIER, KEYWORD, KEYWORD, EOF_TYPE
+            };
+
+            exp_attrs = {
+                "abc", "require", "integer"
+            };
+        }
+};
+
+TEST_F(comments, types) {
+    testTypes();
+}
+
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
