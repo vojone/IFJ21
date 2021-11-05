@@ -424,7 +424,7 @@ token_t get_next_token(scanner_t *sc) {
         }
 
     } //while(result.token_type == UNKNOWN)
-
+    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type,(char *) result.attr);
     return result;
 }
 
@@ -441,7 +441,7 @@ token_t lookahead(scanner_t *sc) {
         sc->tok_buffer = result;
         sc->is_tok_buffer_full = true;
     }
-
+    fprintf(stderr,"^ Lookahead ^\n");
     return result;
 }
 

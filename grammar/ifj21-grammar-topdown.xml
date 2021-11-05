@@ -15,16 +15,18 @@
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
 -->
 
-<program>               -> <statement-list>
+<program>               -> <global-statement-list>  <!--Only functions and require basically-->
+
 <statement-list>        -> <statement> <statement-list>
 <statement-list>        -> [eps]
 
 <!-- require -->
-<statement>             -> require <str>
+<global-statement>      -> require <str>
 
 <!-- VARIABLES -->
 <statement>             -> global [id] : [type] <value-assignment>
 <statement>             -> local  [id] : [type] <value-assignment>
+<value-assignment>      -> [eps]
 <value-assignment>      -> = <expression>
 <statement>             -> <assignment>
 <assignment>            -> [id] <multiple-assignment> <expression>
@@ -42,14 +44,18 @@
 <while>
 
 <!--FUNCTIONS-->
-<statement>             -> function [id](<param-list>) : <type-list> <statement-list> end
-<param-list>            -> [eps]
+<global-statement-list> -> <global-statement> <global-statement-list>
+<global-statement>      -> function [id](<param-list>) <type-list> <statement-list> end
+<function-type-def>     -> [eps]
+<function-type-def>     -> <type-list>
+
 <param-list>            -> [id] : [type] <param-list-1>
 <param-list-1>          -> , [id] : [type] <param-list-1>
 <param-list-1>          -> eps
 <statement>             -> return <expression>
 
-<type-list>             -> [type] <type-list-1>
+<type-list>             -> [eps]
+<type-list>             -> : [type] <type-list-1>
 <type-list-1>           -> , [type] <type-list-1>
 <type-list-1>           -> [eps]
 
