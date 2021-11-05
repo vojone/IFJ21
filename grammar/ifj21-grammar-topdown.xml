@@ -15,10 +15,11 @@
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
 -->
 
-<program>               -> <global-statement-list>  <!--Only functions and require basically-->
+<program>               -> <global-statement-list>  <!--Only require and functions basically-->
 
 <statement-list>        -> <statement> <statement-list>
 <statement-list>        -> [eps]
+<statement-list>        -> <function-call>
 
 <!-- require -->
 <global-statement>      -> require <str>
@@ -43,7 +44,16 @@
 <statement>             -> while <expression> do <statement-list> end
 <while>
 
-<!--FUNCTIONS-->
+<!--FUNCTIONS CALL-->
+<global-statement>      -> <function-call>
+<statement>             -> [function-id](<argument-list>)
+<argument-list>         -> <argument> <argument-list1>
+<argument-list>         -> [eps]
+<argument-list1>        -> <argument> <argument-list1>
+<argument-list1>        -> [eps]
+<argument>              -> <expression>
+
+<!--FUNCTIONS DEFINITION-->
 <global-statement-list> -> <global-statement> <global-statement-list>
 <global-statement>      -> function [id](<param-list>) <type-list> <statement-list> end
 <function-type-def>     -> [eps]

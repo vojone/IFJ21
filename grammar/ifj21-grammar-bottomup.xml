@@ -44,4 +44,4 @@
 <E>             -> [function-id](<argument-list>)
 <argument-list> -> <argument> <argument-list>
 <argument-list> -> [eps]
-<argument>      -> [term]
+<argument>      -> <expression>

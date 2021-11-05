@@ -18,13 +18,7 @@ int main(){
     
     //run parsing
     bool res = global_statement_list();
-    // while(!reachedEOF){
-    //     //token_t t = lookahead(&scanner);
-    //     token_t t = get_next_token(&scanner);
-        
-    //     if(t.token_type == EOF_TYPE)
-    //         reachedEOF = true;
-    // }
+ 
     fprintf(stderr,"Finished! success: %i, at: (%lu,%lu)\n",res, scanner.cursor_pos[0], scanner.cursor_pos[1]);
 }
 bool global_statement_list(){
@@ -72,13 +66,21 @@ bool global_statement(){
             fprintf(stderr,"function ...\n");
             return parse_function_def();
         }
+            
+        incorrect_token("This is global scope so keyword such as require or function definition or call expected", t, &scanner);
+        return false;
+    }else if(t.token_type == IDENTIFIER){
+        if(lookahead_token_attr(&scanner,SEPARATOR,"(")){
+            return parse_function_call();
+        }
+        incorrect_token("function call",t,&scanner);
+        return false;
     }else if(t.token_type == EOF_TYPE){
         reachedEOF = true;
         return true;
-    }else{
-        incorrectToken("This is global scope so keyword such as require or function definition expected",t.token_type,&scanner);
-        return false;
     }
+
+    incorrect_token("This is global scope so keyword such as require or function definition or call expected",t,&scanner);
     return false;
 }
 bool statement(){
@@ -95,16 +97,35 @@ bool statement(){
     // fprintf(stderr,"Token type is: %i | (%lu:%lu) state %i\n",t.token_type,scanner.cursor_pos[0],scanner.cursor_pos[1],scanner.state);
     switch (t.token_type)
     {
+    case IDENTIFIER:
+        // it is neccessary to look at the next lexeme also
+        t = get_next_token(&scanner);
+        t = lookahead(&scanner);
+        bool is_multiple_assignment = (t.token_type == SEPARATOR && 0 == strcmp(",",t.attr));
+        bool is_single_assignment = (t.token_type == OPERATOR && 0 == strcmp("=",t.attr));
+        //check if it is a function call
+        if(t.token_type == SEPARATOR && 0 == strcmp("(",t.attr)){
+            return parse_function_call();
+        }else if(is_multiple_assignment || is_single_assignment){
+            return multiple_assignment();
+        }else{
+            incorrect_token("After IDENTIFIER a function call or an assignment",t,&scanner);
+        }
+        break;
     case KEYWORD:
         if(0 == strcmp(t.attr, "local")){
-            //<statement>             -> require <str>
+            //<statement>             -> local  [id] : [type] <value-assignment>
             t = get_next_token(&scanner);
             bool res = parse_variable_def();
             return res;
         }else if(0 == strcmp(t.attr, "global")){
-            //<statement>             -> function [id](<param-list>) : <type-list> <statement-list> end
+            //<statement>             -> global  [id] : [type] <value-assignment>
             t = get_next_token(&scanner);
             return parse_variable_def();
+        }else if(0 == strcmp(t.attr, "return")){
+            //<statement>             -> return <exp>
+            t = get_next_token(&scanner);
+            return parse_expression();
         }else if(0 == strcmp(t.attr, "end")){
             return true;
         }
@@ -122,10 +143,60 @@ bool statement(){
     }
     return false;
 }
+bool multiple_assignment(){
+    int token_count = 0;
+    bool foundAssignmentOp = false;
+    //first loop checks and counts left side of the assigment
+    while(!foundAssignmentOp){
+        //identifier should be first
+        token_t t;
+        //first token is already read at the beginning, so we check wheter we are at the beginning
+        if(token_count != 0)
+            t = get_next_token(&scanner);
+        if(t.token_type == IDENTIFIER || token_count == 0)
+            token_count++;
+        else{
+            incorrect_token("IDENTIFIER",t,&scanner);
+            return false;
+        }
+        //comma should follow, or assignment operator
+        t = get_next_token(&scanner);
+        if(t.token_type == SEPARATOR && 0 == strcmp((char *)t.attr, ",")){
+            //ok
+        }else if(t.token_type == OPERATOR && 0 == strcmp((char *)t.attr, "=")){
+            foundAssignmentOp = true;
+        }else{
+            incorrect_token("SEPARATOR ',' or OPERATOR '='",t,&scanner);
+            return false;
+        }
+    }
+    fprintf(stderr,"found %i assigment...\n", token_count);
+    //checking the RHS part
+    for(int i = 0; i < token_count;i++){
+        //check for valid expression
+        if(parse_expression()){
+            //ok
+        }else{
+            fprintf(stderr, "Error while parsing expression for multiple assignemt\n");
+            return false;
+        }
+        //if we are not at the end check for comma
+        if(i+1 != token_count){
+            token_t t = get_next_token(&scanner);
+            if( t.token_type == SEPARATOR && 0 == strcmp(t.attr, ",") ){
+                //ok
+            }else{
+                incorrect_token("Missing SEPARATOR ',' in the assigment, which was",t,&scanner);
+                return false;
+            }
+        }
+    }
+    return true;
+}
 bool parse_variable_def(){
-    bool id = checkNextToken(&scanner, IDENTIFIER);
-    bool comma = checkNextTokenAttr(&scanner,SEPARATOR,":");
-    bool type = checkNextToken(&scanner, KEYWORD);   //later check for datatypes only
+    bool id = check_next_token(&scanner, IDENTIFIER);
+    bool comma = check_next_token_attr(&scanner,SEPARATOR,":");
+    bool type = check_next_token(&scanner, KEYWORD);   //later check for datatypes only
     token_t t = lookahead(&scanner);
 
     //there can be a value assigment
@@ -136,8 +207,8 @@ bool parse_variable_def(){
     return id && comma && type;
 }
 bool value_assignment(){
-    bool eq = checkNextTokenAttr(&scanner, OPERATOR,"=");
-    bool expression = parseExpression(&scanner);
+    bool eq = check_next_token_attr(&scanner, OPERATOR,"=");
+    bool expression = parse_expression(&scanner);
     return eq && expression;
 }
 bool parse_str(){
@@ -145,14 +216,14 @@ bool parse_str(){
     if(t.token_type == STRING)
         return true;
     else
-        incorrectToken("STRING",t.token_type,&scanner);
+        incorrect_token("STRING",t,&scanner);
     return false;
 }
 bool parse_function_def(){
     //parsing function definition signature
-    bool id = checkNextToken(&scanner,IDENTIFIER);
-    bool left_bracket = checkNextTokenAttr(&scanner,SEPARATOR,"(");
-    bool right_bracket= checkNextTokenAttr(&scanner,SEPARATOR,")");
+    bool id = check_next_token(&scanner,IDENTIFIER);
+    bool left_bracket = check_next_token_attr(&scanner,SEPARATOR,"(");
+    bool right_bracket= check_next_token_attr(&scanner,SEPARATOR,")");
     if(!(id && left_bracket && right_bracket)){
         fprintf(stderr,"ERROR INVALID FUNCTION SINATURE!\n");
         return false;
@@ -169,33 +240,73 @@ bool parse_function_def(){
             fprintf(stderr,"Successfully ended function definition!\n");
         }
     }else{
-        incorrectToken("Better check the implementation! expected END!",t.token_type,&scanner);
+        incorrect_token("Better check the implementation! expected END!",t,&scanner);
     }
     return res;
 }
-
+bool parse_function_call(){
+    fprintf(stderr,"parsing function call...\n");
+    bool opening_bracket = check_next_token_attr(&scanner, SEPARATOR, "(");
+    if(opening_bracket){
+        bool args = parse_function_arguments();
+        fprintf(stderr,"function args success %i\n",(int) args);
+        return args;
+    }else{
+        return false;
+    }
+    return true;
+}
+bool parse_function_arguments(){
+    bool closing_bracket = false;
+    while(!closing_bracket){
+        token_t t = get_next_token(&scanner);
+        if(is_expression(t)){
+            //ok
+        }else if(t.token_type == SEPARATOR && 0 == strcmp(t.attr , ")")){
+            closing_bracket = true;
+            continue;
+        }else{
+            incorrect_token("EXPRESSION",t,&scanner);
+        }
+        t = get_next_token(&scanner);
+        if(t.token_type == SEPARATOR && 0 == strcmp(t.attr , ",")){
+            //ok
+        }else if(t.token_type == SEPARATOR && 0 == strcmp(t.attr , ")")){
+            closing_bracket = true;
+        }
+        else{
+            incorrect_token("',' as a separator between args or ')' as an end of argument list",t,&scanner);
+            return false;
+        }
+    }
+    return closing_bracket;
+}
 /**
  * *Temporary solution!
- * Expressions should temporarily be replaced by INTEGER or STRING or NUMBER
+ * Expressions should temporarily be replaced by INTEGER or STRING or NUMBER or ID
  */
-bool parseExpression(){
+bool is_expression(token_t t){
+    return (t.token_type == NUMBER || t.token_type == INTEGER || t.token_type == STRING || t.token_type == IDENTIFIER);
+}
+bool parse_expression(){
     fprintf(stderr,"parsing expression..\n");
     token_t t = get_next_token(&scanner);
-    if(t.token_type == NUMBER || t.token_type == INTEGER || t.token_type == STRING)
+    if(is_expression(t))
         return true;
+    else
+        incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,&scanner);
     return false;
 }
-void incorrectToken(char * expected, int got, scanner_t * scanner){
-    fprintf(stderr, "Error, Wrong token! %s expected, but token type is %i!\n",expected, got);
-    fprintf(stderr,"Error occured at row: %lu col: %lu\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]));
+void incorrect_token(char * expected, token_t t, scanner_t * scanner){
+    fprintf(stderr, "stdin:\033[1;37m%lu:%lu\033[0m: \033[0;31mError, Wrong token!\033[0m %s expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]),expected, (char *) t.attr, t.token_type);
 }
-bool lookaheadkToken(scanner_t * scanner,token_type_t expecting){
+bool lookahead_token(scanner_t * scanner,token_type_t expecting){
     token_t t = lookahead(scanner);
     if(t.token_type == expecting)
         return true;
     return false;
 }
-bool lookaheadTokenAttr(scanner_t * scanner,token_type_t expecting, char * expecting_attr){
+bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr){
     token_t t = lookahead(scanner);
     if( t.token_type == expecting ){
         if(0 == strcmp(expecting_attr,(char*) t.attr)){
@@ -204,17 +315,17 @@ bool lookaheadTokenAttr(scanner_t * scanner,token_type_t expecting, char * expec
     }
     return false;
 }
-bool checkNextToken(scanner_t * scanner,token_type_t expecting){
+bool check_next_token(scanner_t * scanner,token_type_t expecting){
     token_t t = get_next_token(scanner);
     if(t.token_type == expecting){
         return true;
     }
     char exp_str[3];
     sprintf(exp_str, "%d", expecting);
-    incorrectToken(exp_str, t.token_type, scanner);
+    incorrect_token(exp_str, t, scanner);
     return false;
 }
-bool checkNextTokenAttr(scanner_t * scanner,token_type_t expecting, char * expecting_attr){
+bool check_next_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr){
     token_t t = get_next_token(scanner);
     if( t.token_type == expecting ){
         if(0 == strcmp(expecting_attr,(char*) t.attr)){
@@ -223,6 +334,6 @@ bool checkNextTokenAttr(scanner_t * scanner,token_type_t expecting, char * expec
     }
     char exp_str[3];
     sprintf(exp_str, "%d", expecting);
-    incorrectToken(exp_str, t.token_type, scanner);
+    incorrect_token(exp_str, t, scanner);
     return false;
 }

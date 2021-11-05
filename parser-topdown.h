@@ -47,7 +47,8 @@ bool parse_variable_def();
 bool value_assignment();
 bool assigment();
 
-bool multiple_assigment();
+bool multiple_assignment();
+
 bool else_branch();
 
 bool loop_while();
@@ -63,43 +64,64 @@ bool expression_list_1();
 
 bool parse_str();
 bool parse_function_def();
+/**
+ * @brief parses the function call.
+ * @note presumes that the function IDENTIFIER was already read and the first token is going to be opening bracket
+ */ 
+bool parse_function_call();
+/**
+ * @brief parses the function arguments till the closing bracket
+ *
+ */ 
+bool parse_function_arguments();
 
 /**
  * @brief Displays error about getting a different token than expected
  * @param expected the token which is expected
- * @param got the token type which we got
+ * @param t the token which we got
  * */
-void incorrectToken(char * expected, int got, scanner_t * scanner);
+void incorrect_token(char * expected, token_t t, scanner_t * scanner);
 
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the expected token type is at the next place
  * @return returns true the expected token type is there
  **/
-bool lookaheadToken(scanner_t * scanner,token_type_t expecting);
+bool lookahead_token(scanner_t * scanner,token_type_t expecting);
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the next token has the specified type and attribute
  * @return returns true if both expected type and attribute are equal to real ones
  **/
-bool lookaheadTokenAttr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
 
 /**
  * @param expecting The token type to expect
  * @brief Shows error if there is an unexpected token type
  * @return returns true the expected token type is there
  **/
-bool checkNextToken(scanner_t * scanner,token_type_t expecting);
+bool check_next_token(scanner_t * scanner,token_type_t expecting);
 /**
  * @param expecting The token type to expect
  * @param expecting_attr The token attribute to expect
  * @brief Shows error if there is an unexpected token type or attribute
  * @return returns true the expected token is there
  **/
-bool checkNextTokenAttr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+bool check_next_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
 
 /**
  * !temporary
+ * @brief shows error if token is not considered expression
  * @note checks only for INTEGER, NUMBER or STRING
+ * 
  **/
-bool parseExpression();
+bool parse_expression();
+
+/**
+ * !temporary
+ * @brief shows error if token is not considered expression
+ * @param t the token which will be checked
+ * @return returns true if token one of types below 
+ * @note checks only for INTEGER, NUMBER or STRING
+ */ 
+bool is_expression(token_t t);
