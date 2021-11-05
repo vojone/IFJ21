@@ -180,7 +180,10 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = ID_F;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_keyword);
+                table_token = match(to_str(&sc->str_buffer), 
+                                    get_keyword, 
+                                    KEYWORD_TABLE_SIZE);
+
                 if(table_token) {
                     str_clear(&sc->str_buffer);
                     result.attr = table_token; 
@@ -213,7 +216,10 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = COM_1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_operator);
+                table_token = match(to_str(&sc->str_buffer), 
+                                    get_operator, 
+                                    OPERATOR_TABLE_SIZE);
+
                 if(table_token) {
                     str_clear(&sc->str_buffer);
                     result.attr = table_token; 
@@ -344,7 +350,10 @@ token_t get_next_token(scanner_t *sc) {
             got_token(STRING, c, &result, sc);
             break;
         case SEP_F:
-            table_token = match(to_str(&sc->str_buffer), get_separator);
+            table_token = match(to_str(&sc->str_buffer), 
+                                get_separator, 
+                                SEPARATOR_TABLE_SIZE);
+
             if(table_token) {
                 str_clear(&sc->str_buffer);
                 result.attr = table_token; 
@@ -374,7 +383,10 @@ token_t get_next_token(scanner_t *sc) {
             }
             break;
         case OP_F1:
-            table_token = match(to_str(&sc->str_buffer), get_operator);
+            table_token = match(to_str(&sc->str_buffer), 
+                                get_operator, 
+                                OPERATOR_TABLE_SIZE);
+
             if(table_token) {
                 str_clear(&sc->str_buffer);
                 result.attr = table_token; 
@@ -389,7 +401,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_operator);
+                table_token = match(to_str(&sc->str_buffer), get_operator, OPERATOR_TABLE_SIZE);
                 if(table_token) {
                     str_clear(&sc->str_buffer);
                     result.attr = table_token; 
@@ -405,7 +417,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_operator);
+                table_token = match(to_str(&sc->str_buffer), get_operator, OPERATOR_TABLE_SIZE);
                 if(table_token) {
                     str_clear(&sc->str_buffer);
                     result.attr = table_token; 

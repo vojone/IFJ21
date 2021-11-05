@@ -18,64 +18,99 @@
 #include "tables.h"
 
 /**
- * @brief Contains static array of allowed keywords in IFJ21 (sorted by ASCII value - alphabetically)
+ * @brief Contains static array of allowed keywords in IFJ21 
+ *        (sorted by ASCII - alphabetically, same sorting as in dictionary)
  * @return Pointer to keyword with index from argument    
  */ 
 char * get_keyword(unsigned int index) {
-    static char * keyword_table[] = {"do", "else", "end", "function", 
-                                     "global", "if", "integer", "local", 
-                                     "nil", "number", "require", "return", 
-                                     "string", "then", "while", NULL};
+    static char * keyword_table[KEYWORD_TABLE_SIZE] = 
+    {
+        "do", "else", "end", "function", 
+        "global", "if", "integer", "local", 
+        "nil", "number", "require", "return", 
+        "string", "then", "while"
+    };
 
     return keyword_table[index];
 }
 
+
 /**
- * @brief Contains static array of allowed operators in IFJ21 (sorted by ASCII value)
+ * @brief Contains static array of allowed operators in IFJ21 
+ *        (sorted by ASCII value)
  * @return Pointer to operator with index from argument    
  */ 
 char * get_operator(unsigned int index) {
-    static char * operator_table[] = {"#", "*", "+", "-", "..", 
-                                      "/", "//", "<", "<=", "=", 
-                                      "==", ">", ">=", "~=", NULL};
+    static char * operator_table[OPERATOR_TABLE_SIZE] = 
+    {
+        "#", "*", "+", "-", "..", 
+        "/", "//", "<", "<=", "=", 
+        "==", ">", ">=", "~="
+    };
 
     return operator_table[index];
 }
 
 /**
- * @brief Contains static array of allowed separators in IFJ21 (sorted by ASCII value)
- * @return Pointer to separators with index from argument    
+ * @brief Contains static array of allowed separators in IFJ21
+ *        (sorted by ASCII value)
+ * @return Pointer to separator with index from argument    
  */ 
 char * get_separator(unsigned int index) {
-    static char * separator_table[] = {",", ":", "(", ")", NULL};
-                                     
+    static char * separator_table[SEPARATOR_TABLE_SIZE] = 
+    {
+        "(", ")", ",", ":"
+    };
+                            
     return separator_table[index];
 }
 
-
+/**
+ * @brief Contains static array of supported builtin functions
+ * @return Pointer to builtin function name 
+ */ 
 char * get_builtin(unsigned int index) {
-    return NULL;
+    static char * builtin_table[BUILTIN_TABLE_SIZE] = 
+    {
+        "chr", "ord", "readi", "readn", 
+        "reads", "substr", "tointeger", "write" 
+    };
+                            
+    return builtin_table[index];
 }
 
+
 /**
- * @brief Tries to find string in table
+ * @brief Tries to find string in table (Implemented as binary search)
  * @param str string to be found
  * @param table_func pointer to function, that contains static array
  * @return pointer to found string in static array or NULL
  */ 
-char * match(char * str, char * (*table_func)(unsigned int)) {
+char * match(char * str, char * (*table_func)(unsigned int), size_t tab_size) {
 
-    int i = 0;
-    char * cur_keyword = NULL;
-    while((cur_keyword = (*table_func)(i)) != NULL) {
-        if(!strcmp(cur_keyword, str)) {
-            return cur_keyword;
+    int middle = tab_size / 2;
+    int left_b = 0, right_b = tab_size - 1;
+    char * found = NULL;
+    do {
+        char * cur_str = table_func(middle);
+        int cmp_result = str_cmp(str, cur_str);
+
+        if(cmp_result == SAME) {
+            found = cur_str;
+            break;
+        }
+        else if(cmp_result == FIRST_BEFORE_SEC) {
+            right_b = middle - 1;
+        }
+        else {
+            left_b = middle + 1;
         }
 
-        i++;
-    }
+        middle = (right_b - left_b) / 2 + left_b;
+    } while(left_b <= right_b);
+    
 
-    return NULL;
+    return found;
 }
 
 
