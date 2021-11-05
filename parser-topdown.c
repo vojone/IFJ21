@@ -9,7 +9,7 @@
 #include "parser-topdown.h"
 
 scanner_t scanner;
-#define MAXCALLS 200
+#define MAXCALLS 100
 int current_calls = 0; 
 bool reachedEOF = false;
 
@@ -18,7 +18,7 @@ int main(){
     
     //run parsing
     bool res = global_statement_list();
- 
+
     fprintf(stderr,"Finished! success: %i, at: (%lu,%lu)\n",res, scanner.cursor_pos[0], scanner.cursor_pos[1]);
 }
 bool global_statement_list(){
@@ -33,8 +33,7 @@ bool global_statement_list(){
 }
 //<statement-list>        -> <statement> <statement-list>
 bool statement_list(){
-    bool ret = true;
-    ret = statement();
+    bool ret = statement();
     //fprintf(stderr,"statement success %i\n",ret);
     if(ret == false)
         return false;
@@ -42,6 +41,10 @@ bool statement_list(){
     if( t.token_type == KEYWORD ){
         if(0 == strcmp(t.attr, "end")){
             fprintf(stderr,"got end\n");
+            return true;
+        }
+        if(0 == strcmp(t.attr, "else")){
+            fprintf(stderr,"got else\n");
             return true;
         }
     }
@@ -55,8 +58,6 @@ bool global_statement(){
     current_calls++;
 
     token_t t = get_next_token(&scanner);
-    //fprintf(stderr,"PARSING INSIDE FUNCTION DEFINITION Finished! success: %i, at: (%lu,%lu), token type: %i\n", scanner.cursor_pos[0], scanner.cursor_pos[1], t); 
-    // fprintf(stderr,"Token type is: %i | (%lu:%lu) state %i\n",t.token_type,scanner.cursor_pos[0],scanner.cursor_pos[1],scanner.state);
     if(t.token_type == KEYWORD){
         if(0 == strcmp(t.attr, "require")){
             //<statement>             -> require <str>
@@ -93,8 +94,6 @@ bool statement(){
 
 
     token_t t = lookahead(&scanner);
-    //fprintf(stderr,"PARSING INSIDE FUNCTION DEFINITION Finished! success: %i, at: (%lu,%lu), token type: %i\n", scanner.cursor_pos[0], scanner.cursor_pos[1], t); 
-    // fprintf(stderr,"Token type is: %i | (%lu:%lu) state %i\n",t.token_type,scanner.cursor_pos[0],scanner.cursor_pos[1],scanner.state);
     switch (t.token_type)
     {
     case IDENTIFIER:
@@ -122,6 +121,15 @@ bool statement(){
             //<statement>             -> global  [id] : [type] <value-assignment>
             t = get_next_token(&scanner);
             return parse_variable_def();
+        }else if(0 == strcmp(t.attr, "if")){
+            //<statement>             -> return <exp>
+            t = get_next_token(&scanner);
+            return parse_if();
+        }else if(0 == strcmp(t.attr, "else")){
+            return true;
+        }else if(0 == strcmp(t.attr, "while")){
+            t = get_next_token(&scanner);
+            return parse_while();
         }else if(0 == strcmp(t.attr, "return")){
             //<statement>             -> return <exp>
             t = get_next_token(&scanner);
@@ -196,7 +204,7 @@ bool multiple_assignment(){
 bool parse_variable_def(){
     bool id = check_next_token(&scanner, IDENTIFIER);
     bool comma = check_next_token_attr(&scanner,SEPARATOR,":");
-    bool type = check_next_token(&scanner, KEYWORD);   //later check for datatypes only
+    bool type = parse_datatype();
     token_t t = lookahead(&scanner);
 
     //there can be a value assigment
@@ -238,11 +246,17 @@ bool parse_function_def(){
     if(t.token_type == KEYWORD){
         if( strcmp( (char *) t.attr , "end") == 0 ){
             fprintf(stderr,"Successfully ended function definition!\n");
+            return res;
+        }else{
+            incorrect_token("Wrong keyword! Only END",t, &scanner);
+            return false;
         }
+        incorrect_token("[]",t,&scanner);
+        return false;
     }else{
-        incorrect_token("Better check the implementation! expected END!",t,&scanner);
+        incorrect_token("Better check the implementation! END",t,&scanner);
     }
-    return res;
+    return false;
 }
 bool parse_function_call(){
     fprintf(stderr,"parsing function call...\n");
@@ -281,6 +295,66 @@ bool parse_function_arguments(){
     }
     return closing_bracket;
 }
+
+bool parse_if(){
+    bool condition = parse_expression();
+    if(!condition)
+        return false;
+    bool then = check_next_token_attr(&scanner, KEYWORD, "then");
+    if(!then)
+        return false;
+    bool inside_statement_list = statement_list();
+    
+    token_t t = get_next_token(&scanner);
+    if(t.token_type == KEYWORD){
+        if( strcmp( (char *) t.attr , "end") == 0 ){
+            fprintf(stderr,"Ended if\n");
+            return inside_statement_list;
+        }
+        else if( strcmp ((char *) t.attr, "else") == 0){
+            //<else-branch>           -> else <statement-list>
+            fprintf(stderr,"parsing else branch...\n");
+            bool else_branch_statement_list = statement_list();
+            t = get_next_token(&scanner);
+            if(t.token_type == KEYWORD && strcmp( (char *) t.attr , "end") == 0){
+                //ended else branch
+                return inside_statement_list && else_branch_statement_list;
+            }
+            incorrect_token("[]",t,&scanner);
+            return false;
+        }
+        incorrect_token("[]",t,&scanner);
+        return false;
+    }else{
+        incorrect_token("Better check the implementation! END",t,&scanner);
+        return false;
+    }
+    return inside_statement_list;
+}
+
+bool parse_while(){
+    bool condition = parse_expression();
+    if(!condition)
+        return false;
+    bool then = check_next_token_attr(&scanner, KEYWORD, "do");
+    if(!then)
+        return false;
+    bool inside_statement_list = statement_list();
+    
+    token_t t = get_next_token(&scanner);
+    if(t.token_type == KEYWORD){
+        if( strcmp( (char *) t.attr , "end") == 0 ){
+            fprintf(stderr,"Ended while\n");
+            return inside_statement_list;
+        }
+        incorrect_token("[]",t,&scanner);
+        return false;
+    }else{
+        incorrect_token("Better check the implementation! END",t,&scanner);
+        return false;
+    }
+    return inside_statement_list;
+}
 /**
  * *Temporary solution!
  * Expressions should temporarily be replaced by INTEGER or STRING or NUMBER or ID
@@ -295,6 +369,15 @@ bool parse_expression(){
         return true;
     else
         incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,&scanner);
+    return false;
+}
+bool parse_datatype(){
+    token_t t = get_next_token(&scanner);
+    if(t.token_type != KEYWORD)
+        return false;
+    if(strcmp("string",t.attr) == 0 || strcmp("number",t.attr) == 0 || strcmp("integer",t.attr) == 0)
+        return true;
+    incorrect_token("DATATYPE keyword",t,&scanner);
     return false;
 }
 void incorrect_token(char * expected, token_t t, scanner_t * scanner){
@@ -332,8 +415,8 @@ bool check_next_token_attr(scanner_t * scanner,token_type_t expecting, char * ex
             return true;
         }
     }
-    char exp_str[3];
-    sprintf(exp_str, "%d", expecting);
-    incorrect_token(exp_str, t, scanner);
+    // char exp_str[3];
+    // sprintf(exp_str, "%d", expecting);
+    incorrect_token(expecting_attr, t, scanner);
     return false;
 }

@@ -44,14 +44,28 @@ bool statement();
  */
 bool parse_variable_def();
 
+/**
+ * @brief checks value assignment when defining a variable
+ */ 
 bool value_assignment();
-bool assigment();
+
+//bool assigment();
 
 bool multiple_assignment();
 
+/**
+ * @brief Parses if statement
+ * @note Expects that the 'if' is already read and the first token is going to be a condition (expression)
+ * @note Also handles else branch currently
+ */ 
+bool parse_if();
+
+/**
+ * @note might use in future 
+ */ 
 bool else_branch();
 
-bool loop_while();
+bool parse_while();
 
 bool param_list();
 bool param_list_1();
@@ -59,10 +73,23 @@ bool param_list_1();
 bool type_list();
 bool type_list_1();
 
+/**
+ * expression_list & expression_list_1 are currently handled in multiple_assignment()
+ * 
+ */ 
 bool expression_list();
 bool expression_list_1();
 
+/**
+ * @brief Shows error if next token is not a STRING
+ * @return true if token is string
+ */ 
 bool parse_str();
+
+/**
+ * @brief Parses function definition, checks for signature and then parses the inside of the function
+ * 
+ */ 
 bool parse_function_def();
 /**
  * @brief parses the function call.
@@ -94,7 +121,6 @@ bool lookahead_token(scanner_t * scanner,token_type_t expecting);
  * @return returns true if both expected type and attribute are equal to real ones
  **/
 bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
-
 /**
  * @param expecting The token type to expect
  * @brief Shows error if there is an unexpected token type
@@ -108,6 +134,11 @@ bool check_next_token(scanner_t * scanner,token_type_t expecting);
  * @return returns true the expected token is there
  **/
 bool check_next_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+
+/**
+ * @brief checks if the next token is datatype
+ */ 
+bool parse_datatype();
 
 /**
  * !temporary
