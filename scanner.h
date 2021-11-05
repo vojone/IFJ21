@@ -41,6 +41,14 @@ typedef enum token_type {
 } token_type_t;
 
 /**
+ * @brief Token structure
+ */ 
+typedef struct token {
+    token_type_t token_type;
+    void * attr;
+} token_t;
+
+/**
  * @brief All possible states of FSM ( = base of scanner impelemntation)
  * @note If token ends with _F suffix, that means, that state is finite
  */ 
@@ -53,16 +61,9 @@ typedef enum fsm_state {
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
     OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
-    EOF_F
+    EOF_F,
+    STATE_NUM
 } fsm_state_t;
-
-/**
- * @brief Token structure
- */ 
-typedef struct token {
-    token_type_t token_type;
-    void * attr;
-} token_t;
 
 /**
  * @brief Data types for cursor coordinates
@@ -81,7 +82,6 @@ typedef struct scanner {
 
     char input_buffer; /**< Sometimes is necessary to "push" character back to stdin*/
     bool is_input_buffer_full; /**< Flag that signalizes validity of data in input_buffer */
-    char c; /**< Currently processed character */ 
 
     token_t tok_buffer; /**< Additional buffer for one token */
     bool is_tok_buffer_full; /**< Flag that signalizes validity of data in tok_buffer */
@@ -90,6 +90,15 @@ typedef struct scanner {
 
     fsm_state_t state; /** Current state of FSM */
 } scanner_t;
+
+/**
+ * @brief Transition function (type) that contains rules for changing 
+ *        automata state or choosing token type
+ */ 
+typedef void (*trans_func_t)(char, token_t *, scanner_t *);
+
+
+
 
 /**
  * @brief Reads characters from stdin (or from buffer) and tries to make token from it

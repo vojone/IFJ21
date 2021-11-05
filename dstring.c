@@ -94,6 +94,7 @@ int str_cpy(char **dst, const char *src, size_t length) {
     return STR_SUCCESS;
 }
 
+
 int str_cmp(const char *str1, const char *str2) {
     int result = SAME;
     size_t u = 0;
@@ -137,5 +138,6 @@ int get_chtype(const char c) {
         return OTHER_CHARACTER;
     }
 }
+
 
 /***                             End of dstring.c                          ***/
