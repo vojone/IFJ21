@@ -19,7 +19,7 @@
 
 
 /**
- * Prepares scanner structure and sets its attributes to initial values
+ * @brief Prepares scanner structure and sets its attributes to initial values
  */
 void scanner_init(scanner_t *sc) {
     sc->state = INIT;
@@ -65,7 +65,7 @@ void update_cursor_pos(char c, scanner_t *sc) {
 }
 
 /**
- * @brief Returns next char from stdin or from input buffer
+ * @brief Read character from stdin (or from input buffer)
  */
 char next_char(scanner_t *sc) {
     char next;
@@ -76,8 +76,6 @@ char next_char(scanner_t *sc) {
     else {
         next = getchar();
     }
-
-    update_cursor_pos(next, sc);
 
     return next;
 }
@@ -101,7 +99,7 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
 }
 
 /**
- * Sets initial values to token
+ * @brief Sets initial values to token
  */ 
 void init_token(token_t *token) {
     token->token_type = UNKNOWN;
@@ -109,7 +107,40 @@ void init_token(token_t *token) {
 }
 
 /**
- * Transitions from intial state of FSM
+ * @brief Tries to find token in table
+ * @param tab_func Function with static table in which will be searching executed
+ * @param token Current processed token
+ * @param sc Scanner structure
+ * @return True if string was found in given table
+ */ 
+bool from_tab(char *(*tab_func)(unsigned int), token_t *token, scanner_t *sc) {
+
+    size_t table_size;
+    if(tab_func == get_keyword) {
+        table_size = KEYWORD_TABLE_SIZE;
+    }
+    else if(tab_func == get_operator) {
+        table_size = OPERATOR_TABLE_SIZE;
+    }
+    else {
+        table_size = SEPARATOR_TABLE_SIZE;
+    }
+
+    char * table_token = NULL;
+    table_token = match(to_str(&sc->str_buffer), tab_func, table_size);
+    if(table_token != NULL) {
+        str_clear(&sc->str_buffer);
+        token->attr = table_token;
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+/**
+ * @brief Transitions from intial state of FSM
  */ 
 void from_init_state(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == ALPHA || c == '_') {
@@ -154,6 +185,8 @@ void from_init_state(char c, token_t * token, scanner_t *sc) {
     }
 }
 
+
+
 token_t get_next_token(scanner_t *sc) {
     token_t result;
     init_token(&result);
@@ -163,10 +196,9 @@ token_t get_next_token(scanner_t *sc) {
        sc->is_tok_buffer_full = false; 
     }
 
-    char c;
-    char * table_token = NULL;
     while(result.token_type == UNKNOWN) {
-        c = next_char(sc);
+        char c = next_char(sc);
+        update_cursor_pos(c, sc);
         //fprintf(stderr, "%c", c);
        
         switch (sc->state)
@@ -180,13 +212,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = ID_F;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), 
-                                    get_keyword, 
-                                    KEYWORD_TABLE_SIZE);
-
-                if(table_token) {
-                    str_clear(&sc->str_buffer);
-                    result.attr = table_token; 
+                if(from_tab(get_keyword, &result, sc)) {
                     got_token(KEYWORD, c, &result, sc);
                 }
                 else {
@@ -216,13 +242,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = COM_1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), 
-                                    get_operator, 
-                                    OPERATOR_TABLE_SIZE);
-
-                if(table_token) {
-                    str_clear(&sc->str_buffer);
-                    result.attr = table_token; 
+                if(from_tab(get_operator, &result, sc)) {
                     got_token(OPERATOR, c, &result, sc);
                 }
                 else {
@@ -350,13 +370,7 @@ token_t get_next_token(scanner_t *sc) {
             got_token(STRING, c, &result, sc);
             break;
         case SEP_F:
-            table_token = match(to_str(&sc->str_buffer), 
-                                get_separator, 
-                                SEPARATOR_TABLE_SIZE);
-
-            if(table_token) {
-                str_clear(&sc->str_buffer);
-                result.attr = table_token; 
+            if(from_tab(get_separator, &result, sc)) {
                 got_token(SEPARATOR, c, &result, sc);
             }
             else {
@@ -383,13 +397,7 @@ token_t get_next_token(scanner_t *sc) {
             }
             break;
         case OP_F1:
-            table_token = match(to_str(&sc->str_buffer), 
-                                get_operator, 
-                                OPERATOR_TABLE_SIZE);
-
-            if(table_token) {
-                str_clear(&sc->str_buffer);
-                result.attr = table_token; 
+            if(from_tab(get_operator, &result, sc)) {
                 got_token(OPERATOR, c, &result, sc);
             }
             else {
@@ -401,10 +409,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_operator, OPERATOR_TABLE_SIZE);
-                if(table_token) {
-                    str_clear(&sc->str_buffer);
-                    result.attr = table_token; 
+                if(from_tab(get_operator, &result, sc)) {
                     got_token(OPERATOR, c, &result, sc);
                 }
                 else {
@@ -417,10 +422,7 @@ token_t get_next_token(scanner_t *sc) {
                 sc->state = OP_F1;
             }
             else {
-                table_token = match(to_str(&sc->str_buffer), get_operator, OPERATOR_TABLE_SIZE);
-                if(table_token) {
-                    str_clear(&sc->str_buffer);
-                    result.attr = table_token; 
+                if(from_tab(get_operator, &result, sc)) {
                     got_token(OPERATOR, c, &result, sc);
                 }
                 else {

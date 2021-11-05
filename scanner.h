@@ -24,7 +24,9 @@
 #include "dstring.h"
 #include "tables.h"
 
-//All possible toke types
+/**
+ * @brief All possible token types
+ */
 typedef enum token_type {
     UNKNOWN,
     IDENTIFIER, 
@@ -38,8 +40,10 @@ typedef enum token_type {
     ERROR_TYPE
 } token_type_t;
 
-//All possible states of FSM ( = base of scanner impelemntation)
-//If token ends with _F suffix, that means, that state is finite
+/**
+ * @brief All possible states of FSM ( = base of scanner impelemntation)
+ * @note If token ends with _F suffix, that means, that state is finite
+ */ 
 typedef enum fsm_state {
     INIT,
     ID_F,
@@ -52,25 +56,32 @@ typedef enum fsm_state {
     EOF_F
 } fsm_state_t;
 
-//Token structure
+/**
+ * @brief Token structure
+ */ 
 typedef struct token {
     token_type_t token_type;
     void * attr;
 } token_t;
 
-//Data types for cursor coordinates
+/**
+ * @brief Data types for cursor coordinates
+ */ 
 typedef long unsigned int pos_t;
 
 typedef enum pos_indexes {
     ROW, COL, COORD_NUM
 } pos_indexes_t;
 
-//Scanner structure
+/**
+ * @brief Scanner structure
+ */ 
 typedef struct scanner {
     string_t str_buffer; /**< Temporary string buffer used for collecting value of token */
 
     char input_buffer; /**< Sometimes is necessary to "push" character back to stdin*/
     bool is_input_buffer_full; /**< Flag that signalizes validity of data in input_buffer */
+    char c; /**< Currently processed character */ 
 
     token_t tok_buffer; /**< Additional buffer for one token */
     bool is_tok_buffer_full; /**< Flag that signalizes validity of data in tok_buffer */
