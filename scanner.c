@@ -275,7 +275,7 @@ void COM_1_trans(char c, token_t * token, scanner_t *sc) {
     if(c == '[') {
         sc->state = COM_2;
     }
-    else if(c == '\n') {
+    else if(c == '\n' || c == EOF) {
         sc->state = COM_F;
     }
     else {

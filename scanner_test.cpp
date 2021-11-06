@@ -547,8 +547,7 @@ class scanning_with_lookahead : public test_fixture {
             local s2 : string = s1 .. ", ktery jeste trochu obohatime"
             end
             end
-            main()
-            )";
+            main() --GSDAGDSA)";
 
             exp_types = {
                 KEYWORD, KEYWORD, STRING, KEYWORD, KEYWORD, 
