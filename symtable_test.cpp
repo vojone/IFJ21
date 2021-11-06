@@ -138,7 +138,9 @@ class normal_tests : public ::testing::Test {
             print_tab(uut);
         }
 
-        destroy_tab(&uut);
+        if(uut != NULL) {
+            destroy_tab(&uut);
+        }
     }
 };
 
@@ -150,6 +152,20 @@ TEST_F(normal_tests, search) {
     }
 }
 
+
+TEST_F(normal_tests, delete_test) {
+    delete_sym(&uut, symbols[0].name);
+    ASSERT_EQ(search(&uut, symbols[0].name), (void *)NULL);
+
+    delete_sym(&uut, symbols[symbols.size() - 1].name);
+    ASSERT_EQ(search(&uut, symbols[symbols.size() - 1].name), (void *)NULL);
+}
+
+
+TEST_F(normal_tests, dispose_whole_table) {
+    destroy_tab(&uut);
+    ASSERT_EQ(uut, (void *)NULL);
+}
 
 
 int main(int argc, char **argv) {
