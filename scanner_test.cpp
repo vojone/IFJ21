@@ -437,7 +437,7 @@ class code_sample4 : public test_fixture {
             "\n")x=0
             -
             1write(x)
-            end whitespaces()
+            end whitespaces() --[[
             )";
 
             exp_types = {
