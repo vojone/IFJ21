@@ -95,11 +95,11 @@ char * match(char * str, char * (*table_func)(unsigned int), size_t tab_size) {
         char * cur_str = table_func(middle);
         int cmp_result = str_cmp(str, cur_str);
 
-        if(cmp_result == SAME) {
+        if(cmp_result == 0) {
             found = cur_str;
             break;
         }
-        else if(cmp_result == FIRST_BEFORE_SEC) {
+        else if(cmp_result < 0) {
             right_b = middle - 1;
         }
         else {

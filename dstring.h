@@ -29,10 +29,6 @@
 #define STR_SUCCESS 0
 #define STR_FAILURE 1
 
-//Return codes of string comparison
-#define SAME 0
-#define FIRST_BEFORE_SEC -1 /**< First given string would be in dictionary before second */
-#define SEC_BEFORE_FIRST 1 /**< SEcond given string would be in dictionary before first */
  
 //String is implemented as dynamic array
 typedef struct string {
@@ -101,8 +97,8 @@ int get_chtype(const char c);
 
 
 /**
- * @brief Compares to strings and returns result as an integer
- * @return SAME (0) if strings are same
+ * @brief Compares to strings and returns result as an integer (same as strcmp)
+ * @return 0 if strings are same
  */ 
 int str_cmp(const char *str1, const char *str2);
 

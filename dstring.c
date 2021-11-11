@@ -96,28 +96,7 @@ int str_cpy(char **dst, const char *src, size_t length) {
 
 
 int str_cmp(const char *str1, const char *str2) {
-    int result = SAME;
-    size_t u = 0;
-    for(; str1[u] != '\0' && str2[u] != '\0'; u++) {
-        if(str1[u] < str2[u]) {
-            result = FIRST_BEFORE_SEC;
-            break;
-        }
-        else if(str1[u] > str2[u]) {
-            result = SEC_BEFORE_FIRST;
-            break;
-        }
-    }
-
-    if(str1[u] == '\0' && str2[u] != '\0') {
-        result = FIRST_BEFORE_SEC;
-    }
-    else if(str1[u] != '\0' && str2[u] == '\0') {
-        result = SEC_BEFORE_FIRST;
-    }
-    //For example: = is before ==
-
-    return result;
+    return strcmp(str1, str2);
 }
 
 
