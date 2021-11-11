@@ -441,7 +441,6 @@ token_t lookahead(scanner_t *sc) {
         sc->tok_buffer = result;
         sc->is_tok_buffer_full = true;
     }
-    fprintf(stderr,"^ Lookahead ^\n");
     return result;
 }
 

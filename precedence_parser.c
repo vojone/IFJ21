@@ -3,22 +3,22 @@
  *                            precedence_parser.c
  * 
  *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *              Purpose:  Implementation of precedence parsing
+ *              Purpose:  Implementation of precedence parsing (PP)
  * 
  *                    Last change:
  *****************************************************************************/
 
 #include "precedence_parser.h"
 
+/**
+ * @brief Resolves if token can be part of expression
+ */ 
 bool is_EOE(token_t *token) {
     token_type_t type = token->token_type;
 
-    if(type == IDENTIFIER ||
-       type == OPERATOR ||
-       type == SEPARATOR ||
-       type == STRING ||
-       type == NUMBER ||
-       type == INTEGER) {
+    if(type == IDENTIFIER || type == OPERATOR ||
+       type == SEPARATOR || type == STRING ||
+       type == NUMBER || type == INTEGER) {
         return false;
     }
     else {
@@ -26,13 +26,12 @@ bool is_EOE(token_t *token) {
     }
 }
 
-
-
+/**
+ * @brief Transforms token to symbol used in precedence parser (see grm_sym_type_t in .h)
+ */ 
 int tok_to_term_type(token_t *last_token, token_t * token) {
-    if(token->token_type == IDENTIFIER ||
-       token->token_type == NUMBER ||
-       token->token_type == STRING ||
-       token->token_type == INTEGER) {
+    if(token->token_type == IDENTIFIER || token->token_type == NUMBER ||
+       token->token_type == STRING || token->token_type == INTEGER) {
            return OPERAND;
     }
     else if(token->token_type == OPERATOR || 
@@ -48,9 +47,9 @@ int tok_to_term_type(token_t *last_token, token_t * token) {
         case '*':
             return MULT;
         case '-':
-            if(last_token == UNKNOWN || 
-               last_token->token_type == OPERATOR || 
-               last_token->token_type == SEPARATOR) {
+            if(last_token == UNKNOWN ||
+               strcmp(last_token->attr, "(") == 0 ||
+               last_token->token_type == OPERATOR) {
                 return MINUS;
             }
             return SUB;
@@ -88,11 +87,14 @@ int tok_to_term_type(token_t *last_token, token_t * token) {
         default:
             return PP_ERROR;
         }
-    }//switch()
+    }//switch(first_ch)
 
     return PP_ERROR;
 }
 
+/**
+ * @brief Contains precedence table of operators in IFJ21
+ */ 
 char get_precedence(int on_stack_top, int on_input) {
     static char precedence_table[TERM_NUM][TERM_NUM] = {
     //   #    _   *   /   //  +   -  ..   <  <=  >  >=  ==  ~=   (   )   i   $
@@ -119,7 +121,9 @@ char get_precedence(int on_stack_top, int on_input) {
     return precedence_table[on_stack_top][on_input];
 }
 
-
+/**
+ * 
+ */ 
 char *to_char_seqence(int integer_symbol) {
     static char * right_sides[] = {
         "#",
@@ -147,7 +151,9 @@ char *to_char_seqence(int integer_symbol) {
     return right_sides[integer_symbol];
 }
 
-
+/**
+ * @brief Contains rules of reduction on top of the pp_stack
+ */ 
 char *get_rule(unsigned int index) {
     static char * right_sides[] = {
         "(E)",
@@ -172,7 +178,9 @@ char *get_rule(unsigned int index) {
     return right_sides[index];
 }
 
-
+/**
+ * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
+ */ 
 bool reduce_top(scanner_t *sc, pp_stack_t *s) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
@@ -191,6 +199,7 @@ bool reduce_top(scanner_t *sc, pp_stack_t *s) {
 
     for(int i = 0; get_rule(i); i++) {
         if(strcmp(to_str(&to_be_reduced), get_rule(i)) == 0) {
+            fprintf(stderr, "REDUCED: %s\n", get_rule(i));
             str_dtor(&to_be_reduced);
             pp_push(s, NON_TERM);
             return true;
@@ -211,6 +220,18 @@ bool parse_expression(scanner_t *sc) {
     last_token.token_type = UNKNOWN;
     while(true) {
         current_token = lookahead(sc);
+        if(current_token.token_type == ERROR_TYPE) {
+            fprintf(stderr, "Lexical error: Not recognized token ! (\"%s\")\n", (char *)current_token.attr);
+            return false;
+        }
+
+        int on_input;
+        if(is_EOE(&current_token)) {
+            on_input = STOP_SYM;
+        }
+        else {
+            on_input = tok_to_term_type(&last_token, &current_token);
+        }
         
         int on_top = pp_top(&stack);
         int tmp = -1;
@@ -220,14 +241,6 @@ bool parse_expression(scanner_t *sc) {
             pp_push(&stack, on_top);
             pp_push(&stack, tmp);
         }
-    
-        int on_input;
-        if(is_EOE(&current_token)) {
-            on_input = STOP_SYM;
-        }
-        else {
-            on_input = tok_to_term_type(&last_token, &current_token);
-        }
 
         if(on_top == STOP_SYM && on_input == STOP_SYM) {
             return true;
@@ -235,7 +248,7 @@ bool parse_expression(scanner_t *sc) {
 
         int precedence = get_precedence(on_top, on_input);
 
-        fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top, on_input);
+        //fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top, on_input);
         if(precedence == '=') {
             pp_push(&stack, on_input);
             last_token = current_token;

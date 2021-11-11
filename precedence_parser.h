@@ -19,11 +19,12 @@
 
 #define PP_ERROR -1
 
-enum terminals {
+typedef enum grm_sym_type {
     HASH, MINUS, MULT, DIV, INT_DIV, ADD, SUB, CONCAT,
     LT, LTE, GT, GTE, EQ, NOTEQ, L_PAR, R_PAR, OPERAND, 
     STOP_SYM, TERM_NUM
-} terminals_t;
+} grm_sym_type_t;
+
 
 #define NON_TERM TERM_NUM
 

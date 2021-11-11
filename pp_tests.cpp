@@ -80,7 +80,7 @@ class test_fixture : public :: testing :: Test {
 
         virtual void setData() {
             scanner_input = R"(
-                a - a * -b + b 
+                (a) - a * (-b + b) 
             )";
         }
 

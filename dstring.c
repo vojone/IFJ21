@@ -75,7 +75,6 @@ int prep_char(char c, string_t *string) {
 int prep_str(string_t *dst, char *src) {
     for(int i = strlen(src) - 1; i >= 0; i--) {
         int ret = prep_char(src[i], dst);
-        fprintf(stderr, "PREP: %s\n", dst->str);
         if(ret == STR_FAILURE) {
             return STR_FAILURE;
         }
