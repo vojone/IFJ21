@@ -448,10 +448,7 @@ void OP_F2_trans(char c, token_t * token, scanner_t *sc) {
 
 
 void OP_F3_trans(char c, token_t * token, scanner_t *sc) {
-    if(get_chtype(c) == DIGIT) {
-        sc->state = INT_F;
-    }
-    else if(c == '-') {
+    if(c == '-') {
         sc->state = COM_F1;
     }
     else {
