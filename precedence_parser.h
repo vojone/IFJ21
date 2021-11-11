@@ -12,11 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "dstack.h"
 
 #ifndef PRECEDENCE_PARSER_H
 #define PRECEDENCE_PARSER_H
-
-#define STACK_MAX 100
 
 #define PP_ERROR -1
 
@@ -27,11 +26,6 @@ enum terminals {
 } terminals_t;
 
 #define NON_TERM TERM_NUM
-
-typedef struct dstack {
-    int data[STACK_MAX];
-    int top;
-} dstack_t;
 
 bool parse_expression(scanner_t *sc);
 

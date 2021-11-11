@@ -26,7 +26,7 @@ PP_TEST_BIN = $(PP_TEST_NAME)
 
 #------------------------------------------------------------------------------
 
-OBJS = $(PARSER).o $(SCANNER).o dstring.o tables.o
+OBJS = $(PARSER).o $(SCANNER).o dstring.o tables.o dstack.o
 EXES = $(EXECUTABLE) $(SCAN_TEST_BIN) $(PP_TEST_BIN) $(PARSER_EXE)
 
 .PHONY: all clean unit_tests
@@ -52,7 +52,7 @@ unit_tests: $(SCAN_TEST_BIN) $(PP_TEST_BIN)
 #linking binary with test
 $(SCAN_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(SCAN_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
-$(SCAN_TEST_BIN) : $(SCANNER).o $(SCAN_TEST_BIN).o dstring.o tables.o
+$(SCAN_TEST_BIN) : $(SCANNER).o $(SCAN_TEST_BIN).o dstring.o tables.o dstack.o
 
 #compilation of obj file with test
 $(SCAN_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include 
@@ -68,7 +68,7 @@ $(TEST_DIR)lib/%.a :
 #linking binary with test
 $(PP_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(PP_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib 
-$(PP_TEST_BIN) : $(PP_PARSER).o $(PP_TEST_BIN).o $(SCANNER).o dstring.o tables.o
+$(PP_TEST_BIN) : $(PP_PARSER).o $(PP_TEST_BIN).o $(SCANNER).o dstring.o tables.o dstack.o
 
 #compilation of obj file with test
 $(PP_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include 
