@@ -15,7 +15,8 @@
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
 -->
 
-<!-- 'i' is a token (terminal). Any <[a-zA-Z0-9-]*> is a nonterminal -->
+<!-- 'i' is a terminal. Any <[a-zA-Z0-9-]*> is a nonterminal -->
+<!-- 'i' can be function call, variable, numeric or string literal -->
 
 <E>     -> ( <E> )
 <E>     -> i
@@ -27,9 +28,11 @@
 <E>     -> <E> / <E>
 <E>     -> <E> // <E>
 
+<!--Unary operators-->
+<E>     -> #<E>
+<E>     -> _ <E> <!-- '_' is unary minus operator (in program it is '-') -->
 
 <!--Logical rules-->
-<E>     -> ! <E>
 <E>     -> <E> < <E>
 <E>     -> <E> > <E>
 <E>     -> <E> <= <E>
