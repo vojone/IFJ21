@@ -161,7 +161,7 @@ class relational_operators : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(8 + 8 >= 8
+            R"(8 + 8 >= 42*42
             )";
         }
 };

@@ -22,9 +22,12 @@
 /**
  * @brief Return codes
  */ 
+
+#define UNDEFINED -1
 #define EXPRESSION_SUCCESS 0
 #define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
+#define INTERNAL_ERROR 99
 
 
 typedef enum grm_sym_type {

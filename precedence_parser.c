@@ -284,20 +284,21 @@ void has_lower_prec(pp_stack_t *stack, int on_input) {
 
 /**
  * @brief Does necessary actions when stack top has higher precedence than input (reductions on stack top)
+ * @return True if everything (reduction) goes well
  */
-int has_higher_prec(pp_stack_t *stack) {
+bool has_higher_prec(pp_stack_t *stack) {
     bool is_reduced = reduce_top(stack);
         
     if(!is_reduced) {
         fprintf(stderr, "Precedence parser: Cannot reduce the top of the stack!\n");
-        return EXPRESSION_FAILURE;
+        return false;
     }
     else {
         fprintf(stderr, "Reducted! On top:%d\n", pp_top(stack));
         pp_show(stack);
     }
 
-    return EXPRESSION_SUCCESS;
+    return true;
 }
 
 int parse_expression(scanner_t *sc) {
@@ -342,14 +343,29 @@ int parse_expression(scanner_t *sc) {
             token_aging(sc, &last_token, &current_token);
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            if(has_higher_prec(&stack) == EXPRESSION_FAILURE) {
+            if(!has_higher_prec(&stack)) {
+                fprintf(stderr, 
+                    "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens ! (\"%s%s\")\n", 
+                    sc->cursor_pos[ROW], 
+                    sc->cursor_pos[COL],
+                    (char *)last_token.attr,
+                    (char *)current_token.attr);
+
                 free_everything(&stack, &last_token, &current_token);
+
                 return EXPRESSION_FAILURE;
             }
         }
         else {
-            fprintf(stderr, "Precedence parser: Unallowed combination of symbols!\n");
+            fprintf(stderr, 
+                    "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens ! (\"%s%s\")\n", 
+                    sc->cursor_pos[ROW], 
+                    sc->cursor_pos[COL],
+                    (char *)last_token.attr,
+                    (char *)current_token.attr);
+
             free_everything(&stack, &last_token, &current_token);
+
             return EXPRESSION_FAILURE;
         }
     }
