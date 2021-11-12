@@ -54,8 +54,8 @@ typedef struct sym_data {
 typedef struct tree_node {
     char * key; 
     sym_data_t data;
-    struct tree_node *lPtr;
-    struct tree_node *rPtr;
+    struct tree_node *left;
+    struct tree_node *right;
 } tree_node_t;
 
 /**
@@ -82,6 +82,13 @@ void insert_sym(symtab_t *tab, const char *key);
  * @param key key of element to be deleted
  */ 
 void delete_sym(symtab_t *tab, const char *key);
+
+/**
+ * @brief Replaces deleted element with two children by rightmost element
+ * @param tab destination table
+ * @param target replaced element
+ */
+void replace_rightmost(symtab_t *tab, symtab_t *target);
 
 /**
  * @brief Deletetes whole symbol table and correctly frees its resources
