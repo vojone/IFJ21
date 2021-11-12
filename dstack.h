@@ -85,6 +85,7 @@ TYPE NAME##_top(NAME##_stack_t *s);                         \
  */                                                         \
 void NAME##_show(NAME##_stack_t *s);                        \
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DECLARATIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DSTACK_DECL(int, pp)
 

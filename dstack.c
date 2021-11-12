@@ -91,6 +91,8 @@ void NAME##_show(NAME##_stack_t *s) {           \
     fprintf(stderr, "<= top\n");                \
 }                                               \
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DEFINITIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
 
 
