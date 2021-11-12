@@ -26,6 +26,11 @@ typedef enum grm_sym_type {
 } grm_sym_type_t;
 
 
+typedef struct exp_el {
+    grm_sym_type_t type; 
+} exp_el_t;
+
+
 #define NON_TERM TERM_NUM
 
 bool parse_expression(scanner_t *sc);

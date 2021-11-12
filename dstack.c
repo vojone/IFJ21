@@ -22,7 +22,14 @@
 
 #include "dstack.h"
 
-#define DSTACK(TYPE, NAME, FORMAT_STR)                          \
+/**
+ * @brief Generates definition of stack (of related functions) with specific name and data type
+ * @param NAME prefix that will be added to opearations and structure name
+ * @param TYPE data type of elements in the stack
+ * @param PRINT_CMD Command that is used for printing data in the stack (not important, used only in show)
+ * @note PRINT_CMD Can be omitted if NAME##_show is not needed
+ */ 
+#define DSTACK(TYPE, NAME, PRINT_CMD)                           \
 void NAME##_stack_init(NAME##_stack_t *s) {                     \
     s->top = 0;                                                 \
     s->data = (TYPE *)malloc(sizeof(TYPE)*INIT_SIZE);           \
@@ -31,6 +38,12 @@ void NAME##_stack_init(NAME##_stack_t *s) {                     \
         return;                                                 \
     }                                                           \
     s->allocated = INIT_SIZE;                                   \
+}                                                               \
+                                                                \
+                                                                \
+void NAME##_stack_dtor(NAME##_stack_t *s) {                     \
+    free(s->data);                                              \
+    s->allocated = 0;                                           \
 }                                               \
                                                 \
 bool NAME##_is_empty(NAME##_stack_t *s) {       \
@@ -38,9 +51,10 @@ bool NAME##_is_empty(NAME##_stack_t *s) {       \
 }                                               \
                                                 \
 void NAME##_push(NAME##_stack_t *s, TYPE  newdata) {                                \
-    if(s->top == s->allocated) {                                                    \
+    if(s->top == s->allocated) { /*Allocated memory is full -> extend it*/          \
         s->data = (TYPE *)realloc(s->data, sizeof(TYPE)*s->allocated*2);            \
         if(!s->data) {                                                              \
+            fprintf(stderr, "Stack: Can't allocate!\n");                            \
             return;                                                                 \
         }                                                                           \
         s->allocated *= 2;                                                          \
@@ -64,19 +78,20 @@ TYPE NAME##_top(NAME##_stack_t *s) {            \
         return ST_ERROR;                        \
     }                                           \
                                                 \
-    return s->data[s->top - 1];           }     \
+    return s->data[s->top - 1];                 \
+}                                               \
                                                 \
 void NAME##_show(NAME##_stack_t *s) {           \
     int i = 0;                                  \
     fprintf(stderr, "STACK: |");                \
     while(i != s->top) {                        \
-        fprintf(stderr, FORMAT_STR , s->data[i]);\
+        PRINT_CMD;                              \
         i++;                                    \
     }                                           \
     fprintf(stderr, "<= top\n");                \
 }                                               \
 
-DSTACK(int, pp, "%d ")
+DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
 
 
 /***                        End of dstack.c                                ***/
