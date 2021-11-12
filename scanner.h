@@ -98,7 +98,16 @@ typedef struct scanner {
 typedef void (*trans_func_t)(char, token_t *, scanner_t *);
 
 
+/**
+ * @brief Sets initial values to token structure
+ */ 
+void token_init(token_t *token);
 
+
+/**
+ * @brief Correctly frees resources holds by token and sets it to initial state
+ */ 
+void token_dtor(token_t *token);
 
 /**
  * @brief Reads characters from stdin (or from buffer) and tries to make token from it

@@ -42,8 +42,6 @@ parser: $(OBJS)
 
 
 unit_tests: $(SCAN_TEST_BIN) $(PP_TEST_BIN)
-#./$(SCAN_TEST_BIN)
-	./$(PP_TEST_BIN)
 
 
 

@@ -17,6 +17,36 @@
 
 #include "scanner.h"
 
+/**
+ * @brief Sets initial values to token
+ */ 
+void token_init(token_t *token) {
+    token->token_type = UNKNOWN;
+    token->attr = NULL;
+}
+
+/**
+ * @brief Correctly frees resources holds by token
+ */ 
+void token_dtor(token_t *token) {
+
+    switch (token->token_type)
+    {
+    case KEYWORD:
+    case SEPARATOR:
+    case OPERATOR:
+        break;
+    default:
+        if(token->attr) {
+            free(token->attr);
+        }
+        
+        break;
+    }
+
+    token->attr = NULL;
+    token->token_type = UNKNOWN;
+}
 
 /**
  * @brief Prepares scanner structure and sets its attributes to initial values
@@ -113,15 +143,6 @@ void got_comment(char c, token_t *token, scanner_t *sc) {
     ungetchar(c, sc);
     str_clear(&sc->str_buffer);
     sc->state = INIT;
-}
-
-
-/**
- * @brief Sets initial values to token
- */ 
-void init_token(token_t *token) {
-    token->token_type = UNKNOWN;
-    token->attr = NULL;
 }
 
 
@@ -524,7 +545,7 @@ trans_func_t get_trans(fsm_state_t state) {
 
 token_t get_next_token(scanner_t *sc) {
     token_t result;
-    init_token(&result);
+    token_init(&result);
 
     if(sc->is_tok_buffer_full) {
        result = sc->tok_buffer;
@@ -552,7 +573,7 @@ token_t get_next_token(scanner_t *sc) {
 
 token_t lookahead(scanner_t *sc) {
     token_t result;
-    init_token(&result);
+    token_init(&result);
 
     if(sc->is_tok_buffer_full) {
         result = sc->tok_buffer;

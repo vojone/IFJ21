@@ -103,11 +103,7 @@ class test_fixture : public ::testing::Test {
 
                 ASSERT_EQ(exp_types[i], temp.token_type);
 
-                if(temp.token_type != KEYWORD && 
-                   temp.token_type != OPERATOR && 
-                   temp.token_type != SEPARATOR) {
-                    free(temp.attr);
-                }
+                token_dtor(&temp);
             }
         }
 
