@@ -144,6 +144,46 @@ TEST_F(str_parse, only_parse) {
     ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
+class nested_parenthesis : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(((8+8))*7+((1+1)*a)
+            )";
+        }
+};
+
+TEST_F(nested_parenthesis, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+}
+
+class relational_operators : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(8 + 8 >= 8
+            )";
+        }
+};
+
+TEST_F(relational_operators, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+}
+
+
+class parenthesis_err : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"((8+8)(42+42)
+            )";
+        }
+};
+
+TEST_F(parenthesis_err, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
