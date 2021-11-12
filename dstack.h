@@ -23,6 +23,7 @@
 #define H_DSTACK
 
 #include "precedence_parser.h"
+#include "symtable.h"
 
 #define ST_ERROR -1  /**<Error return code for stack operations*/
 
@@ -88,6 +89,7 @@ void NAME##_show(NAME##_stack_t *s);                        \
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DECLARATIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DSTACK_DECL(int, pp)
+DSTACK_DECL(tree_node_t*, ts)
 
 #endif
 

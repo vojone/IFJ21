@@ -31,7 +31,7 @@ PP_TEST_BIN = $(PP_TEST_NAME)
 #------------------------------------------------------------------------------
 
 OBJS = $(PARSER).o $(SCANNER).o dstring.o tables.o dstack.o
-EXES = $(EXECUTABLE) $(SCAN_TEST_BIN) $(PP_TEST_BIN) $(PARSER_EXE)
+EXES = $(EXECUTABLE) $(SCAN_TEST_BIN) $(PP_TEST_BIN) $(SYMTAB_TEST_BIN) $(PARSER_EXE)
 
 .PHONY: all clean unit_tests
 
@@ -64,18 +64,12 @@ $(SCAN_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 #linking binary with test
 $(SYMTAB_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(SYMTAB_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
-$(SYMTAB_TEST_BIN) : $(SYMTAB).o $(SYMTAB_TEST_BIN).o dstring.o tables.o
+$(SYMTAB_TEST_BIN) : $(SYMTAB).o $(SYMTAB_TEST_BIN).o dstring.o tables.o dstack.o
 
 #compilation of obj file with test
 $(SYMTAB_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include 
 $(SYMTAB_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 
-#------------------------------------------------------------------------------
-
-$(TEST_DIR)lib/%.a :
-	cd $(TEST_DIR) && cmake .. && make -s
-
-#------------------------------------------------------------------------------
 
 #---------------------PRECEDENCE PARSER (PP) TESTS-----------------------------
 
@@ -87,6 +81,11 @@ $(PP_TEST_BIN) : $(PP_PARSER).o $(PP_TEST_BIN).o $(SCANNER).o dstring.o tables.o
 #compilation of obj file with test
 $(PP_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include 
 $(PP_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
+
+$(TEST_DIR)lib/%.a :
+	cd $(TEST_DIR) && cmake .. && make -s
+
+#------------------------------------------------------------------------------
 
 $(TEST_DIR)lib/%.a :
 	cd $(TEST_DIR) && cmake .. && make -s

@@ -93,6 +93,7 @@ bool str_search(const char c, const char *str);
  */
 int str_cpy(char **dst, const char *src, size_t length);
 
+int str_cpy_tostring(string_t* dst, const char *src, size_t length);
 
 /**
  * @brief returns type of character
@@ -105,6 +106,9 @@ int get_chtype(const char c);
  * @return 0 if strings are same
  */ 
 int str_cmp(const char *str1, const char *str2);
+
+
+int dstring_cmp(string_t* str1, string_t* str2);
 
 
 #endif

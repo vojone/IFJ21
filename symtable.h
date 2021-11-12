@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "dstring.h"
+#include "dstack.h"
 
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
@@ -27,7 +28,7 @@ typedef enum sym_type {
  * @brief Specifies data type of variable or return type of function 
  */ 
 typedef enum sym_dtype {
-    INTEGER, NUMBER, STRING
+    INT, NUM, STR
 } sym_dtype_t;
 
 
@@ -54,8 +55,8 @@ typedef struct sym_data {
 typedef struct tree_node {
     char * key; 
     sym_data_t data;
-    struct tree_node *lPtr;
-    struct tree_node *rPtr;
+    struct tree_node *l_ptr;
+    struct tree_node *r_ptr;
 } tree_node_t;
 
 /**
@@ -70,11 +71,11 @@ typedef tree_node_t* symtab_t;
 void init_tab(symtab_t *tab);
 
 /**
- * @brief Inserts a new element into existing symbol table 
+ * @brief Inserts a new element into existing symbol table or updates existing node
  * @param tab destination table
  * @param key key of new element
  */ 
-void insert_sym(symtab_t *tab, const char *key);
+void insert_sym(symtab_t *tab, const char *key, sym_data_t new_data);
 
 /**
  * @brief Deletes element with specific key and frees all its resources
@@ -82,6 +83,13 @@ void insert_sym(symtab_t *tab, const char *key);
  * @param key key of element to be deleted
  */ 
 void delete_sym(symtab_t *tab, const char *key);
+
+/**
+ * @brief Replaces deleted element with two children by rightmost element
+ * @param tab destination table
+ * @param target replaced element
+ */
+void replace_rightmost(symtab_t *tab, symtab_t *target);
 
 /**
  * @brief Deletetes whole symbol table and correctly frees its resources
@@ -97,13 +105,6 @@ void destroy_tab(symtab_t *tab);
  */ 
 tree_node_t *search(symtab_t *tab, const char *key);
 
-/**
- * @brief Changes data of element with given key (if it exists)
- * @param tab destination table
- * @param key key, that specifies element to be changed
- * @param new_data new data of symbol
- */ 
-void set_sym(symtab_t *tab, const char *key, sym_data_t new_data);
 
 #endif
 

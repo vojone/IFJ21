@@ -65,19 +65,11 @@ void NAME##_push(NAME##_stack_t *s, TYPE  newdata) {                            
 }                                               \
                                                 \
 TYPE NAME##_pop(NAME##_stack_t *s) {            \
-    if(NAME##_is_empty(s)) {                    \
-        return ST_ERROR;                        \
-    }                                           \
-                                                \
     s->top -= 1;                                \
     return s->data[s->top];                     \
 }                                               \
                                                 \
 TYPE NAME##_top(NAME##_stack_t *s) {            \
-    if(NAME##_is_empty(s)) {                    \
-        return ST_ERROR;                        \
-    }                                           \
-                                                \
     return s->data[s->top - 1];                 \
 }                                               \
                                                 \
@@ -94,6 +86,7 @@ void NAME##_show(NAME##_stack_t *s) {           \
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DEFINITIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
+DSTACK(tree_node_t*, ts,)
 
 
 /***                        End of dstack.c                                ***/
