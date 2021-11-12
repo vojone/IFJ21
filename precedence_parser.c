@@ -235,7 +235,20 @@ int get_top_symbol(pp_stack_t *stack) {
     return on_top;
 }
 
-bool parse_expression(scanner_t *sc) {
+void free_everything(pp_stack_t *stack, token_t *last, token_t *cur) {
+    pp_stack_dtor(stack);
+    token_dtor(last);
+    token_dtor(cur);
+}
+
+
+void token_aging(scanner_t *sc, token_t *last, token_t *cur) {
+    token_dtor(last);
+    *last = *cur;
+    *cur = get_next_token(sc);
+}
+
+int parse_expression(scanner_t *sc) {
     token_t current_token, last_token;
 
     pp_stack_t stack;
@@ -248,20 +261,17 @@ bool parse_expression(scanner_t *sc) {
         current_token = lookahead(sc);
         if(current_token.token_type == ERROR_TYPE) {
             fprintf(stderr, "Lexical error: Not recognized token ! (\"%s\")\n", (char *)current_token.attr);
-            pp_stack_dtor(&stack);
-            token_dtor(&last_token);
-            token_dtor(&current_token);
-            return false;
+            free_everything(&stack, &last_token, &current_token);
+            return LEXICAL_ERROR;
         }
 
         int on_input = get_input_symbol(&last_token, &current_token);
         int on_top = get_top_symbol(&stack);
 
-        if(on_top == STOP_SYM && on_input == STOP_SYM) { /*There is end of the expression on input and stop symbol at the top of the stack*/
-            pp_stack_dtor(&stack);
-            token_dtor(&last_token);
-            token_dtor(&current_token);
-            return true;
+        /*There is end of the expression on input and stop symbol at the top of the stack*/
+        if(on_top == STOP_SYM && on_input == STOP_SYM) {
+            free_everything(&stack, &last_token, &current_token);
+            return EXPRESSION_SUCCESS;
         }
 
         int precedence = get_precedence(on_top, on_input);
@@ -269,10 +279,8 @@ bool parse_expression(scanner_t *sc) {
         //fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top, on_input);
         if(precedence == '=') {
             pp_push(&stack, on_input);
-    
-            token_dtor(&last_token);
-            last_token = current_token;
-            current_token = get_next_token(sc);
+
+            token_aging(sc, &last_token, &current_token);
         }
         else if(precedence == '<') {
             if(pp_top(&stack) == NON_TERM) {
@@ -286,19 +294,15 @@ bool parse_expression(scanner_t *sc) {
     
             pp_push(&stack, on_input);
 
-            token_dtor(&last_token);
-            last_token = current_token;
-            current_token = get_next_token(sc);
+            token_aging(sc, &last_token, &current_token);
         }
         else if(precedence == '>') {
             bool is_reduced = reduce_top(sc, &stack);
         
             if(!is_reduced) {
                 fprintf(stderr, "Precedence parser: Cannot reduce the top of the stack!\n");
-                pp_stack_dtor(&stack);
-                token_dtor(&last_token);
-                token_dtor(&current_token);
-                return false;
+                
+                return EXPRESSION_FAILURE;
             }
             else {
                 fprintf(stderr, "Reducted! On top:%d\n", pp_top(&stack));
@@ -307,17 +311,13 @@ bool parse_expression(scanner_t *sc) {
         }
         else {
             fprintf(stderr, "Precedence parser: Unallowed combination of symbols!\n");
-            pp_stack_dtor(&stack);
-            token_dtor(&last_token);
-            token_dtor(&current_token);
-            return false;
+            free_everything(&stack, &last_token, &current_token);
+            return EXPRESSION_FAILURE;
         }
     }
 
-    pp_stack_dtor(&stack);
-    token_dtor(&last_token);
-    token_dtor(&current_token);
-    return true;
+    free_everything(&stack, &last_token, &current_token);
+    return EXPRESSION_SUCCESS;
 }
 
 /***                     End of precedence_parser.c                        ***/

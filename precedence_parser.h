@@ -19,6 +19,14 @@
 
 #define PP_ERROR -1
 
+/**
+ * @brief Return codes
+ */ 
+#define EXPRESSION_SUCCESS 0
+#define LEXICAL_ERROR 1
+#define EXPRESSION_FAILURE 2
+
+
 typedef enum grm_sym_type {
     HASH, MINUS, MULT, DIV, INT_DIV, ADD, SUB, CONCAT,
     LT, LTE, GT, GTE, EQ, NOTEQ, L_PAR, R_PAR, OPERAND, 
@@ -33,7 +41,7 @@ typedef struct exp_el {
 
 #define NON_TERM TERM_NUM
 
-bool parse_expression(scanner_t *sc);
+int parse_expression(scanner_t *sc);
 
 #endif
 

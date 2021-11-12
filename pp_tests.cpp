@@ -101,7 +101,7 @@ class test_fixture : public :: testing :: Test {
 };
 
 TEST_F(test_fixture, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), true);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
 
@@ -115,7 +115,7 @@ class lexical_error : public test_fixture {
 };
 
 TEST_F(lexical_error, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), false);
+    ASSERT_EQ(parse_expression(&uut), LEXICAL_ERROR);
 }
 
 class basic : public test_fixture {
@@ -128,7 +128,7 @@ class basic : public test_fixture {
 };
 
 TEST_F(basic, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), true);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
 class str_parse : public test_fixture {
@@ -141,7 +141,7 @@ class str_parse : public test_fixture {
 };
 
 TEST_F(str_parse, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), true);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
 int main(int argc, char **argv) {
