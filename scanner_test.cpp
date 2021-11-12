@@ -227,10 +227,10 @@ class lexical_errors : public test_fixture {
             R"(  ; ; ; ; === -200end"
             )";
             exp_types = {ERROR_TYPE, ERROR_TYPE, ERROR_TYPE, ERROR_TYPE,
-                        OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
+                        OPERATOR, OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
                         EOF_TYPE};
 
-            exp_attrs = {";", ";", ";", ";", "==", "=", "-200e", "nd"};
+            exp_attrs = {";", ";", ";", ";", "==", "=", "-", "200e", "nd"};
         }
 };
 
@@ -331,7 +331,7 @@ class code_sample2 : public test_fixture {
                 KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER,
                 SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, KEYWORD,
                 KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD, 
-                KEYWORD, IDENTIFIER, INTEGER, KEYWORD, IDENTIFIER, 
+                KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD, IDENTIFIER, 
                 SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR, 
                 KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, 
                 KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
@@ -339,7 +339,7 @@ class code_sample2 : public test_fixture {
                 KEYWORD, KEYWORD, IDENTIFIER, OPERATOR, INTEGER, 
                 KEYWORD, IDENTIFIER, SEPARATOR, STRING, SEPARATOR, 
                 IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, 
-                IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, INTEGER, 
+                IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, OPERATOR, INTEGER, 
                 KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
                 SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, 
                 OPERATOR, IDENTIFIER, SEPARATOR, INTEGER, SEPARATOR, 
@@ -437,7 +437,7 @@ class code_sample4 : public test_fixture {
             "\n")x=0
             -
             1write(x)
-            end whitespaces()
+            end whitespaces() --[[
             )";
 
             exp_types = {
@@ -547,8 +547,7 @@ class scanning_with_lookahead : public test_fixture {
             local s2 : string = s1 .. ", ktery jeste trochu obohatime"
             end
             end
-            main()
-            )";
+            main() --GSDAGDSA)";
 
             exp_types = {
                 KEYWORD, KEYWORD, STRING, KEYWORD, KEYWORD, 

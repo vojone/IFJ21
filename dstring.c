@@ -128,6 +128,11 @@ int str_cpy(char **dst, const char *src, size_t length) {
 }
 
 
+int str_cmp(const char *str1, const char *str2) {
+    return strcmp(str1, str2);
+}
+
+
 int get_chtype(const char c) {
     if(isalpha(c)) {
         return ALPHA;
@@ -145,5 +150,6 @@ int get_chtype(const char c) {
         return OTHER_CHARACTER;
     }
 }
+
 
 /***                             End of dstring.c                          ***/
