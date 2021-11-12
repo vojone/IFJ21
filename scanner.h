@@ -24,7 +24,9 @@
 #include "dstring.h"
 #include "tables.h"
 
-//All possible toke types
+/**
+ * @brief All possible token types
+ */
 typedef enum token_type {
     UNKNOWN,
     IDENTIFIER, 
@@ -38,34 +40,43 @@ typedef enum token_type {
     ERROR_TYPE
 } token_type_t;
 
-//All possible states of FSM ( = base of scanner impelemntation)
-//If token ends with _F suffix, that means, that state is finite
-typedef enum fsm_state {
-    INIT,
-    ID_F,
-    INT_F,
-    NUM_1, NUM_2, NUM_3, NUM_F,
-    COM_1, COM_2, COM_3, COM_4, COM_F,
-    STR_1, STR_2, STR_3, STR_4, STR_F,
-    SEP_F,
-    OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
-    EOF_F
-} fsm_state_t;
-
-//Token structure
+/**
+ * @brief Token structure
+ */ 
 typedef struct token {
     token_type_t token_type;
     void * attr;
 } token_t;
 
-//Data types for cursor coordinates
+/**
+ * @brief All possible states of FSM ( = base of scanner impelemntation)
+ * @note If token ends with _F suffix, that means, that state is finite
+ */ 
+typedef enum fsm_state {
+    INIT,
+    ID_F,
+    INT_F,
+    NUM_1, NUM_2, NUM_3, NUM_F,
+    COM_F1, COM_F2, COM_F3, COM_F4, COM_F5,
+    STR_1, STR_2, STR_3, STR_4, STR_F,
+    SEP_F,
+    OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
+    EOF_F,
+    STATE_NUM
+} fsm_state_t;
+
+/**
+ * @brief Data types for cursor coordinates
+ */ 
 typedef long unsigned int pos_t;
 
 typedef enum pos_indexes {
     ROW, COL, COORD_NUM
 } pos_indexes_t;
 
-//Scanner structure
+/**
+ * @brief Scanner structure
+ */ 
 typedef struct scanner {
     string_t str_buffer; /**< Temporary string buffer used for collecting value of token */
 
@@ -79,6 +90,24 @@ typedef struct scanner {
 
     fsm_state_t state; /** Current state of FSM */
 } scanner_t;
+
+/**
+ * @brief Transition function (type) that contains rules for changing 
+ *        automata state or choosing token type
+ */ 
+typedef void (*trans_func_t)(char, token_t *, scanner_t *);
+
+
+/**
+ * @brief Sets initial values to token structure
+ */ 
+void token_init(token_t *token);
+
+
+/**
+ * @brief Correctly frees resources holds by token and sets it to initial state
+ */ 
+void token_dtor(token_t *token);
 
 /**
  * @brief Reads characters from stdin (or from buffer) and tries to make token from it

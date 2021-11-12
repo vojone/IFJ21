@@ -51,6 +51,39 @@ int app_char(char c, string_t *string) {
 }
 
 
+int prep_char(char c, string_t *string) {
+    if(string->alloc_size - 1 < string->length + 1) {
+        size_t new_size = string->alloc_size*2;
+        string->str = (char *)realloc(string->str, sizeof(char)*new_size);
+        if(!string->str) {
+            fprintf(stderr, "dstring: str_init: Cannot extend string!");
+            return STR_FAILURE;
+        } 
+        string->alloc_size = new_size;
+    }
+
+    for(int i = strlen(string->str); i >= 0; i--) {
+        string->str[i + 1] = string->str[i];
+    }
+
+    string->str[0] = c;
+
+    return STR_SUCCESS;
+}
+
+
+int prep_str(string_t *dst, char *src) {
+    for(int i = strlen(src) - 1; i >= 0; i--) {
+        int ret = prep_char(src[i], dst);
+        if(ret == STR_FAILURE) {
+            return STR_FAILURE;
+        }
+    }
+
+    return STR_SUCCESS;
+}
+
+
 void str_clear(string_t *string) {
     string->str[0] = '\0';
     string->length = 0;
@@ -95,6 +128,11 @@ int str_cpy(char **dst, const char *src, size_t length) {
 }
 
 
+int str_cmp(const char *str1, const char *str2) {
+    return strcmp(str1, str2);
+}
+
+
 int get_chtype(const char c) {
     if(isalpha(c)) {
         return ALPHA;
@@ -112,5 +150,6 @@ int get_chtype(const char c) {
         return OTHER_CHARACTER;
     }
 }
+
 
 /***                             End of dstring.c                          ***/

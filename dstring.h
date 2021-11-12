@@ -28,6 +28,7 @@
 //Return codes of string processing functions
 #define STR_SUCCESS 0
 #define STR_FAILURE 1
+
  
 //String is implemented as dynamic array
 typedef struct string {
@@ -55,6 +56,10 @@ int str_init(string_t *string);
  * @return STR_SUCCESS if everything goes well
  */
 int app_char(char c, string_t *string);
+
+int prep_char(char c, string_t *string);
+
+int prep_str(string_t *dst, char *src);
 
 /**
  * @brief Brings string to the state after initialization  
@@ -93,6 +98,13 @@ int str_cpy(char **dst, const char *src, size_t length);
  * @brief returns type of character
  */
 int get_chtype(const char c);
+
+
+/**
+ * @brief Compares to strings and returns result as an integer (same as strcmp)
+ * @return 0 if strings are same
+ */ 
+int str_cmp(const char *str1, const char *str2);
 
 
 #endif

@@ -1,0 +1,74 @@
+<!--
+******************************************************************************
+ *                                  IFJ21
+ *                        ifj21-grammar-topdown.xml
+ * 
+ *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * Purpose: Source file of functions to process (dynamic) strings and chars
+ * 
+ *                    Last change: 02. 11. 2021
+ *****************************************************************************
+
+ * @file ifj21-grammar-topdown.xml
+ * @brief File for grammar definition for recursive descent parsing
+ * 
+ * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+-->
+
+<program>               -> <global-statement-list>  <!--Only require and functions basically-->
+
+<statement-list>        -> <statement> <statement-list>
+<statement-list>        -> [eps]
+<statement-list>        -> <function-call>
+
+<!-- require -->
+<global-statement>      -> require <str>
+
+<!-- VARIABLES -->
+<statement>             -> global [id] : [type] <value-assignment>
+<statement>             -> local  [id] : [type] <value-assignment>
+<value-assignment>      -> [eps]
+<value-assignment>      -> = <expression>
+<statement>             -> <assignment>
+<assignment>            -> [id] <multiple-assignment> <expression>
+<assignment>            -> [eps]       <!--remove later?-->
+<multiple-assignment>   -> =
+<multiple-assignment>   -> , [id] <multiple-assignment> <expression> ,
+
+<!--IF ELSE-->
+<statement>             -> if <expression> then <statement-list> <else-branch> end
+<else-branch>           -> [eps]
+<else-branch>           -> else <statement-list>
+
+<!--WHILE-->
+<statement>             -> while <expression> do <statement-list> end
+<while>
+
+<!--FUNCTIONS CALL-->
+<global-statement>      -> <function-call>
+<statement>             -> [function-id](<argument-list>)
+<argument-list>         -> <argument> <argument-list1>
+<argument-list>         -> [eps]
+<argument-list1>        -> <argument> <argument-list1>
+<argument-list1>        -> [eps]
+<argument>              -> <expression>
+
+<!--FUNCTIONS DEFINITION-->
+<global-statement-list> -> <global-statement> <global-statement-list>
+<global-statement>      -> function [id](<param-list>) <type-list> <statement-list> end
+<function-type-def>     -> [eps]
+<function-type-def>     -> <type-list>
+
+<param-list>            -> [id] : [type] <param-list-1>
+<param-list-1>          -> , [id] : [type] <param-list-1>
+<param-list-1>          -> eps
+<statement>             -> return <expression>
+
+<type-list>             -> [eps]
+<type-list>             -> : [type] <type-list-1>
+<type-list-1>           -> , [type] <type-list-1>
+<type-list-1>           -> [eps]
+
+<expression-list>       ->  <expression> <expression-list-1>
+<expression-list-1>     -> , <expression-list-1>
+<expression-list-1>     -> [eps]

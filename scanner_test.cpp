@@ -103,11 +103,7 @@ class test_fixture : public ::testing::Test {
 
                 ASSERT_EQ(exp_types[i], temp.token_type);
 
-                if(temp.token_type != KEYWORD && 
-                   temp.token_type != OPERATOR && 
-                   temp.token_type != SEPARATOR) {
-                    free(temp.attr);
-                }
+                token_dtor(&temp);
             }
         }
 
@@ -227,10 +223,10 @@ class lexical_errors : public test_fixture {
             R"(  ; ; ; ; === -200end"
             )";
             exp_types = {ERROR_TYPE, ERROR_TYPE, ERROR_TYPE, ERROR_TYPE,
-                        OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
+                        OPERATOR, OPERATOR, OPERATOR, ERROR_TYPE, IDENTIFIER, ERROR_TYPE,
                         EOF_TYPE};
 
-            exp_attrs = {";", ";", ";", ";", "==", "=", "-200e", "nd"};
+            exp_attrs = {";", ";", ";", ";", "==", "=", "-", "200e", "nd"};
         }
 };
 
@@ -331,7 +327,7 @@ class code_sample2 : public test_fixture {
                 KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER,
                 SEPARATOR, KEYWORD, SEPARATOR, SEPARATOR, KEYWORD,
                 KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD, 
-                KEYWORD, IDENTIFIER, INTEGER, KEYWORD, IDENTIFIER, 
+                KEYWORD, IDENTIFIER, OPERATOR, INTEGER, KEYWORD, IDENTIFIER, 
                 SEPARATOR, STRING, SEPARATOR, IDENTIFIER, SEPARATOR, 
                 KEYWORD, IDENTIFIER, SEPARATOR, IDENTIFIER, SEPARATOR, 
                 KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
@@ -339,7 +335,7 @@ class code_sample2 : public test_fixture {
                 KEYWORD, KEYWORD, IDENTIFIER, OPERATOR, INTEGER, 
                 KEYWORD, IDENTIFIER, SEPARATOR, STRING, SEPARATOR, 
                 IDENTIFIER, SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, 
-                IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, INTEGER, 
+                IDENTIFIER, SEPARATOR, KEYWORD, KEYWORD, OPERATOR, INTEGER, 
                 KEYWORD, KEYWORD, KEYWORD, IDENTIFIER, SEPARATOR, 
                 SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, KEYWORD, 
                 OPERATOR, IDENTIFIER, SEPARATOR, INTEGER, SEPARATOR, 
@@ -437,7 +433,7 @@ class code_sample4 : public test_fixture {
             "\n")x=0
             -
             1write(x)
-            end whitespaces()
+            end whitespaces() --[[
             )";
 
             exp_types = {
@@ -547,8 +543,7 @@ class scanning_with_lookahead : public test_fixture {
             local s2 : string = s1 .. ", ktery jeste trochu obohatime"
             end
             end
-            main()
-            )";
+            main() --GSDAGDSA)";
 
             exp_types = {
                 KEYWORD, KEYWORD, STRING, KEYWORD, KEYWORD, 
@@ -608,6 +603,33 @@ TEST_F(scanning_with_lookahead, types) {
     testTypes();
 }
 
+
+class comments : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            --[[Comment comment comment]]abc--def
+require--abc
+--[[
+asdfdsaf
+]]
+integer
+            )";
+
+            exp_types = {
+                IDENTIFIER, KEYWORD, KEYWORD, EOF_TYPE
+            };
+
+            exp_attrs = {
+                "abc", "require", "integer"
+            };
+        }
+};
+
+TEST_F(comments, types) {
+    testTypes();
+}
 
 
 int main(int argc, char **argv) {

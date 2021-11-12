@@ -1,0 +1,50 @@
+<!--
+******************************************************************************
+ *                                  IFJ21
+ *                        ifj21-grammar-bottomup.xml
+ * 
+ *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * Purpose: Source file of functions to process (dynamic) strings and chars
+ * 
+ *                    Last change: 02. 11. 2021
+ *****************************************************************************
+
+ * @file ifj21-grammar-bottomup.xml
+ * @brief File for grammar definition for bottom-up expression parsing
+ * 
+ * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+-->
+
+<!-- 'i' is a terminal. Any <[a-zA-Z0-9-]*> is a nonterminal -->
+<!-- 'i' can be function call, variable, numeric or string literal -->
+
+<E>     -> ( <E> )
+<E>     -> i
+
+<!--Arithmetic rules-->
+<E>     -> <E> + <E>
+<E>     -> <E> - <E>
+<E>     -> <E> * <E>
+<E>     -> <E> / <E>
+<E>     -> <E> // <E>
+
+<!--Unary operators-->
+<E>     -> #<E>
+<E>     -> _ <E> <!-- '_' is unary minus operator (in program it is '-') -->
+
+<!--Logical rules-->
+<E>     -> <E> < <E>
+<E>     -> <E> > <E>
+<E>     -> <E> <= <E>
+<E>     -> <E> >= <E>
+<E>     -> <E> == <E>
+<E>     -> <E> ~= <E>
+
+<!--Concat rule-->
+<E>     -> <E> .. <E>
+
+<!--Rules for function call parsing-->
+<E>             -> [function-id](<argument-list>)
+<argument-list> -> <argument> <argument-list>
+<argument-list> -> [eps]
+<argument>      -> <expression>
