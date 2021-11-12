@@ -249,6 +249,8 @@ bool parse_expression(scanner_t *sc) {
         if(current_token.token_type == ERROR_TYPE) {
             fprintf(stderr, "Lexical error: Not recognized token ! (\"%s\")\n", (char *)current_token.attr);
             pp_stack_dtor(&stack);
+            token_dtor(&last_token);
+            token_dtor(&current_token);
             return false;
         }
 
@@ -257,6 +259,8 @@ bool parse_expression(scanner_t *sc) {
 
         if(on_top == STOP_SYM && on_input == STOP_SYM) { /*There is end of the expression on input and stop symbol at the top of the stack*/
             pp_stack_dtor(&stack);
+            token_dtor(&last_token);
+            token_dtor(&current_token);
             return true;
         }
 
@@ -266,6 +270,7 @@ bool parse_expression(scanner_t *sc) {
         if(precedence == '=') {
             pp_push(&stack, on_input);
     
+            token_dtor(&last_token);
             last_token = current_token;
             current_token = get_next_token(sc);
         }
@@ -281,6 +286,7 @@ bool parse_expression(scanner_t *sc) {
     
             pp_push(&stack, on_input);
 
+            token_dtor(&last_token);
             last_token = current_token;
             current_token = get_next_token(sc);
         }
@@ -290,6 +296,8 @@ bool parse_expression(scanner_t *sc) {
             if(!is_reduced) {
                 fprintf(stderr, "Precedence parser: Cannot reduce the top of the stack!\n");
                 pp_stack_dtor(&stack);
+                token_dtor(&last_token);
+                token_dtor(&current_token);
                 return false;
             }
             else {
@@ -300,11 +308,15 @@ bool parse_expression(scanner_t *sc) {
         else {
             fprintf(stderr, "Precedence parser: Unallowed combination of symbols!\n");
             pp_stack_dtor(&stack);
+            token_dtor(&last_token);
+            token_dtor(&current_token);
             return false;
         }
     }
 
     pp_stack_dtor(&stack);
+    token_dtor(&last_token);
+    token_dtor(&current_token);
     return true;
 }
 
