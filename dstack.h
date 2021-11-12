@@ -22,6 +22,8 @@
 #ifndef H_DSTACK
 #define H_DSTACK
 
+#include "precedence_parser.h"
+
 #define ST_ERROR -1
 
 #define INIT_SIZE 16

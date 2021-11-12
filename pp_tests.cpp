@@ -80,7 +80,7 @@ class test_fixture : public :: testing :: Test {
 
         virtual void setData() {
             scanner_input = R"(
-                (a) - a * (-b + b) 
+                (a) -12 * (-1 + b) 
             )";
         }
 
@@ -100,12 +100,49 @@ class test_fixture : public :: testing :: Test {
         }
 };
 
-TEST_F(test_fixture, basic) {
+TEST_F(test_fixture, only_parse) {
     ASSERT_EQ(parse_expression(&uut), true);
 }
 
 
+class lexical_error : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a + ;b * 5 
+            )";
+        }
+};
 
+TEST_F(lexical_error, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), false);
+}
+
+class basic : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(8+8*42
+            )";
+        }
+};
+
+TEST_F(basic, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), true);
+}
+
+class str_parse : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(#("A".."B".."D".."C") + #("D".."E".."F".."G")
+            )";
+        }
+};
+
+TEST_F(str_parse, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), true);
+}
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

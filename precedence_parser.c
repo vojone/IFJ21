@@ -277,6 +277,7 @@ bool parse_expression(scanner_t *sc) {
             }
             else {
                 fprintf(stderr, "Reducted! On top:%d\n", pp_top(&stack));
+                //pp_show(&stack);
             }
         }
         else {
