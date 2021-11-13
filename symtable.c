@@ -22,8 +22,8 @@ void init_tab(symtab_t *tab) {
 
 /**
  * @brief Searches for symbol table with specific key
- * @param tab Symbol table in which should be searching executed
- * @param key Key of element that should be found
+ * @param tab symbol table in which should be searching executed
+ * @param key key of element that should be found
  * @return Pointer to found symbol or NULL
  */ 
 tree_node_t *search(symtab_t *tab, const char *key) {
@@ -45,8 +45,8 @@ tree_node_t *search(symtab_t *tab, const char *key) {
 
 /**
  * @brief Inserts a new element into existing symbol table 
- * @param tab Destination table
- * @param key Key of new element
+ * @param tab destination table
+ * @param key key of new element
  */ 
 void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
     bool was_inserted = false;
@@ -81,7 +81,11 @@ void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
     }
 }
 
-
+/**
+ * @brief Replaces deleted element with two children by rightmost element
+ * @param tab destination table
+ * @param target replaced element
+ */
 void replace_by_rightmost(tree_node_t *target, tree_node_t **tab) {
     if(*tab == NULL) {
         return;
@@ -107,11 +111,10 @@ void replace_by_rightmost(tree_node_t *target, tree_node_t **tab) {
     free(temp);
 }
 
-
 /**
  * @brief Deletes element with specific key and frees all its resources
- * @param tab Destination table
- * @param key Key of element to be deleted
+ * @param tab destination table
+ * @param key key of element to be deleted
  */ 
 void delete_sym(symtab_t *tab, const char *key) {
 	while(*tab) {
@@ -145,10 +148,9 @@ void delete_sym(symtab_t *tab, const char *key) {
     }
 }
 
-
 /**
- * @brief Deletetes whole symbol table and correctly frees its resources
- * @param tab Symbol table to be deleted
+ * @brief Deletetes the entire symbol table and correctly frees its resources
+ * @param tab symbol table to be deleted
  */ 
 void destroy_tab(tree_node_t **tab) {
     ts_stack_t stack;
@@ -174,6 +176,5 @@ void destroy_tab(tree_node_t **tab) {
 
   ts_stack_dtor(&stack);
 }
-
 
 /***                          End of symtable.c                            ***/
