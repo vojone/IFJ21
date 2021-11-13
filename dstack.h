@@ -24,7 +24,6 @@
 
 #include "precedence_parser.h"
 
-#define ST_ERROR -1  /**<Error return code for stack operations*/
 
 #define INIT_SIZE 16 /**< Initial size of stack (after initialization)*/
 
@@ -87,7 +86,9 @@ void NAME##_show(NAME##_stack_t *s);                        \
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DECLARATIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DSTACK_DECL(int, pp)
+//DSTACK_DECL(int, pp)
+DSTACK_DECL(exp_el_t, pp)
+DSTACK_DECL(exp_el_t, pp_op)
 
 #endif
 

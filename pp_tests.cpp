@@ -184,6 +184,46 @@ TEST_F(parenthesis_err, only_parse) {
     ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
 }
 
+
+class op_err1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(42++42
+            )";
+        }
+};
+
+TEST_F(op_err1, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+class op_err2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(42**42
+            )";
+        }
+};
+
+TEST_F(op_err2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+class op_ok : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(42//42--42
+            )";
+        }
+};
+
+TEST_F(op_ok, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
