@@ -23,6 +23,7 @@
 #define H_DSTACK
 
 #include "precedence_parser.h"
+#include "symtable.h"
 
 
 #define INIT_SIZE 16 /**< Initial size of stack (after initialization)*/
@@ -89,6 +90,8 @@ void NAME##_show(NAME##_stack_t *s);                        \
 //DSTACK_DECL(int, pp)
 DSTACK_DECL(exp_el_t, pp)
 DSTACK_DECL(exp_el_t, pp_op)
+
+DSTACK_DECL(tree_node_t*, ts)
 
 #endif
 

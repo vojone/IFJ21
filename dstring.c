@@ -127,9 +127,26 @@ int str_cpy(char **dst, const char *src, size_t length) {
     return STR_SUCCESS;
 }
 
+int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
+    str_clear(dst); //Length of source + \0
+    for(size_t i = 0; i < length; i++) {
+        if(app_char(src[i], dst) == STR_FAILURE) {
+            fprintf(stderr, "dstring: str_cpy: Cannot copy a string!");
+            return STR_FAILURE;
+        }
+    }
+    
+    return STR_SUCCESS;
+}
+
 
 int str_cmp(const char *str1, const char *str2) {
     return strcmp(str1, str2);
+}
+
+
+int dstring_cmp(string_t* str1, string_t* str2) {
+    return strcmp(str1->str, str2->str);
 }
 
 
