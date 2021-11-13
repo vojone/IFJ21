@@ -112,7 +112,7 @@ TEST_F(empty_symtable, set) {
 }
 
 
-class normal_tests : public ::testing::Test {
+class normal_tests1 : public ::testing::Test {
     protected:
         symtab_t uut;
         std::vector<sym_data_t> symbols = {
@@ -143,7 +143,7 @@ class normal_tests : public ::testing::Test {
 };
 
 
-TEST_F(normal_tests, search) {
+TEST_F(normal_tests1, search) {
     for(size_t i = 0; i < symbols.size(); i++) {
         tree_node_t* current = search(&uut, symbols[i].name);
         ASSERT_EQ(strcmp(current->key, symbols[i].name), 0);
@@ -151,7 +151,7 @@ TEST_F(normal_tests, search) {
 }
 
 
-TEST_F(normal_tests, delete_test) {
+TEST_F(normal_tests1, delete_test) {
     delete_sym(&uut, symbols[0].name);
     ASSERT_EQ(search(&uut, symbols[0].name), (void *)NULL);
     ASSERT_NE(search(&uut, symbols[1].name), (void *)NULL);
@@ -161,9 +161,70 @@ TEST_F(normal_tests, delete_test) {
 }
 
 
-TEST_F(normal_tests, dispose_whole_table) {
+TEST_F(normal_tests1, dispose_whole_table) {
     destroy_tab(&uut);
     ASSERT_EQ(uut, (void *)NULL);
+}
+
+
+class normal_tests2 : public ::testing::Test {
+    protected:
+        symtab_t uut;
+        std::vector<sym_data_t> symbols = {
+            {(char *)"F", FUNC, INT, DECLARED},
+            {(char *)"B", VAR, INT, DECLARED},
+            {(char *)"C", VAR, INT, DEFINED},
+            {(char *)"A", VAR, NUM, DECLARED},
+            {(char *)"E", VAR, STR, USED},
+            {(char *)"D", VAR, STR, USED},
+        };
+
+    virtual void SetUp() {
+        init_tab(&uut);
+        for(size_t i = 0; i < symbols.size(); i++) {
+            insert_sym(&uut, symbols[i].name, symbols[i]);
+        }
+        
+    }
+
+    virtual void TearDown() {
+        if(verbose_mode) {
+            print_tab(uut);
+        }
+
+        if(uut != NULL) {
+            destroy_tab(&uut);
+        }
+    }
+};
+
+
+TEST_F(normal_tests2, delete_test) {
+    delete_sym(&uut, "B"); //Deletion of node with both subtrees
+    ASSERT_NE(search(&uut, "A"), (void *)NULL);
+    ASSERT_NE(search(&uut, "E"), (void *)NULL);
+    ASSERT_NE(search(&uut, "C"), (void *)NULL);
+    ASSERT_NE(search(&uut, "F"), (void *)NULL);
+    ASSERT_NE(search(&uut, "D"), (void *)NULL);
+
+    delete_sym(&uut, "E");
+    ASSERT_NE(search(&uut, "A"), (void *)NULL);
+    ASSERT_NE(search(&uut, "C"), (void *)NULL);
+    ASSERT_NE(search(&uut, "F"), (void *)NULL);
+    ASSERT_NE(search(&uut, "D"), (void *)NULL);
+
+    delete_sym(&uut, "F");
+    ASSERT_NE(search(&uut, "A"), (void *)NULL);
+    ASSERT_NE(search(&uut, "C"), (void *)NULL);
+    ASSERT_NE(search(&uut, "D"), (void *)NULL);
+
+    destroy_tab(&uut);
+    ASSERT_EQ(uut, (void *)NULL);
+}
+
+TEST_F(normal_tests2, insert_test) {
+    insert_sym(&uut, "Blue", {(char*)"Blue", VAR, INT, DECLARED});
+    ASSERT_NE(search(&uut, "Blue"), (void *)NULL);
 }
 
 

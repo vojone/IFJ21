@@ -32,7 +32,7 @@ tree_node_t *search(symtab_t *tab, const char *key) {
         if(comparison_result == 0) {
             break;
         }
-        else if(comparison_result < 0) {
+        else if(comparison_result > 0) {
             tab = &(*tab)->l_ptr;
         }
         else {
@@ -56,7 +56,7 @@ void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
             (*tab)->data = newdata;
             was_inserted = true;
         }
-        else if(comparison_result < 0) {
+        else if(comparison_result > 0) {
             tab = &(*tab)->l_ptr;
         }
         else {
@@ -136,7 +136,7 @@ void delete_sym(symtab_t *tab, const char *key) {
                 free(to_be_deleted);
             }
         }
-        else if(comparison_result < 0) {
+        else if(comparison_result > 0) {
             tab = &(*tab)->l_ptr;
         }
         else {
