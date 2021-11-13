@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "dstack.h"
+#include "symtable.h"
 
 #ifndef PRECEDENCE_PARSER_H
 #define PRECEDENCE_PARSER_H
@@ -39,20 +40,24 @@ typedef enum grm_sym_type {
 } grm_sym_type_t;
 
 #define NON_TERM TERM_NUM /**< Nonterminal symbol */
-#define LOWER 
-#define GREATER 
-#define SAME 
-
-#define NONE -1 /**< Says that operator doesn't have any operands */
 
 /**
  * @brief Structure that represents element in expression
  */ 
-typedef struct exp_el {
+typedef struct expr_el {
     grm_sym_type_t type; /**< Determines type of element (and it is index to precedence table) */
+    sym_dtype_t dtype; /**< Data type of element in expression (string, integer, number) */
     void *value; /**< Value of element (or pointer to symbol table) */
-    int left_op_type, right_op_type; /**< Data type of left and right operand (MAX number of operands is 2)*/
-} exp_el_t;
+} expr_el_t;
+
+
+#define ORIGIN -1 /**< Says that after reduction has nonterminal oriiginal data typ (e.g. ("abc") -> E.type = STR) */
+
+typedef struct expr_rule {
+    char * right_side;
+    char * operator_types; /**< Specification of operator types*/
+    sym_dtype_t return_type;
+} expr_rule_t;
 
 int parse_expression(scanner_t *sc);
 

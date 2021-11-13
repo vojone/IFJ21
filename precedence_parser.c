@@ -99,9 +99,28 @@ int tok_to_type(token_t *last_token, token_t * token) {
     return PP_ERROR;
 }
 
-exp_el_t from_input_token(token_t *last, token_t *current) {
-    exp_el_t result;
+expr_el_t from_input_token(token_t *last, token_t *current) {
+    expr_el_t result;
     result.type = tok_to_type(last, current);
+    
+    switch (current->token_type)
+    {
+    case INTEGER:
+        result.dtype = INT;
+        break;
+    case NUMBER:
+        result.dtype = NUM;
+        break;
+    case STRING:
+        result.dtype = STR;
+        break;
+    case IDENTIFIER:
+        result.dtype = NUM;
+        break;
+    default:
+        result.dtype = 123;
+        break;
+    }
 
     result.value = current->attr;
 
@@ -111,7 +130,7 @@ exp_el_t from_input_token(token_t *last, token_t *current) {
 /**
  * @brief Contains precedence table of operators in IFJ21
  */ 
-char get_precedence(exp_el_t on_stack_top, exp_el_t on_input) {
+char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
     static char precedence_table[TERM_NUM][TERM_NUM] = {
     //   #    _   *   /   //  +   -  ..   <  <=  >  >=  ==  ~=   (   )   i   $
 /*#*/  {'>','>','>','>','>','>','>','>','>','>','>','>','>','>','<','>','<','>'}, 
@@ -140,7 +159,7 @@ char get_precedence(exp_el_t on_stack_top, exp_el_t on_input) {
 /**
  * @brief Additional function to get real expression element from enum type
  */ 
-char *to_char_seqence(exp_el_t expression_element) {
+char *to_char_seqence(expr_el_t expression_element) {
     static char * right_sides[] = {
         "#",
         "_",
@@ -170,28 +189,99 @@ char *to_char_seqence(exp_el_t expression_element) {
 /**
  * @brief Contains rules of reduction on top of the pp_stack
  */ 
-char *get_rule(unsigned int index) {
-    static char * right_sides[] = {
-        "(E)",
-        "i",
-        "E+E",
-        "E-E",
-        "E*E",
-        "E/E",
-        "E//E",
-        "#E",
-        "_E",
-        "<E",
-        ">E",
-        "E<=E",
-        "E>=E",
-        "E==E",
-        "E~=E",
-        "E..E",
-        NULL
+expr_rule_t *get_rule(unsigned int index) {
+    static expr_rule_t rules[] = {
+        {"(E)", "*", ORIGIN},
+        {"i", "*", ORIGIN},
+        {"E+E", "ni|ni", ORIGIN},
+        {"E-E", "ni|ni", ORIGIN},
+        {"E*E", "ni|ni", ORIGIN},
+        {"E/E", "ni|ni", ORIGIN},
+        {"E//E", "ni|ni", ORIGIN},
+        {"_E", "ni", ORIGIN},
+        {"#E", "s", INT},
+        {"E<E", "ni(s|ni", INT},
+        {"E>E", "ni(s|ni", INT},
+        {"E<=E", "ni(s|ni", INT},
+        {"E>=E", "ni(s|ni", INT},
+        {"E==E", "ni(s|ni", INT},
+        {"E~=E", "ni(s|ni", INT},
+        {"E..E", "s|s", STR},
+        {NULL, NULL, NUM}
     };
 
-    return right_sides[index];
+    return &(rules[index]);
+}
+
+sym_dtype_t char_to_dtype(char type_c) {
+    sym_dtype_t type;
+    switch (type_c)
+    {
+    case 'n':
+        type = NUM;
+        break;
+    case 'i':
+        type = INT;
+        break;
+    case 's':
+        type = STR;
+        break;
+    default:
+        type = UNDEFINED;
+    }
+
+    return type;
+}
+
+bool type_check(pp_op_stack_t *op_stack, expr_rule_t *rule, sym_dtype_t* res) {
+    expr_el_t current = pp_op_pop(op_stack);
+    fprintf(stderr, "%d\n", current.dtype);
+
+    bool is_ok = false;
+    sym_dtype_t res_type = rule->return_type, must_be = ORIGIN;
+    char c;
+    for(int i = 0; (c = rule->operator_types[i]) != '\0' ; i++) {
+        if(c == '|' && !is_ok) { //Cannot found corresponding symbol for current datatype in rule
+            *res = res_type;
+            return false;
+        }
+        else if(c == '|') {
+            if(!pp_op_is_empty(op_stack)) {
+                current = pp_op_pop(op_stack);
+                is_ok = false;
+                fprintf(stderr, "%d\n", current.dtype);
+            }
+            else {
+                *res = res_type;
+                return false;
+            }
+        }
+        else if(c == '(') {
+            char next_char = rule->operator_types[i + 1];
+            must_be = char_to_dtype(next_char);
+        }
+        
+       if(must_be != ORIGIN) {
+            if(current.dtype == must_be) {
+                is_ok = true;
+            }
+        }
+        else {
+            if(c == '*' || current.dtype == char_to_dtype(c)) {
+                is_ok = true;
+            }
+        }
+
+        if(is_ok) {
+            if(res_type == ORIGIN || //Result of operation will have same type as his operators
+               (res_type == INT && current.dtype == NUM)) { //If at least on operan is NUM result type is num 
+                res_type = current.dtype;
+            }
+        }
+    }
+
+    *res = res_type;
+    return true;
 }
 
 /**
@@ -201,17 +291,19 @@ bool reduce_top(pp_stack_t *s) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
-    pp_op_stack_t operand_stack;
-    pp_op_stack_init(&operand_stack);
+    pp_op_stack_t operands;
+    pp_op_stack_init(&operands);
 
-    exp_el_t from_top;
+    expr_el_t from_top;
     while((from_top = pp_top(s)).type != STOP_SYM) {
         if(from_top.type == '<') {
             pp_pop(s);
             break;
         }
 
-
+        if(from_top.type == NON_TERM || from_top.type == OPERAND) {
+            pp_op_push(&operands, from_top);
+        }
 
         char *char_seq = to_char_seqence(from_top);
         prep_str(&to_be_reduced, char_seq);
@@ -219,37 +311,41 @@ bool reduce_top(pp_stack_t *s) {
     }
 
 
-    for(int i = 0; get_rule(i); i++) {
-        if(strcmp(to_str(&to_be_reduced), get_rule(i)) == 0) {
-            fprintf(stderr, "REDUCED: %s\n", get_rule(i));
+    for(int i = 0; get_rule(i)->right_side; i++) {
+        if(strcmp(to_str(&to_be_reduced), get_rule(i)->right_side) == 0) {
+            fprintf(stderr, "REDUCED: %s\n", get_rule(i)->right_side);
+
+            sym_dtype_t result_type;
+            bool ok = type_check(&operands, get_rule(i), &result_type);
+            fprintf(stderr, "=%d %d\n", ok, result_type);
+            pp_op_stack_dtor(&operands);
             str_dtor(&to_be_reduced);
 
-            exp_el_t non_terminal;
+            expr_el_t non_terminal;
             non_terminal.type = NON_TERM;
+            non_terminal.dtype = result_type;
             pp_push(s, non_terminal);
             return true;
         }
     }
 
-    pp_op_stack_dtor(&operand_stack);
+    pp_op_stack_dtor(&operands);
     str_dtor(&to_be_reduced);
     return false;
 }
 
-exp_el_t stop_symbol() {
-    exp_el_t stop_symbol;
+expr_el_t stop_symbol() {
+    expr_el_t stop_symbol;
 
     stop_symbol.type = STOP_SYM;
+    stop_symbol.dtype = NUM;
     stop_symbol.value = NULL;
-
-    stop_symbol.right_op_type = NONE;
-    stop_symbol.left_op_type = NONE;
 
     return stop_symbol;
 }
 
-exp_el_t prec_sign(char sign) {
-    exp_el_t precedence_sign;
+expr_el_t prec_sign(char sign) {
+    expr_el_t precedence_sign;
     switch(sign) {
         case '<':
             precedence_sign.type = '<';
@@ -266,9 +362,7 @@ exp_el_t prec_sign(char sign) {
     }
 
     precedence_sign.value = NULL;
-
-    precedence_sign.right_op_type = NONE;
-    precedence_sign.left_op_type = NONE;
+    precedence_sign.dtype = NUM;
 
     return precedence_sign;
 }
@@ -276,8 +370,8 @@ exp_el_t prec_sign(char sign) {
 /**
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  */ 
-exp_el_t get_input_symbol(token_t *last, token_t *current) {
-    exp_el_t on_input;
+expr_el_t get_input_symbol(token_t *last, token_t *current) {
+    expr_el_t on_input;
     if(is_EOE(current)) {
         on_input = stop_symbol();
     }
@@ -291,9 +385,9 @@ exp_el_t get_input_symbol(token_t *last, token_t *current) {
 /**
  * @brief Gets first nonterminal from top of the stack (There can't be sequence of them) 
  */ 
-exp_el_t get_top_symbol(pp_stack_t *stack) {
-    exp_el_t on_top = pp_top(stack);
-    exp_el_t tmp;
+expr_el_t get_top_symbol(pp_stack_t *stack) {
+    expr_el_t on_top = pp_top(stack);
+    expr_el_t tmp;
     if(on_top.type == NON_TERM) {
         tmp = pp_pop(stack);
         on_top = pp_pop(stack);
@@ -328,8 +422,8 @@ void token_aging(scanner_t *sc, token_t *last, token_t *cur) {
 /**
  * @brief Does necessary actions when stack top has lower precedence than input
  */ 
-void has_lower_prec(pp_stack_t *stack, exp_el_t on_input) {
-    exp_el_t top = pp_top(stack);
+void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
+    expr_el_t top = pp_top(stack);
     if(top.type == NON_TERM) {
         pp_pop(stack);
         pp_push(stack, prec_sign('<'));
@@ -383,8 +477,8 @@ int parse_expression(scanner_t *sc) {
             return LEXICAL_ERROR;
         }
 
-        exp_el_t on_input = get_input_symbol(&last_token, &current_token);
-        exp_el_t on_top = get_top_symbol(&stack);
+        expr_el_t on_input = get_input_symbol(&last_token, &current_token);
+        expr_el_t on_top = get_top_symbol(&stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
             free_everything(&stack, &last_token, &current_token);
