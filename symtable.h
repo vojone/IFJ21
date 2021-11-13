@@ -92,7 +92,7 @@ void delete_sym(symtab_t *tab, const char *key);
 void replace_rightmost(symtab_t *tab, symtab_t *target);
 
 /**
- * @brief Deletetes whole symbol table and correctly frees its resources
+ * @brief Deletetes the entire symbol table and correctly frees its resources
  * @param tab symbol table to be deleted
  */ 
 void destroy_tab(symtab_t *tab);
