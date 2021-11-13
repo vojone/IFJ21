@@ -36,7 +36,7 @@ bool is_unary_minus(token_t *last_token) {
 }
 
 /**
- * @brief Transforms token to symbol used in precedence parser (see grm_sym_type_t in .h)
+ * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
  */ 
 int tok_to_type(token_t *last_token, token_t * token) {
     if(token->token_type == IDENTIFIER || token->token_type == NUMBER ||
@@ -82,7 +82,7 @@ int tok_to_type(token_t *last_token, token_t * token) {
                 return EQ;
             }
 
-            return PP_ERROR;
+            return UNDEFINED;
         case '~':
             return NOTEQ;
         case '(':
@@ -92,13 +92,16 @@ int tok_to_type(token_t *last_token, token_t * token) {
         case '.':
             return CONCAT;
         default:
-            return PP_ERROR;
+            return UNDEFINED;
         }
     }//switch(first_ch)
 
-    return PP_ERROR;
+    return UNDEFINED;
 }
 
+/**
+ * @brief Creates expression element from current and last token
+ */ 
 expr_el_t from_input_token(token_t *last, token_t *current) {
     expr_el_t result;
     result.type = tok_to_type(last, current);
@@ -118,13 +121,52 @@ expr_el_t from_input_token(token_t *last, token_t *current) {
         result.dtype = NUM;
         break;
     default:
-        result.dtype = 123;
+        result.dtype = UNDEFINED;
         break;
     }
 
     result.value = current->attr;
 
     return result;
+}
+
+/**
+ * @brief Creates stop symbol and initializes it
+ */ 
+expr_el_t stop_symbol() {
+    expr_el_t stop_symbol;
+
+    stop_symbol.type = STOP_SYM;
+    stop_symbol.dtype = UNDEFINED;
+    stop_symbol.value = NULL;
+
+    return stop_symbol;
+}
+
+/**
+ * @brief Creates precedence sign due to given parameter and initializes it
+ */ 
+expr_el_t prec_sign(char sign) {
+    expr_el_t precedence_sign;
+    switch(sign) {
+        case '<':
+            precedence_sign.type = '<';
+            break;
+        case '>':
+            precedence_sign.type = '>';
+            break;
+        case '=':
+            precedence_sign.type = '=';
+            break;
+        default:
+            precedence_sign.type = '<';
+            break;
+    }
+
+    precedence_sign.value = NULL;
+    precedence_sign.dtype = UNDEFINED;
+
+    return precedence_sign;
 }
 
 /**
@@ -160,37 +202,31 @@ char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
  * @brief Additional function to get real expression element from enum type
  */ 
 char *to_char_seqence(expr_el_t expression_element) {
-    static char * right_sides[] = {
-        "#",
-        "_",
-        "*",
-        "/",
-        "//",
-        "+",
-        "-",
-        "..",
-        "<",
-        "<=",
-        ">",
-        ">=",
-        "==",
-        "~=",
-        "(",
-        ")",
-        "i",
-        "$",
-        "E",
-        NULL
+    static char * cher_seq[] = {
+        "#", "_", "*", "/", "//", "+", "-", "..", "<", "<=", 
+        ">", ">=", "==", "~=", "(", ")", "i", "$", "E", NULL
     };
 
-    return right_sides[expression_element.type];
+    return cher_seq[expression_element.type];
 }
 
 /**
- * @brief Contains rules of reduction on top of the pp_stack
+ * @brief Contains rules of reduction on top of the pp_stack, operand possibilities and return data type of reduction
+ * @note For explaning possible operands is used specific string:
+ *       | separates possibilities for operands
+ *       * every data type
+ *       n number
+ *       i integer
+ *       s string
+ *       ( types symbols after it defines type for resting operators (integer and number are compatible)
+ *       Example: (nis|nis = First and sec operand can be number/integer/string and if it's e. g. string second must be string too
  */ 
 expr_rule_t *get_rule(unsigned int index) {
-    static expr_rule_t rules[] = {
+    if(index > REDUCTION_RULES_NUM) { //Safety check
+        return NULL;
+    }
+
+    static expr_rule_t rules[REDUCTION_RULES_NUM] = {
         {"(E)", "*", ORIGIN},
         {"i", "*", ORIGIN},
         {"E+E", "ni|ni", ORIGIN},
@@ -200,19 +236,21 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E//E", "ni|ni", ORIGIN},
         {"_E", "ni", ORIGIN},
         {"#E", "s", INT},
-        {"E<E", "ni(s|ni", INT},
-        {"E>E", "ni(s|ni", INT},
-        {"E<=E", "ni(s|ni", INT},
-        {"E>=E", "ni(s|ni", INT},
-        {"E==E", "ni(s|ni", INT},
-        {"E~=E", "ni(s|ni", INT},
+        {"E<E", "(nis|nis", INT},
+        {"E>E", "(nis|nis", INT},
+        {"E<=E", "(nis|nis", INT},
+        {"E>=E", "(nis|nis", INT},
+        {"E==E", "(nis|nis", INT},
+        {"E~=E", "(nis|nis", INT},
         {"E..E", "s|s", STR},
-        {NULL, NULL, NUM}
     };
 
     return &(rules[index]);
 }
 
+/**
+ * @brief Converts character used in operand type grammar in get_rule() to sym_dtype enum
+ */ 
 sym_dtype_t char_to_dtype(char type_c) {
     sym_dtype_t type;
     switch (type_c)
@@ -233,55 +271,112 @@ sym_dtype_t char_to_dtype(char type_c) {
     return type;
 }
 
-bool type_check(pp_op_stack_t *op_stack, expr_rule_t *rule, sym_dtype_t* res) {
-    expr_el_t current = pp_op_pop(op_stack);
-    fprintf(stderr, "%d\n", current.dtype);
+/**
+ * @brief Pops operand stack if it is not empty
+ */ 
+expr_el_t safe_op_pop(bool *cur_ok, bool* check_res, pp_stack_t *op_stack) {
+    if(!pp_is_empty(op_stack)) {
+        *cur_ok = false;
+        return pp_pop(op_stack);
+    }
+    else {
+        *cur_ok = false;
+        return stop_symbol();
+    }
+}
 
-    bool is_ok = false;
-    sym_dtype_t res_type = rule->return_type, must_be = ORIGIN;
-    char c;
-    for(int i = 0; (c = rule->operator_types[i]) != '\0' ; i++) {
-        if(c == '|' && !is_ok) { //Cannot found corresponding symbol for current datatype in rule
-            *res = res_type;
-            return false;
-        }
-        else if(c == '|') {
-            if(!pp_op_is_empty(op_stack)) {
-                current = pp_op_pop(op_stack);
-                is_ok = false;
-                fprintf(stderr, "%d\n", current.dtype);
-            }
-            else {
-                *res = res_type;
-                return false;
-            }
-        }
-        else if(c == '(') {
-            char next_char = rule->operator_types[i + 1];
-            must_be = char_to_dtype(next_char);
-        }
-        
-       if(must_be != ORIGIN) {
-            if(current.dtype == must_be) {
-                is_ok = true;
-            }
-        }
-        else {
-            if(c == '*' || current.dtype == char_to_dtype(c)) {
-                is_ok = true;
-            }
-        }
+/**
+ * @brief Returns true if two types are compatible
+ */ 
+bool is_compatible(sym_dtype_t dtype1, sym_dtype_t dtype2) {
+    return (dtype1 == dtype2) ||
+           (dtype1 == NUM && dtype2 == INT) || 
+           (dtype2 == NUM && dtype1 == INT);
+}
 
-        if(is_ok) {
-            if(res_type == ORIGIN || //Result of operation will have same type as his operators
-               (res_type == INT && current.dtype == NUM)) { //If at least on operan is NUM result type is num 
-                res_type = current.dtype;
-            }
+/**
+ * @brief Resolves which data type attribut should have newly created nonterminal on stack
+ */ 
+void resolve_res_type(sym_dtype_t *res, expr_rule_t *rule, 
+                      expr_el_t cur_op, bool cur_ok) {
+
+    if(*res == UNDEFINED) {
+        if(cur_ok) {
+            *res = cur_op.dtype;
         }
     }
+    
+    if(rule->return_type != UNDEFINED) {
+        *res = rule->return_type;
+    }
+    else if(cur_op.dtype == NUM && *res == INT) {
+        *res = NUM;
+    }
+}
 
-    *res = res_type;
-    return true;
+bool type_check(pp_stack_t *op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
+
+    expr_el_t current = pp_pop(op_stack);
+    bool is_curr_op_ok = false, must_be_flag = false, result = true;
+    sym_dtype_t tmp_res_type = rule->return_type, must_be = UNDEFINED;
+
+    char c;
+    for(int i = 0; (c = rule->operator_types[i]) != '\0'; i++) {
+        if(c == '|' && !is_curr_op_ok) { //Cannot found corresponding symbol for current datatype in rule
+            result = false;
+            break;
+        }
+        else if(c == '|' || c == '(') {
+            if(c == '|')
+                current = safe_op_pop(&is_curr_op_ok, &result, op_stack);
+            else
+                must_be_flag = true;
+
+            continue;
+        }
+
+        //Operand before current op. defined type of resting operands
+        if(must_be_flag && 
+          (is_compatible(current.dtype, must_be) || must_be == UNDEFINED)) {
+            is_curr_op_ok = true;
+            if(must_be == UNDEFINED && current.dtype == char_to_dtype(c)) {
+                must_be = current.dtype;
+            }
+        }
+        else if(!must_be_flag) { 
+            if(c == '*' || current.dtype == char_to_dtype(c)) {
+                is_curr_op_ok = true; //Operand type corresponds with current possiblity
+            }
+        }
+
+        resolve_res_type(&tmp_res_type, rule, current, is_curr_op_ok);
+    }
+
+    result = (!is_curr_op_ok && c == '\0') ?  false : result;
+
+    *res_t = tmp_res_type;
+    return result;
+}
+
+/**
+ * @brief Gets from top of the stack sequence that will be reduced
+ */ 
+void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
+    expr_el_t from_top;
+    while((from_top = pp_top(s)).type != STOP_SYM) {
+        if(from_top.type == '<') {
+            pp_pop(s);
+            break;
+        }
+
+        if(from_top.type == NON_TERM || from_top.type == OPERAND) {
+            pp_push(op, from_top);
+        }
+
+        char *char_seq = to_char_seqence(from_top);
+        prep_str(to_be_red, char_seq);
+        pp_pop(s);
+    }
 }
 
 /**
@@ -291,35 +386,21 @@ bool reduce_top(pp_stack_t *s) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
-    pp_op_stack_t operands;
-    pp_op_stack_init(&operands);
+    pp_stack_t operands;
+    pp_stack_init(&operands);
 
-    expr_el_t from_top;
-    while((from_top = pp_top(s)).type != STOP_SYM) {
-        if(from_top.type == '<') {
-            pp_pop(s);
-            break;
-        }
-
-        if(from_top.type == NON_TERM || from_top.type == OPERAND) {
-            pp_op_push(&operands, from_top);
-        }
-
-        char *char_seq = to_char_seqence(from_top);
-        prep_str(&to_be_reduced, char_seq);
-        pp_pop(s);
-    }
-
+    get_str_to_reduction(s, &operands, &to_be_reduced);
 
     for(int i = 0; get_rule(i)->right_side; i++) {
         if(strcmp(to_str(&to_be_reduced), get_rule(i)->right_side) == 0) {
-            fprintf(stderr, "REDUCED: %s\n", get_rule(i)->right_side);
-
             sym_dtype_t result_type;
-            bool ok = type_check(&operands, get_rule(i), &result_type);
-            fprintf(stderr, "=%d %d\n", ok, result_type);
-            pp_op_stack_dtor(&operands);
+            bool type_check_result = type_check(&operands, get_rule(i), &result_type);
+
+            pp_stack_dtor(&operands);
             str_dtor(&to_be_reduced);
+            if(!type_check_result) {
+                return false;
+            }
 
             expr_el_t non_terminal;
             non_terminal.type = NON_TERM;
@@ -329,43 +410,11 @@ bool reduce_top(pp_stack_t *s) {
         }
     }
 
-    pp_op_stack_dtor(&operands);
+    pp_stack_dtor(&operands);
     str_dtor(&to_be_reduced);
     return false;
 }
 
-expr_el_t stop_symbol() {
-    expr_el_t stop_symbol;
-
-    stop_symbol.type = STOP_SYM;
-    stop_symbol.dtype = NUM;
-    stop_symbol.value = NULL;
-
-    return stop_symbol;
-}
-
-expr_el_t prec_sign(char sign) {
-    expr_el_t precedence_sign;
-    switch(sign) {
-        case '<':
-            precedence_sign.type = '<';
-            break;
-        case '>':
-            precedence_sign.type = '>';
-            break;
-        case '=':
-            precedence_sign.type = '=';
-            break;
-        default:
-            precedence_sign.type = '<';
-            break;
-    }
-
-    precedence_sign.value = NULL;
-    precedence_sign.dtype = NUM;
-
-    return precedence_sign;
-}
 
 /**
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)

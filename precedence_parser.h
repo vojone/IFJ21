@@ -18,17 +18,16 @@
 #ifndef PRECEDENCE_PARSER_H
 #define PRECEDENCE_PARSER_H
 
-#define PP_ERROR -1
-
 /**
  * @brief Return codes
  */ 
 
-#define UNDEFINED -1
+
 #define EXPRESSION_SUCCESS 0
 #define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
 #define INTERNAL_ERROR 99
+
 
 /**
  * @brief Type of element in expression (and in operator grammar)
@@ -50,9 +49,11 @@ typedef struct expr_el {
     void *value; /**< Value of element (or pointer to symbol table) */
 } expr_el_t;
 
-
+#define UNDEFINED -1
 #define ORIGIN -1 /**< Says that after reduction has nonterminal oriiginal data typ (e.g. ("abc") -> E.type = STR) */
 
+
+#define REDUCTION_RULES_NUM 17
 typedef struct expr_rule {
     char * right_side;
     char * operator_types; /**< Specification of operator types*/

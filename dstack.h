@@ -89,7 +89,6 @@ void NAME##_show(NAME##_stack_t *s);                        \
 
 //DSTACK_DECL(int, pp)
 DSTACK_DECL(expr_el_t, pp)
-DSTACK_DECL(expr_el_t, pp_op)
 
 DSTACK_DECL(tree_node_t*, ts)
 

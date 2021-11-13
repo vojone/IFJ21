@@ -157,7 +157,7 @@ TEST_F(nested_parenthesis, only_parse) {
     ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
-class relational_operators : public test_fixture {
+class relational_operators1 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
@@ -166,10 +166,78 @@ class relational_operators : public test_fixture {
         }
 };
 
-TEST_F(relational_operators, only_parse) {
+TEST_F(relational_operators1, only_parse) {
     ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
 }
 
+
+class relational_operators2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"("abc" == "def"
+            )";
+        }
+};
+
+TEST_F(relational_operators2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+}
+
+
+class relational_operators3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"("abc" > 7
+            )";
+        }
+};
+
+TEST_F(relational_operators3, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+class relational_operators4 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(42 > "abc"
+            )";
+        }
+};
+
+TEST_F(relational_operators4, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+
+class relational_operators5 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4.2 > 7
+            )";
+        }
+};
+
+TEST_F(relational_operators5, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+}
+
+
+class relational_operators6 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4.2 > "str"
+            )";
+        }
+};
+
+TEST_F(relational_operators6, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
 
 class parenthesis_err : public test_fixture {
     protected:

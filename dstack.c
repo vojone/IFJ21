@@ -87,7 +87,6 @@ void NAME##_show(NAME##_stack_t *s) {           \
 
 //DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
 DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
-DSTACK(expr_el_t, pp_op, fprintf(stderr," %d", s->data[i].type))
 
 DSTACK(tree_node_t*, ts,)
 
