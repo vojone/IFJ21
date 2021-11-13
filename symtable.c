@@ -9,6 +9,8 @@
  *****************************************************************************/
 
 #include "symtable.h"
+#include <stdbool.h>
+#include <string.h>
 
 /**
  * @brief Initializes symbol table
