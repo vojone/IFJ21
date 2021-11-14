@@ -49,7 +49,7 @@ typedef struct NAME##_stack {                               \
 /**                                                         \
  * @brief Allocates initial memory space for stack          \
  */                                                         \
-void NAME##_stack_init(NAME##_stack_t *s);                  \
+bool NAME##_stack_init(NAME##_stack_t *s);                  \
                                                             \
 /**                                                         \
  * @brief Deallocates all resources of                      \
@@ -66,7 +66,7 @@ bool NAME##_is_empty(NAME##_stack_t *s);                    \
 /**                                                         \
  * @brief Pushes element to the stack                       \
  */                                                         \
-void NAME##_push(NAME##_stack_t *s, TYPE newdata);          \
+bool NAME##_push(NAME##_stack_t *s, TYPE newdata);          \
                                                             \
                                                             \
 /**                                                         \
@@ -85,9 +85,7 @@ TYPE NAME##_top(NAME##_stack_t *s);                         \
  */                                                         \
 void NAME##_show(NAME##_stack_t *s);                        \
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DECLARATIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-//DSTACK_DECL(int, pp)
 DSTACK_DECL(expr_el_t, pp)
 
 DSTACK_DECL(tree_node_t*, ts)

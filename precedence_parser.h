@@ -21,11 +21,10 @@
 /**
  * @brief Return codes
  */ 
-
-
 #define EXPRESSION_SUCCESS 0
 #define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
+#define SEM_ERROR_IN_EXPR 6
 #define INTERNAL_ERROR 99
 
 
@@ -53,11 +52,13 @@ typedef struct expr_el {
 #define ORIGIN -1 /**< Says that after reduction has nonterminal oriiginal data typ (e.g. ("abc") -> E.type = STR) */
 
 
-#define REDUCTION_RULES_NUM 17
+#define REDUCTION_RULES_NUM 16
+
 typedef struct expr_rule {
     char * right_side;
-    char * operator_types; /**< Specification of operator types*/
+    char * operator_types; /**< Specification of operator types (see get_rule() in .c file)*/
     sym_dtype_t return_type;
+    char *error_message; /**< Error message that is showed when semantic error occured*/
 } expr_rule_t;
 
 int parse_expression(scanner_t *sc);

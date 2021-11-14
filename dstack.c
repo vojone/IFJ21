@@ -30,14 +30,16 @@
  * @note PRINT_CMD Can be omitted if NAME##_show is not needed
  */ 
 #define DSTACK(TYPE, NAME, PRINT_CMD)                           \
-void NAME##_stack_init(NAME##_stack_t *s) {                     \
+bool NAME##_stack_init(NAME##_stack_t *s) {                     \
     s->top = 0;                                                 \
     s->data = (TYPE *)malloc(sizeof(TYPE)*INIT_SIZE);           \
     if(!s->data) {                                              \
         fprintf(stderr, "Stack: Can't allocate!\n");            \
-        return;                                                 \
+        return false;                                           \
     }                                                           \
     s->allocated = INIT_SIZE;                                   \
+                                                                \
+    return true;                                                \
 }                                                               \
                                                                 \
                                                                 \
@@ -50,18 +52,20 @@ bool NAME##_is_empty(NAME##_stack_t *s) {       \
     return s->top == 0;                         \
 }                                               \
                                                 \
-void NAME##_push(NAME##_stack_t *s, TYPE  newdata) {                                \
+bool NAME##_push(NAME##_stack_t *s, TYPE  newdata) {                                \
     if(s->top == s->allocated) { /*Allocated memory is full -> extend it*/          \
         s->data = (TYPE *)realloc(s->data, sizeof(TYPE)*s->allocated*2);            \
         if(!s->data) {                                                              \
             fprintf(stderr, "Stack: Can't allocate!\n");                            \
-            return;                                                                 \
+            return false;                                                           \
         }                                                                           \
         s->allocated *= 2;                                                          \
                                                                                     \
     }                                           \
                                                 \
     s->data[s->top++] = newdata;                \
+                                                \
+    return true;                                \
 }                                               \
                                                 \
 TYPE NAME##_pop(NAME##_stack_t *s) {            \
@@ -86,7 +90,7 @@ void NAME##_show(NAME##_stack_t *s) {           \
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DEFINITIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
-DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
+DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].dtype))
 
 DSTACK(tree_node_t*, ts,)
 

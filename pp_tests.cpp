@@ -195,7 +195,7 @@ class relational_operators3 : public test_fixture {
 };
 
 TEST_F(relational_operators3, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
 }
 
 class relational_operators4 : public test_fixture {
@@ -208,7 +208,7 @@ class relational_operators4 : public test_fixture {
 };
 
 TEST_F(relational_operators4, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
 }
 
 
@@ -216,7 +216,7 @@ class relational_operators5 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(4.2 > 7
+            R"(4.2 < 7
             )";
         }
 };
@@ -230,13 +230,26 @@ class relational_operators6 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(4.2 > "str"
+            R"(4.2 ~= "str"
             )";
         }
 };
 
 TEST_F(relational_operators6, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
+}
+
+class relational_operators7 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(#("def".."abc") ~= "str"
+            )";
+        }
+};
+
+TEST_F(relational_operators7, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
 }
 
 class parenthesis_err : public test_fixture {
@@ -276,6 +289,47 @@ class op_err2 : public test_fixture {
 };
 
 TEST_F(op_err2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+
+class op_err3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(42 42
+            )";
+        }
+};
+
+TEST_F(op_err3, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+
+class op_not_err1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a + b a = a + 1 
+            )";
+        }
+};
+
+TEST_F(op_not_err1, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+}
+
+class op_err4 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a + b = c
+            )";
+        }
+};
+
+TEST_F(op_err4, only_parse) {
     ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
 }
 

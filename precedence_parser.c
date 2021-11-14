@@ -195,6 +195,10 @@ char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
 /*$*/  {'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<',' ','<',' '}
     };
 
+    if(on_stack_top.type >= TERM_NUM || on_input.type >= TERM_NUM) {
+        return ' ';
+    }
+
     return precedence_table[on_stack_top.type][on_input.type];
 }
 
@@ -222,27 +226,27 @@ char *to_char_seqence(expr_el_t expression_element) {
  *       Example: (nis|nis = First and sec operand can be number/integer/string and if it's e. g. string second must be string too
  */ 
 expr_rule_t *get_rule(unsigned int index) {
-    if(index > REDUCTION_RULES_NUM) { //Safety check
+    if(index >= REDUCTION_RULES_NUM) { //Safety check
         return NULL;
     }
 
     static expr_rule_t rules[REDUCTION_RULES_NUM] = {
-        {"(E)", "*", ORIGIN},
-        {"i", "*", ORIGIN},
-        {"E+E", "ni|ni", ORIGIN},
-        {"E-E", "ni|ni", ORIGIN},
-        {"E*E", "ni|ni", ORIGIN},
-        {"E/E", "ni|ni", ORIGIN},
-        {"E//E", "ni|ni", ORIGIN},
-        {"_E", "ni", ORIGIN},
-        {"#E", "s", INT},
-        {"E<E", "(nis|nis", INT},
-        {"E>E", "(nis|nis", INT},
-        {"E<=E", "(nis|nis", INT},
-        {"E>=E", "(nis|nis", INT},
-        {"E==E", "(nis|nis", INT},
-        {"E~=E", "(nis|nis", INT},
-        {"E..E", "s|s", STR},
+        {"(E)", "*", ORIGIN, NULL},
+        {"i", "*", ORIGIN, NULL},
+        {"E+E", "ni|ni", ORIGIN, "\"+\" expects number/integer as operands"},
+        {"E-E", "ni|ni", ORIGIN, "\"-\" expects number/integer as operands"},
+        {"E*E", "ni|ni", ORIGIN, "\"*\" expects number/integer as operands"},
+        {"E/E", "ni|ni", ORIGIN, "\"/\" expects number/integer as operands"},
+        {"E//E", "ni|ni", ORIGIN, "\"//\" expects number/integer as operands"},
+        {"_E", "ni", ORIGIN, "Unary minus expects number/integer as operands"},
+        {"#E", "s", INT, "Only string can be operand of \"#\""},
+        {"E<E", "(nis|nis", INT, "Incompatible operands of \"<\""},
+        {"E>E", "(nis|nis", INT, "Incompatible operands of \">\""},
+        {"E<=E", "(nis|nis", INT, "Incompatible operands of \"<=\""},
+        {"E>=E", "(nis|nis", INT, "Incompatible operands of \">=\""},
+        {"E==E", "(nis|nis", INT, "Incompatible operands of \"==\""},
+        {"E~=E", "(nis|nis", INT, "Incompatible operands of \"~=\""},
+        {"E..E", "s|s", STR, "Operation \"..\" needs strings as operands"},
     };
 
     return &(rules[index]);
@@ -314,9 +318,9 @@ void resolve_res_type(sym_dtype_t *res, expr_rule_t *rule,
     }
 }
 
-bool type_check(pp_stack_t *op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
+bool type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
 
-    expr_el_t current = pp_pop(op_stack);
+    expr_el_t current = pp_pop(&op_stack);
     bool is_curr_op_ok = false, must_be_flag = false, result = true;
     sym_dtype_t tmp_res_type = rule->return_type, must_be = UNDEFINED;
 
@@ -328,7 +332,7 @@ bool type_check(pp_stack_t *op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
         }
         else if(c == '|' || c == '(') {
             if(c == '|')
-                current = safe_op_pop(&is_curr_op_ok, &result, op_stack);
+                current = safe_op_pop(&is_curr_op_ok, &result, &op_stack);
             else
                 must_be_flag = true;
 
@@ -377,42 +381,82 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
         prep_str(to_be_red, char_seq);
         pp_pop(s);
     }
+
+    fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
+}
+
+
+void print_operands(pp_stack_t *ops) {
+    while(!pp_is_empty(ops)) {
+        fprintf(stderr, "Operand: %s\n", (char *)pp_pop(ops).value);
+    }
+}
+
+/**
+ * @brief Creates non-terminal (E) expression symbol (there is only one non-terminal in rules)
+ */ 
+expr_el_t non_term(sym_dtype_t data_type) {
+    expr_el_t non_terminal;
+    non_terminal.type = NON_TERM;
+    non_terminal.dtype = data_type;
+    non_terminal.value = "NONTERM";
+
+    return non_terminal;
+}
+
+/**
+ * @brief Makes reduction of top of the main stack including type check and resolving errors
+ * @param st Main stack where reductions are performed
+ * @param ops Stack with operands
+ * @param rule Rule containing information about result type and operand data types
+ * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
+ */ 
+int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, char **err_m) {
+
+    sym_dtype_t result_type;
+    *err_m = NULL;
+
+    bool t_check_res = type_check(*ops, rule, &result_type);
+    if(!t_check_res) { /**< Type check was not succesfull */
+        *err_m = rule->error_message;
+        return SEM_ERROR_IN_EXPR;
+    }
+
+    print_operands(ops); /**< It will be probably substituted for code generating */
+
+    pp_show(ops); //TODO
+
+    if(!pp_push(st, non_term(result_type))) {
+        return INTERNAL_ERROR;
+    }
+
+    return EXPRESSION_SUCCESS;
 }
 
 /**
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
-bool reduce_top(pp_stack_t *s) {
+int reduce_top(pp_stack_t *s, char ** failed_operation) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
     pp_stack_t operands;
-    pp_stack_init(&operands);
+    if(!pp_stack_init(&operands)) {
+        return INTERNAL_ERROR;
+    }
 
-    get_str_to_reduction(s, &operands, &to_be_reduced);
-
-    for(int i = 0; get_rule(i)->right_side; i++) {
-        if(strcmp(to_str(&to_be_reduced), get_rule(i)->right_side) == 0) {
-            sym_dtype_t result_type;
-            bool type_check_result = type_check(&operands, get_rule(i), &result_type);
-
-            pp_stack_dtor(&operands);
-            str_dtor(&to_be_reduced);
-            if(!type_check_result) {
-                return false;
-            }
-
-            expr_el_t non_terminal;
-            non_terminal.type = NON_TERM;
-            non_terminal.dtype = result_type;
-            pp_push(s, non_terminal);
-            return true;
+    get_str_to_reduction(s, &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string  from it*/
+    int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
+    expr_rule_t *rule;
+    for(int i = 0; (rule = get_rule(i)); i++) {
+        if(strcmp(to_str(&to_be_reduced), rule->right_side) == 0) {
+            retval = reduce(s, &operands, rule, failed_operation);
         }
     }
 
     pp_stack_dtor(&operands);
     str_dtor(&to_be_reduced);
-    return false;
+    return retval;
 }
 
 
@@ -446,9 +490,6 @@ expr_el_t get_top_symbol(pp_stack_t *stack) {
 
     return on_top;
 }
-
-
-
 
 /**
  * @brief Frees all resources (expecially dynamic allocated memory) of PP
@@ -485,59 +526,85 @@ void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
     pp_push(stack, on_input);
 }
 
-/**
- * @brief Does necessary actions when stack top has higher precedence than input (reductions on stack top)
- * @return True if everything (reduction) goes well
- */
-bool has_higher_prec(pp_stack_t *stack) {
-    bool is_reduced = reduce_top(stack);
-        
-    if(!is_reduced) {
-        fprintf(stderr, "Precedence parser: Cannot reduce the top of the stack!\n");
-        return false;
-    }
-    else {
-        fprintf(stderr, "Reducted! On top:%d\n", pp_top(stack).type);
-        pp_show(stack);
-    }
 
-    return true;
+/**
+ * @brief Prints error message due to return value
+ */ 
+void print_err_message(int return_value, scanner_t *sc, 
+                       token_t *last_tok, token_t *cur_tok, 
+                       char **err_m) {
+
+    switch(return_value)
+    {
+    case LEXICAL_ERROR:
+        fprintf(stderr, 
+                "(%ld,%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token! (\"%s\")\n",
+                sc->cursor_pos[ROW], 
+                sc->cursor_pos[COL], 
+                (char *)cur_tok->attr);
+        break;
+    case SEM_ERROR_IN_EXPR:
+        fprintf(stderr, 
+                "(%ld,%ld)\t| \033[0;31mSemantic error:\033[0m Bad data types in expression!\n",
+                sc->cursor_pos[ROW], 
+                sc->cursor_pos[COL]);
+        if(*err_m) {
+            fprintf(stderr, "\t| %s\n", *err_m);
+        }
+
+        break;
+    case EXPRESSION_FAILURE:
+        fprintf(stderr, 
+                "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in epxression! (\"%s%s\")\n", 
+                sc->cursor_pos[ROW], 
+                sc->cursor_pos[COL],
+                (char *)last_tok->attr,
+                (char *)cur_tok->attr);
+
+        break;
+    default:
+        break;
+    }
 }
 
 int parse_expression(scanner_t *sc) {
+    int retval = EXPRESSION_SUCCESS;
+    char *failed_op;
     token_t current_token, last_token;
     token_init(&last_token);
     token_init(&current_token);
 
     pp_stack_t stack;
-    pp_stack_init(&stack);
-    pp_push(&stack, stop_symbol());
-    while(true) {
+    if(!pp_stack_init(&stack)) {
+        retval = INTERNAL_ERROR;
+    }
+
+    if(!pp_push(&stack, stop_symbol())) {
+        retval = INTERNAL_ERROR;
+    }
+    
+    while(retval == EXPRESSION_SUCCESS) {
         current_token = lookahead(sc);
+
         if(current_token.token_type == ERROR_TYPE) {
-
-            fprintf(stderr, 
-                    "(%ld,%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token ! (\"%s\")\n", 
-                    sc->cursor_pos[ROW], 
-                    sc->cursor_pos[COL], 
-                    (char *)current_token.attr);
-
-            free_everything(&stack, &last_token, &current_token);
-            return LEXICAL_ERROR;
+            retval = LEXICAL_ERROR;
+            break;
         }
 
         expr_el_t on_input = get_input_symbol(&last_token, &current_token);
         expr_el_t on_top = get_top_symbol(&stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
-            free_everything(&stack, &last_token, &current_token);
-            return EXPRESSION_SUCCESS;
+            retval = EXPRESSION_SUCCESS;
+            break;
         }
         char precedence = get_precedence(on_top, on_input);
 
         //fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top, on_input);
         if(precedence == '=') {
-            pp_push(&stack, on_input);
+            if(!pp_push(&stack, on_input)) {
+                retval = INTERNAL_ERROR;
+            }
 
             token_aging(sc, &last_token, &current_token); //TODO
         }
@@ -546,35 +613,16 @@ int parse_expression(scanner_t *sc) {
             token_aging(sc, &last_token, &current_token); //TODO
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            if(!has_higher_prec(&stack)) {
-                fprintf(stderr, 
-                    "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens ! (\"%s%s\")\n", 
-                    sc->cursor_pos[ROW], 
-                    sc->cursor_pos[COL],
-                    (char *)last_token.attr,
-                    (char *)current_token.attr);
-
-                free_everything(&stack, &last_token, &current_token);
-
-                return EXPRESSION_FAILURE;
-            }
+            retval = reduce_top(&stack, &failed_op);
         }
         else {
-            fprintf(stderr, 
-                    "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens ! (\"%s%s\")\n", 
-                    sc->cursor_pos[ROW], 
-                    sc->cursor_pos[COL],
-                    (char *)last_token.attr,
-                    (char *)current_token.attr);
-
-            free_everything(&stack, &last_token, &current_token);
-
-            return EXPRESSION_FAILURE;
+            retval = EXPRESSION_FAILURE;
         }
     }
 
+    print_err_message(retval, sc, &last_token, &current_token, &failed_op);
     free_everything(&stack, &last_token, &current_token);
-    return EXPRESSION_SUCCESS;
+    return retval;
 }
 
 /***                     End of precedence_parser.c                        ***/
