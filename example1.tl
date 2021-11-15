@@ -2,20 +2,20 @@
 require "ifj21"
 
 function main() -- uzivatelska funkce bez parametru
-  local a : integer
+  local a : integer = 0
   local vysl : integer = 0
   write("Zadejte cislo pro vypocet faktorialu\n")
-  a = readi()
-  if a == nil then
-      write("a je nil\n") return
+  a = true
+  if a then
+      write("a je nil\n") return a
   else
   end
-  if a < 0 then
+  if 0 then
     write("Faktorial nelze spocitat\n")
   else
     vysl = 1
-    while a > 0 do
-      vysl = vysl * a a = a - 1  -- dva prikazy
+    while true do
+      vysl = vysl a = 1  -- dva prikazy
     end
     write("Vysledek je: ", vysl, "\n")
   end

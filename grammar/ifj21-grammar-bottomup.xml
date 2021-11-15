@@ -4,9 +4,9 @@
  *                        ifj21-grammar-bottomup.xml
  * 
  *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- * Purpose: Source file of functions to process (dynamic) strings and chars
+ * Purpose: File for grammar definition for bottom-up expression parsing
  * 
- *                    Last change: 02. 11. 2021
+ *                    Last change: 14. 11. 2021
  *****************************************************************************
 
  * @file ifj21-grammar-bottomup.xml
@@ -29,7 +29,7 @@
 
 
 <!--Logical rules-->
-<E>     -> ! <E>
+<!-- <E>     -> ! <E> -->
 <E>     -> <E> < <E>
 <E>     -> <E> > <E>
 <E>     -> <E> <= <E>
@@ -39,6 +39,9 @@
 
 <!--Concat rule-->
 <E>     -> <E> .. <E>
+
+<!--String length rule-->
+<E>     -> #<E>
 
 <!--Rules for function call parsing-->
 <E>             -> [function-id](<argument-list>)

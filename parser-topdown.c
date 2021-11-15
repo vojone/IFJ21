@@ -231,6 +231,7 @@ bool parse_function_def(){
     //parsing function definition signature
     bool id = check_next_token(&scanner,IDENTIFIER);
     bool left_bracket = check_next_token_attr(&scanner,SEPARATOR,"(");
+    //add attributes
     bool right_bracket= check_next_token_attr(&scanner,SEPARATOR,")");
     if(!(id && left_bracket && right_bracket)){
         fprintf(stderr,"ERROR INVALID FUNCTION SINATURE!\n");
