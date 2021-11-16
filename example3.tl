@@ -1,6 +1,6 @@
 -- Program 3: Prace s retezci a vestavenymi funkcemi
 function main()
-  local s1 : number = 0
+  local s1 : integer = 0
   local s2 : string = ", ktery jeste trochu obohatime"
   write(s1, "\010", s2)local s1len:integer=s1 local s1len4: integer=s1len
   s1len = 4 s1 = true s1len = s1len

@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "dstring.h"
 #include "scanner.h"
+#include <stdarg.h>
 
 typedef struct result{
     bool success;
@@ -18,89 +20,156 @@ typedef struct result{
 } result_t;
 
 
-int main();
+/**
+ * @brief Return codes
+ */ 
+typedef enum return_codes {
+    PARSE_SUCCESS = 0,
+    LEXICAL_ERROR = 1,
+    SYNTAX_ERROR  = 2,
+    SEMANTIC_ERROR_DEFINITION = 3,
+    SEMANTIC_ERROR_ASSIGNMENT = 4,
+    SEMANTIC_ERROR_PARAMETERS = 5,
+    SEMANTIC_ERROR_EXPRESSION = 6,
+    SEMANTIC_ERROR_OTHER      = 7,
+    UNEXPECTED_NIL_ERROR      = 8,
+    DIVISION_BY_ZERO_ERROR    = 9,
+    INTERNAL_ERROR = 99
+} return_codes_t;
+
+
+typedef struct parser {
+    int return_code;
+    bool reached_EOF;
+} parser_t;
+
+int error_rule();
+
+typedef struct rule {
+    int (* rule_function)();
+    token_t rule_first;
+} rule_t;
+
+/**
+ * @brief Finds the appropriate rule
+ * @return Returns reference to rule function
+ */ 
+rule_t get_rule(token_t t);
+
+/**
+ * @brief sets the parser and scanner to use
+ * @note there can be only one instance i guess, because of the parser static var
+ */ 
+void parser_setup(parser_t *p, scanner_t *s);
+
+/**
+ * @brief Starts parsing
+ */ 
+int parse_program();
 
 /**
  * @brief Parses statements list outside of a function
  */
-bool global_statement_list();
+int global_statement_list();
 
 /**
  * @brief Parses statements outside of a function
  */
-bool global_statement();
+int global_statement();
 
 /**
  * @brief Parses statements list inside of a function
  */
-bool statement_list();
+int statement_list();
 /**
  * @brief Parses statements inside of a function
  */
-bool statement();
+int statement();
 
 /**
- * @brief Parses variable definitions
+ * @brief Parses local variable definitions
  */
-bool parse_variable_def();
+int parse_local_var();
+
+/**
+ * @brief Parses global variable definitions
+ */
+int parse_global_var();
+
+/**
+ * @brief Parses else branch 
+ */
+int parse_else();
+
+/**
+ * @brief Parses return statement
+ */
+int parse_return();
+
+/**
+ * @brief Parses end statement
+ */
+int parse_end();
 
 /**
  * @brief checks value assignment when defining a variable
  */ 
 bool value_assignment();
 
-//bool assigment();
+//int assigment();
 
-bool multiple_assignment();
+int assignment();
 
 /**
  * @brief Parses if statement
  * @note Expects that the 'if' is already read and the first token is going to be a condition (expression)
  * @note Also handles else branch currently
  */ 
-bool parse_if();
+int parse_if();
 
 /**
  * @note might use in future 
  */ 
-bool else_branch();
+int else_branch();
 
-bool parse_while();
+int parse_while();
 
-bool param_list();
-bool param_list_1();
+int param_list();
+int param_list_1();
 
-bool type_list();
-bool type_list_1();
+int type_list();
+int type_list_1();
 
 /**
  * expression_list & expression_list_1 are currently handled in multiple_assignment()
  * 
  */ 
-bool expression_list();
-bool expression_list_1();
+int expression_list();
+int expression_list_1();
 
 /**
  * @brief Shows error if next token is not a STRING
  * @return true if token is string
  */ 
-bool parse_str();
+int parse_str();
 
 /**
  * @brief Parses function definition, checks for signature and then parses the inside of the function
  * 
  */ 
-bool parse_function_def();
+int parse_function_def();
+
 /**
  * @brief parses the function call.
  * @note presumes that the function IDENTIFIER was already read and the first token is going to be opening bracket
  */ 
-bool parse_function_call();
+int parse_function_call();
+
 /**
  * @brief parses the function arguments till the closing bracket
  *
  */ 
-bool parse_function_arguments();
+int parse_function_arguments();
 
 /**
  * @brief Displays error about getting a different token than expected
@@ -115,30 +184,53 @@ void incorrect_token(char * expected, token_t t, scanner_t * scanner);
  * @return returns true the expected token type is there
  **/
 bool lookahead_token(scanner_t * scanner,token_type_t expecting);
+
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the next token has the specified type and attribute
  * @return returns true if both expected type and attribute are equal to real ones
  **/
 bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+
 /**
  * @param expecting The token type to expect
  * @brief Shows error if there is an unexpected token type
  * @return returns true the expected token type is there
  **/
 bool check_next_token(scanner_t * scanner,token_type_t expecting);
+
 /**
  * @param expecting The token type to expect
  * @param expecting_attr The token attribute to expect
  * @brief Shows error if there is an unexpected token type or attribute
  * @return returns true the expected token is there
  **/
-bool check_next_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+bool check_next_token_attr(scanner_t * scanner, token_type_t expecting_type, char * expecting_attr);
+
+/**
+ * @param expecting The token type to expect
+ * @brief Compares the expected token type to token 't'
+ * @return returns true the expected token types are equal
+ **/
+bool compare_token(token_t t,token_type_t expecting);
+
+/**
+ * @param expecting_type The token type to expect
+ * @param expecting_attr The token attribute to expect
+ * @brief Compares the expected token type & parameter to token 't'
+ * @return returns true the token types & parameters are equal
+ **/
+bool compare_token_attr(token_t t, token_type_t expecting_type, char * expecting_attr);
+
+/**
+ * @return True if token is datatype
+ */ 
+bool is_datatype(token_t t);
 
 /**
  * @brief checks if the next token is datatype
  */ 
-bool parse_datatype();
+int parse_datatype();
 
 /**
  * !temporary
@@ -146,7 +238,7 @@ bool parse_datatype();
  * @note checks only for INTEGER, NUMBER or STRING
  * 
  **/
-bool parse_expression();
+int parse_expression();
 
 /**
  * !temporary
@@ -156,3 +248,10 @@ bool parse_expression();
  * @note checks only for INTEGER, NUMBER or STRING
  */ 
 bool is_expression(token_t t);
+
+/**
+ * @brief debug printing
+ * @note can be disabled by DEBUG static global variable
+ * @note to disable the "Got token at:" and "^ Lookahead ^", delete it in the scanner.c file. My apologies for the inconvenience
+ */
+void debug_print(const char *const _Format, ...);

@@ -1,2 +1,4 @@
--- 1: Vypocet faktorialu (iterativne)
-require "ifj21"
+function main() : string
+    local s1 : string = "As I Was"
+    return
+end
