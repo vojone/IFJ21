@@ -29,10 +29,6 @@
 #define STR_SUCCESS 0
 #define STR_FAILURE 1
 
-//Return codes of string comparison
-#define SAME 0
-#define FIRST_BEFORE_SEC -1 /**< First given string would be in dictionary before second */
-#define SEC_BEFORE_FIRST 1 /**< SEcond given string would be in dictionary before first */
  
 //String is implemented as dynamic array
 typedef struct string {
@@ -60,6 +56,10 @@ int str_init(string_t *string);
  * @return STR_SUCCESS if everything goes well
  */
 int app_char(char c, string_t *string);
+
+int prep_char(char c, string_t *string);
+
+int prep_str(string_t *dst, char *src);
 
 /**
  * @brief Brings string to the state after initialization  
@@ -93,6 +93,7 @@ bool str_search(const char c, const char *str);
  */
 int str_cpy(char **dst, const char *src, size_t length);
 
+int str_cpy_tostring(string_t* dst, const char *src, size_t length);
 
 /**
  * @brief returns type of character
@@ -101,10 +102,13 @@ int get_chtype(const char c);
 
 
 /**
- * @brief Compares to strings and returns result as an integer
- * @return SAME (0) if strings are same
+ * @brief Compares to strings and returns result as an integer (same as strcmp)
+ * @return 0 if strings are same
  */ 
 int str_cmp(const char *str1, const char *str2);
+
+
+int dstring_cmp(string_t* str1, string_t* str2);
 
 
 #endif

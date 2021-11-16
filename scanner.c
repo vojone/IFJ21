@@ -17,6 +17,36 @@
 
 #include "scanner.h"
 
+/**
+ * @brief Sets initial values to token
+ */ 
+void token_init(token_t *token) {
+    token->token_type = UNKNOWN;
+    token->attr = NULL;
+}
+
+/**
+ * @brief Correctly frees resources holds by token
+ */ 
+void token_dtor(token_t *token) {
+
+    switch (token->token_type)
+    {
+    case KEYWORD:
+    case SEPARATOR:
+    case OPERATOR:
+        break;
+    default:
+        if(token->attr) {
+            free(token->attr);
+        }
+        
+        break;
+    }
+
+    token->attr = NULL;
+    token->token_type = UNKNOWN;
+}
 
 /**
  * @brief Prepares scanner structure and sets its attributes to initial values
@@ -107,11 +137,12 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
 
 
 /**
- * @brief Sets initial values to token
+ * @brief Auxiliary function to ignore comments
  */ 
-void init_token(token_t *token) {
-    token->token_type = UNKNOWN;
-    token->attr = NULL;
+void got_comment(char c, token_t *token, scanner_t *sc) {
+    ungetchar(c, sc);
+    str_clear(&sc->str_buffer);
+    sc->state = INIT;
 }
 
 
@@ -271,53 +302,60 @@ void NUM_F_trans(char c, token_t * token, scanner_t *sc) {
 }
 
 
-void COM_1_trans(char c, token_t * token, scanner_t *sc) {
+void COM_F1_trans(char c, token_t * token, scanner_t *sc) {
     if(c == '[') {
-        sc->state = COM_2;
+        sc->state = COM_F2;
     }
     else if(c == '\n' || c == EOF) {
-        sc->state = COM_F;
+       got_comment(c, token, sc);
     }
     else {
-        sc->state = COM_1;
+        sc->state = COM_F1;
     }
 }
 
 
-void COM_2_trans(char c, token_t * token, scanner_t *sc) {
+void COM_F2_trans(char c, token_t * token, scanner_t *sc) {
     if(c == '[') {
-        sc->state = COM_3;
+        sc->state = COM_F3;
+    }
+    else if(c == '\n' || c == EOF) {
+       got_comment(c, token, sc);
     }
     else {
-        got_token(ERROR_TYPE, c, token, sc);
+        sc->state = COM_F1; //There is character between two [ -> still one line comment
     }
 }
 
 
-void COM_3_trans(char c, token_t * token, scanner_t *sc) {
-    if(c != ']') {
-        sc->state = COM_3;
-    }
-    else {
-        sc->state = COM_4;
-    }
-}
-
-
-void COM_4_trans(char c, token_t * token, scanner_t *sc) {
+void COM_F3_trans(char c, token_t * token, scanner_t *sc) {
     if(c == ']') {
-        sc->state = COM_F;
+        sc->state = COM_F4;
+    }
+    else if(c == EOF) {
+       got_comment(c, token, sc);
     }
     else {
-        got_token(ERROR_TYPE, c, token, sc);
+        sc->state = COM_F3;
     }
 }
 
 
-void COM_F_trans(char c, token_t * token, scanner_t *sc) {
-    ungetchar(c, sc);
-    str_clear(&sc->str_buffer);
-    sc->state = INIT; //Just ignore comments
+void COM_F4_trans(char c, token_t * token, scanner_t *sc) {
+    if(c == ']') {
+        sc->state = COM_F5;
+    }
+    else if(c == EOF) {
+       got_comment(c, token, sc);
+    }
+    else {
+        sc->state = COM_F3; //There is character between two ] -> still comment
+    }
+}
+
+
+void COM_F5_trans(char c, token_t * token, scanner_t *sc) {
+    got_comment(c, token, sc);
 }
 
 
@@ -431,11 +469,8 @@ void OP_F2_trans(char c, token_t * token, scanner_t *sc) {
 
 
 void OP_F3_trans(char c, token_t * token, scanner_t *sc) {
-    if(get_chtype(c) == DIGIT) {
-        sc->state = INT_F;
-    }
-    else if(c == '-') {
-        sc->state = COM_1;
+    if(c == '-') {
+        sc->state = COM_F1;
     }
     else {
         if(from_tab(get_operator, token, sc)) {
@@ -485,11 +520,11 @@ trans_func_t get_trans(fsm_state_t state) {
     transition_functions[NUM_2] = NUM_2_trans;
     transition_functions[NUM_3] = NUM_3_trans;
     transition_functions[NUM_F] = NUM_F_trans;
-    transition_functions[COM_1] = COM_1_trans;
-    transition_functions[COM_2] = COM_2_trans;
-    transition_functions[COM_3] = COM_3_trans;
-    transition_functions[COM_4] = COM_4_trans;
-    transition_functions[COM_F] = COM_F_trans;
+    transition_functions[COM_F1] = COM_F1_trans;
+    transition_functions[COM_F2] = COM_F2_trans;
+    transition_functions[COM_F3] = COM_F3_trans;
+    transition_functions[COM_F4] = COM_F4_trans;
+    transition_functions[COM_F5] = COM_F5_trans;
     transition_functions[STR_1] = STR_1_trans;
     transition_functions[STR_2] = STR_2_trans;
     transition_functions[STR_3] = STR_3_trans;
@@ -510,7 +545,7 @@ trans_func_t get_trans(fsm_state_t state) {
 
 token_t get_next_token(scanner_t *sc) {
     token_t result;
-    init_token(&result);
+    token_init(&result);
 
     if(sc->is_tok_buffer_full) {
        result = sc->tok_buffer;
@@ -539,7 +574,7 @@ token_t get_next_token(scanner_t *sc) {
 
 token_t lookahead(scanner_t *sc) {
     token_t result;
-    init_token(&result);
+    token_init(&result);
 
     if(sc->is_tok_buffer_full) {
         result = sc->tok_buffer;
@@ -549,7 +584,6 @@ token_t lookahead(scanner_t *sc) {
         sc->tok_buffer = result;
         sc->is_tok_buffer_full = true;
     }
-    fprintf(stderr,"^ Lookahead ^\n");
     return result;
 }
 

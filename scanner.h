@@ -57,7 +57,7 @@ typedef enum fsm_state {
     ID_F,
     INT_F,
     NUM_1, NUM_2, NUM_3, NUM_F,
-    COM_1, COM_2, COM_3, COM_4, COM_F,
+    COM_F1, COM_F2, COM_F3, COM_F4, COM_F5,
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
     OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
@@ -98,7 +98,16 @@ typedef struct scanner {
 typedef void (*trans_func_t)(char, token_t *, scanner_t *);
 
 
+/**
+ * @brief Sets initial values to token structure
+ */ 
+void token_init(token_t *token);
 
+
+/**
+ * @brief Correctly frees resources holds by token and sets it to initial state
+ */ 
+void token_dtor(token_t *token);
 
 /**
  * @brief Reads characters from stdin (or from buffer) and tries to make token from it
