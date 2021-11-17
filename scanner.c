@@ -108,6 +108,7 @@ char next_char(scanner_t *sc) {
     }
     else {
         next = getchar();
+        update_cursor_pos(next, sc);
     }
 
     return next;
@@ -554,7 +555,6 @@ token_t get_next_token(scanner_t *sc) {
 
     while(result.token_type == UNKNOWN) {
         char c = next_char(sc);
-        update_cursor_pos(c, sc);
 
         //Get transitions from current state
         trans_func_t do_transition = get_trans(sc->state);
