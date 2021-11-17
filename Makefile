@@ -22,14 +22,14 @@ TESTLIB_NAME = libgtest
 TEST_DIR = googletest-master/googletest/
 
 CXX = g++
-CXXFLAGS := -Werror -Wall -pedantic -std=c++11
+CXXFLAGS := -Werror -Wall -pedantic -std=c++11 -g
 
 PARSER_TEST_NAME = parser_topdown_tests
 PARSER_TEST_BIN = $(PARSER_TEST_NAME)
 
 #------------------------------------------------------------------------------
 
-OBJS = parser_wrapper.o $(PARSER).o $(PP_PARSER).o $(SCANNER).o dstring.o tables.o dstack.o
+OBJS = parser_wrapper.o $(PARSER).o $(PP_PARSER).o $(SCANNER).o $(SYMTAB).o dstring.o tables.o dstack.o
 EXES = $(EXECUTABLE) $(PARSER_TEST_BIN) $(SYMTAB_TEST_BIN) $(PARSER_EXE)
 
 .PHONY: all clean unit_tests
@@ -52,7 +52,7 @@ unit_tests: $(SCAN_TEST_BIN) $(PARSER_TEST_BIN) $(SYMTAB_TEST_BIN)
 #linking binary with test
 $(PARSER_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(PARSER_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
-$(PARSER_TEST_BIN) : $(PARSER).o $(PARSER_TEST_BIN).o $(SCANNER).o dstring.o tables.o dstack.o
+$(PARSER_TEST_BIN) : $(PARSER).o $(PARSER_TEST_BIN).o $(SCANNER).o $(SYMTAB).o $(PP_PARSER).o dstring.o tables.o dstack.o 
 
 #compilation of obj file with test
 $(PARSER_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include

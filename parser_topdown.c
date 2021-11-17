@@ -7,8 +7,10 @@
 
 #include "parser_topdown.h"
 
+
 static scanner_t * scanner;
 static parser_t * parser;
+static symtab_t symtab;
 #define MAXCALLS 100
 static int current_calls = 0;
 #define DEBUG true
@@ -18,6 +20,7 @@ void parser_setup(parser_t * p,scanner_t *s){
     p->reached_EOF=false;
     p->return_code=0;
     scanner = s;
+    init_tab(&(symtab));
 }
 int parse_program(){
     //scanner_init(scanner);    
@@ -83,6 +86,11 @@ int global_statement(){
         incorrect_token("This is global scope so keyword such as require or function definition or call expected", t, scanner);
         return false;
     }else if(compare_token(t,IDENTIFIER)){
+        char *func = t.attr;
+        tree_node_t *func_valid = search(&(symtab), func);
+        if (func_valid == NULL){ //----------------------------------------------------------------------------
+            return SEMANTIC_ERROR_DEFINITION;
+        }
         if(lookahead_token_attr(scanner,SEPARATOR,"(")){
             return parse_function_call();
         }
@@ -108,13 +116,21 @@ int statement () {
     switch (t.token_type)
     {
     case IDENTIFIER:
+        true;
+        char *func = t.attr;
         // it is neccessary to look at the next lexeme also
         t = get_next_token(scanner);
         t = lookahead(scanner);
         bool is_multiple_assignment = compare_token_attr(t,SEPARATOR,",");
         bool is_single_assignment = compare_token_attr(t,OPERATOR,"=");
         //check if it is a function call
+        debug_print("Calling function ------------");
         if(compare_token_attr(t,SEPARATOR, "(")){
+            debug_print("Call function %s\n", func);
+            tree_node_t *func_valid = search(&(symtab), func);
+            if (func_valid == NULL){ //----------------------------------------------------------------------------
+                return SEMANTIC_ERROR_DEFINITION;
+            }
             return parse_function_call();
         }else if(is_multiple_assignment || is_single_assignment){
             return assignment();
@@ -293,9 +309,13 @@ int parse_str(){
     return SYNTAX_ERROR;
 }
 int parse_function_def(){
+
+    token_t id_fc = get_next_token(scanner);
     //parsing function definition signature
-    bool id = check_next_token(scanner,IDENTIFIER);
+    bool id = (id_fc.token_type == (IDENTIFIER));
     bool left_bracket = check_next_token_attr(scanner,SEPARATOR,"(");
+    int params = 0;
+    int returns = 0;
 
     // check if there are parameters
     token_t t = lookahead(scanner);
@@ -336,8 +356,10 @@ int parse_function_def(){
                 //we go one token forward
                 get_next_token(scanner);
             }
+            params++;
         }
     }
+
 
     bool right_bracket= check_next_token_attr(scanner,SEPARATOR,")");
     if(!(id && left_bracket && right_bracket)){
@@ -367,8 +389,12 @@ int parse_function_def(){
                 //we go one token forward
                 get_next_token(scanner);
             }
+            returns++;
         }
     }
+
+    sym_data_t symtab_data = {id_fc.attr, FUNC};
+    insert_sym(&(symtab), id_fc.attr, symtab_data);
 
     //parsing inside function
     debug_print("parsing inside function...\n");
