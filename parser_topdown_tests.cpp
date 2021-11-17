@@ -277,7 +277,7 @@ class multiple_assignment : public test_fixture {
             R"(
                 function main() : string, integer
                     local s1 : string = "As I Was"
-                    local b : bool
+                    local b : number
                     s1, b = a, c
                 end
             )";

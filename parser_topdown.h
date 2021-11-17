@@ -13,6 +13,7 @@
 #include "dstring.h"
 #include "scanner.h"
 #include <stdarg.h>
+#include "precedence_parser.h"
 
 typedef struct result{
     bool success;
@@ -25,7 +26,7 @@ typedef struct result{
  */ 
 typedef enum return_codes {
     PARSE_SUCCESS = 0,
-    LEXICAL_ERROR = 1,
+    LEXICAL_ERROR_ = 1,
     SYNTAX_ERROR  = 2,
     SEMANTIC_ERROR_DEFINITION = 3,
     SEMANTIC_ERROR_ASSIGNMENT = 4,
@@ -34,7 +35,7 @@ typedef enum return_codes {
     SEMANTIC_ERROR_OTHER      = 7,
     UNEXPECTED_NIL_ERROR      = 8,
     DIVISION_BY_ZERO_ERROR    = 9,
-    INTERNAL_ERROR = 99
+    INTERNAL_ERROR_ = 99
 } return_codes_t;
 
 
@@ -54,7 +55,7 @@ typedef struct rule {
  * @brief Finds the appropriate rule
  * @return Returns reference to rule function
  */ 
-rule_t get_rule(token_t t);
+rule_t determine_rule(token_t t);
 
 /**
  * @brief sets the parser and scanner to use
@@ -238,7 +239,7 @@ int parse_datatype();
  * @note checks only for INTEGER, NUMBER or STRING
  * 
  **/
-int parse_expression();
+// int parse_expression();
 
 /**
  * !temporary

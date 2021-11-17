@@ -11,7 +11,7 @@ static scanner_t * scanner;
 static parser_t * parser;
 #define MAXCALLS 100
 static int current_calls = 0;
-#define DEBUG false
+#define DEBUG true
 
 void parser_setup(parser_t * p,scanner_t *s){
     parser = p;
@@ -124,7 +124,7 @@ int statement () {
         break;
     case KEYWORD:
         // true;
-        // rule_t rule_to_use = get_rule(t);
+        // rule_t rule_to_use = determine_rule(t);
         // t = get_next_token(scanner);
         // int res = rule_to_use.rule_function();
         // debug_print("Using rule %s, which returned %i\n",(char *)rule_to_use.rule_first.attr,res);
@@ -150,7 +150,8 @@ int statement () {
         }else if(compare_token_attr(t,KEYWORD,"return")){
             //<statement>             -> return <exp>
             t = get_next_token(scanner);
-            return parse_expression();
+            debug_print("Calling precedence parser...\n");
+            return parse_expression(scanner);
         }else if(compare_token_attr(t,KEYWORD,"end")){
             return PARSE_SUCCESS;
         }
@@ -198,7 +199,8 @@ int assignment(){
     //checking the RHS part
     for(int i = 0; i < token_count;i++){
         //check for valid expression
-        if(parse_expression() == PARSE_SUCCESS){
+        debug_print("Calling precedence parser...\n");
+        if(parse_expression(scanner) == PARSE_SUCCESS){
             //ok
         }else{
             debug_print("Error while parsing expression for multiple assignemt\n");
@@ -241,6 +243,7 @@ int parse_local_var(){
     if(lookahead_token_attr(scanner,OPERATOR,"=")){ 
         get_next_token(scanner);
         //if there is = we check the value assignment
+        debug_print("Calling precedence parser...\n");
         int assignment = parse_expression(scanner);
         if(assignment != PARSE_SUCCESS)
             incorrect_token("Valid expression",t,scanner);
@@ -272,6 +275,7 @@ int parse_global_var(){
     if(lookahead_token_attr(scanner,OPERATOR,"=")){ 
         get_next_token(scanner);
         //if there is = we check the value assignment
+        debug_print("Calling precedence parser...\n");
         int assignment = parse_expression(scanner);
         if(assignment != PARSE_SUCCESS)
             incorrect_token("Valid expression",t,scanner);
@@ -426,7 +430,8 @@ int parse_function_arguments(){
 }
 
 int parse_if(){
-    int condition = parse_expression();
+    debug_print("Calling precedence parser...\n");
+    int condition = parse_expression(scanner);
     
     if(condition != PARSE_SUCCESS)
         return SYNTAX_ERROR;
@@ -501,7 +506,8 @@ int parse_end(){
 }
 
 int parse_while(){
-    int condition = parse_expression();
+    debug_print("Calling precedence parser...\n");
+    int condition = parse_expression(scanner);
     if(condition != PARSE_SUCCESS)
         return condition;
     bool then = check_next_token_attr(scanner, KEYWORD, "do");
@@ -527,7 +533,7 @@ int parse_while(){
 /**
  * *MORE GENERAL RULE PARSING ATTEMPT
  */
-rule_t get_rule(token_t t){
+rule_t determine_rule(token_t t){
     rule_t statement_rules[] = {
         {parse_local_var,   {KEYWORD,"local"}   },
         {parse_global_var,  {KEYWORD,"global"}  },
@@ -560,15 +566,15 @@ int error_rule(){
 bool is_expression(token_t t){
     return (t.token_type == NUMBER || t.token_type == INTEGER || t.token_type == STRING || t.token_type == IDENTIFIER);
 }
-int parse_expression(){
-    debug_print("parsing expression..\n");
-    token_t t = get_next_token(scanner);
-    if(is_expression(t))
-        return PARSE_SUCCESS;
-    else
-        incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,scanner);
-    return SYNTAX_ERROR;
-}
+// int parse_expression(){
+//     debug_print("parsing expression..\n");
+//     token_t t = get_next_token(scanner);
+//     if(is_expression(t))
+//         return PARSE_SUCCESS;
+//     else
+//         incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,scanner);
+//     return SYNTAX_ERROR;
+// }
 bool is_datatype(token_t t){
     return (compare_token_attr(t, KEYWORD, "string") || compare_token_attr(t, KEYWORD, "number") || compare_token_attr(t, KEYWORD, "integer") || compare_token_attr(t, KEYWORD, "bool"));
 }
@@ -580,7 +586,7 @@ int parse_datatype(){
     return SYNTAX_ERROR;
 }
 void incorrect_token(char * expected, token_t t, scanner_t * scanner){
-    fprintf(stderr, "stdin:\033[1;37m%lu:%lu\033[0m: \033[0;31mError, Wrong token!\033[0m %s expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]),expected, (char *) t.attr, t.token_type);
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Syntax error:\033[0m Wrong token! %s expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]),expected, (char *) t.attr, t.token_type);
 }
 bool lookahead_token(scanner_t * scanner,token_type_t expecting){
     token_t t = lookahead(scanner);
