@@ -144,6 +144,11 @@ int str_cmp(const char *str1, const char *str2) {
     return strcmp(str1, str2);
 }
 
+size_t len(string_t *str) {
+    return str->length;
+}
+
+
 
 int dstring_cmp(string_t* str1, string_t* str2) {
     return strcmp(str1->str, str2->str);

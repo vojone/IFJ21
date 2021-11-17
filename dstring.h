@@ -108,6 +108,9 @@ int get_chtype(const char c);
 int str_cmp(const char *str1, const char *str2);
 
 
+size_t len(string_t *str);
+
+
 int dstring_cmp(string_t* str1, string_t* str2);
 
 

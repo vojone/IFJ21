@@ -47,6 +47,7 @@ typedef struct sym_data {
     sym_type_t type;
     sym_dtype_t dtype;
     sym_status_t status;
+    string_t ret_types;
 } sym_data_t;
 
 /**
