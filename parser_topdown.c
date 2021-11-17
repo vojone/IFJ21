@@ -293,6 +293,7 @@ int parse_str(){
     return SYNTAX_ERROR;
 }
 int parse_function_def(){
+    
     //parsing function definition signature
     bool id = check_next_token(scanner,IDENTIFIER);
     bool left_bracket = check_next_token_attr(scanner,SEPARATOR,"(");
@@ -369,7 +370,7 @@ int parse_function_def(){
             }
         }
     }
-
+    //TODO FIX OVERWRITING ERRORS 
     //parsing inside function
     debug_print("parsing inside function...\n");
     int res = statement_list();
