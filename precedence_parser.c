@@ -10,6 +10,11 @@
 
 #include "precedence_parser.h"
 
+bool is_allowed_separator(token_t *token) {
+    return token->token_type == SEPARATOR && 
+           (str_cmp(token->attr, ")") == 0 || str_cmp(token->attr, "(") == 0);
+}
+
 /**
  * @brief Resolves if token can be part of expression
  */ 
@@ -17,7 +22,7 @@ bool is_EOE(token_t *token) {
     token_type_t type = token->token_type;
 
     if(type == IDENTIFIER || type == OPERATOR ||
-       type == SEPARATOR || type == STRING ||
+       is_allowed_separator(token) || type == STRING ||
        type == NUMBER || type == INTEGER) {
         return false;
     }
@@ -538,14 +543,14 @@ void print_err_message(int return_value, scanner_t *sc,
     {
     case LEXICAL_ERROR:
         fprintf(stderr, 
-                "(%ld,%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token! (\"%s\")\n",
+                "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token! (\"%s\")\n",
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL], 
                 (char *)cur_tok->attr);
         break;
     case SEM_ERROR_IN_EXPR:
         fprintf(stderr, 
-                "(%ld,%ld)\t| \033[0;31mSemantic error:\033[0m Bad data types in expression!\n",
+                "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m Bad data types in expression!\n",
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL]);
         if(*err_m) {
@@ -555,7 +560,7 @@ void print_err_message(int return_value, scanner_t *sc,
         break;
     case EXPRESSION_FAILURE:
         fprintf(stderr, 
-                "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in epxression! (\"%s%s\")\n", 
+                "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in epxression! (\"%s%s\")\n", 
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL],
                 (char *)last_tok->attr,
@@ -599,8 +604,7 @@ int parse_expression(scanner_t *sc) {
             break;
         }
         char precedence = get_precedence(on_top, on_input);
-
-        //fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top, on_input);
+        fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top.type, on_input.type);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;
@@ -616,12 +620,14 @@ int parse_expression(scanner_t *sc) {
             retval = reduce_top(&stack, &failed_op);
         }
         else {
-            retval = EXPRESSION_FAILURE;
+            retval = EXPRESSION_SUCCESS;
+            break;
         }
     }
 
     print_err_message(retval, sc, &last_token, &current_token, &failed_op);
     free_everything(&stack, &last_token, &current_token);
+    //fprintf(stderr, "%s\n", (char *)lookahead(sc).attr);
     return retval;
 }
 

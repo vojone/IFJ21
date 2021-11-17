@@ -451,6 +451,39 @@ TEST_F(complexity_moderate, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
+class expression_error : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(-- Program 3: Prace s retezci a vestavenymi funkcemi
+                function main()
+                    local a : integer
+                    a = 1**2
+                end
+                main()
+            )";
+        }
+};
+
+TEST_F(expression_error, only_parse) {
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class expression_sem_error : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(
+                    local a : integer
+                    a = 8+1*"a"
+            )";
+        }
+};
+
+TEST_F(expression_sem_error, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_EXPRESSION);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
