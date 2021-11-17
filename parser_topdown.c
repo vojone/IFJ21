@@ -7,10 +7,11 @@
 
 #include "parser_topdown.h"
 
+
 static scanner_t * scanner;
 static parser_t * parser;
-#define MAXCALLS 100
-static int current_calls = 0;
+static symtab_t symtab;
+
 #define DEBUG true
 
 void parser_setup(parser_t * p,scanner_t *s){
@@ -18,6 +19,7 @@ void parser_setup(parser_t * p,scanner_t *s){
     p->reached_EOF=false;
     p->return_code=0;
     scanner = s;
+    init_tab(&(symtab));
 }
 int parse_program(){
     //scanner_init(scanner);    
@@ -62,12 +64,6 @@ int statement_list(){
     return statement_list();
 }
 int global_statement(){
-    //* remove later
-    if(current_calls >= MAXCALLS){
-        debug_print("Max calls exceeded, terminating \n");
-        return INTERNAL_ERROR;
-    }
-    current_calls++;
 
     token_t t = get_next_token(scanner);
     if(compare_token(t, KEYWORD)){
@@ -80,46 +76,56 @@ int global_statement(){
             return parse_function_def();
         }
             
-        incorrect_token("This is global scope so keyword such as require or function definition or call expected", t, scanner);
+        error_unexpected_token("This is global scope so keyword such as require or function definition or call expected", t);
         return false;
     }else if(compare_token(t,IDENTIFIER)){
-        if(lookahead_token_attr(scanner,SEPARATOR,"(")){
+        char *func = t.attr;
+        tree_node_t *func_valid = search(&(symtab), func);
+        if (func_valid == NULL){ //----------------------------------------------------------------------------
+            error_semantic("Function name '%s' not defined!",func);
+            return SEMANTIC_ERROR_DEFINITION;
+        }
+        if(lookahead_token_attr(SEPARATOR,"(")){
             return parse_function_call();
         }
-        incorrect_token("function call",t,scanner);
+        error_unexpected_token("function call",t);
         return SYNTAX_ERROR;
     }else if(compare_token(t,EOF_TYPE)){
         parser->reached_EOF = true;
         return PARSE_SUCCESS;
     }
 
-    incorrect_token("This is global scope so keyword such as require or function definition or call expected",t,scanner);
+    error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
     return SYNTAX_ERROR;
 }
 int statement () {
-    //just to be sure for development. remove later
-    if(current_calls >= MAXCALLS){
-        debug_print("Max calls exceeded, terminating \n");
-        return INTERNAL_ERROR;
-    }
-    current_calls++;
+    
     token_t t = lookahead(scanner);
     
     switch (t.token_type)
     {
     case IDENTIFIER:
+        true;
+        char *func = t.attr;
         // it is neccessary to look at the next lexeme also
         t = get_next_token(scanner);
         t = lookahead(scanner);
         bool is_multiple_assignment = compare_token_attr(t,SEPARATOR,",");
         bool is_single_assignment = compare_token_attr(t,OPERATOR,"=");
         //check if it is a function call
+        debug_print("Calling function ------------");
         if(compare_token_attr(t,SEPARATOR, "(")){
+            debug_print("Call function %s\n", func);
+            tree_node_t *func_valid = search(&(symtab), func);
+            if (func_valid == NULL){ //----------------------------------------------------------------------------
+                error_semantic("Function name '%s' not defined!",func);
+                return SEMANTIC_ERROR_DEFINITION;
+            }
             return parse_function_call();
         }else if(is_multiple_assignment || is_single_assignment){
             return assignment();
         }else{
-            incorrect_token("After IDENTIFIER a function call or an assignment",t,scanner);
+            error_unexpected_token("After IDENTIFIER a function call or an assignment",t);
         }
         break;
     case KEYWORD:
@@ -157,7 +163,7 @@ int statement () {
         }
         break;
     case EOF_TYPE:
-        incorrect_token("Reached EOF inside a function. Did you forget 'end'? END",t,scanner);
+        error_unexpected_token("Reached EOF inside a function. Did you forget 'end'? END",t);
         parser->reached_EOF = true;
         return SYNTAX_ERROR;
         break;
@@ -181,7 +187,7 @@ int assignment(){
         if(t.token_type == IDENTIFIER || token_count == 0)
             token_count++;
         else{
-            incorrect_token("IDENTIFIER",t,scanner);
+            error_unexpected_token("IDENTIFIER",t);
             return SYNTAX_ERROR;
         }
         //comma should follow, or assignment operator
@@ -191,7 +197,7 @@ int assignment(){
         }else if(compare_token_attr(t,OPERATOR,"=")){
             foundAssignmentOp = true;
         }else{
-            incorrect_token("SEPARATOR ',' or OPERATOR '='",t,scanner);
+            error_unexpected_token("SEPARATOR ',' or OPERATOR '='",t);
             return SYNTAX_ERROR;
         }
     }
@@ -212,7 +218,7 @@ int assignment(){
             if( compare_token_attr(t,SEPARATOR,",")){
                 //ok
             }else{
-                incorrect_token("Missing SEPARATOR ',' in the assignment, which was",t,scanner);
+                error_unexpected_token("Missing SEPARATOR ',' in the assignment, which was",t);
                 return SYNTAX_ERROR;
             }
         }
@@ -223,11 +229,11 @@ int parse_local_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
     if(!compare_token(t,IDENTIFIER)){
-        incorrect_token("identifier",t,scanner);
+        error_unexpected_token("identifier",t);
         return t.token_type == EOF_TYPE ? LEXICAL_ERROR : SYNTAX_ERROR;
     }
     //should be a comma
-    bool comma = check_next_token_attr(scanner,SEPARATOR,":");
+    bool comma = check_next_token_attr(SEPARATOR,":");
     if(!comma)
         return SYNTAX_ERROR;
 
@@ -235,18 +241,18 @@ int parse_local_var(){
     t = get_next_token(scanner);
     bool type = is_datatype(t);
     if(!type){
-        incorrect_token("datatype",t,scanner);
+        error_unexpected_token("datatype",t);
         return SYNTAX_ERROR;
     }
 
     //there can be a value assignment
-    if(lookahead_token_attr(scanner,OPERATOR,"=")){ 
+    if(lookahead_token_attr(OPERATOR,"=")){ 
         get_next_token(scanner);
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
         int assignment = parse_expression(scanner);
         if(assignment != PARSE_SUCCESS)
-            incorrect_token("Valid expression",t,scanner);
+            error_unexpected_token("Valid expression",t);
         return assignment;
     }
     return PARSE_SUCCESS;
@@ -255,11 +261,11 @@ int parse_global_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
     if(!compare_token(t,IDENTIFIER)){
-        incorrect_token("identifier",t,scanner);
+        error_unexpected_token("identifier",t);
         return SYNTAX_ERROR;
     }
     //should be a comma
-    bool comma = check_next_token_attr(scanner,SEPARATOR,":");
+    bool comma = check_next_token_attr(SEPARATOR,":");
     if(!comma)
         return SYNTAX_ERROR;
 
@@ -267,18 +273,18 @@ int parse_global_var(){
     t = get_next_token(scanner);
     bool type = is_datatype(t);
     if(!type){
-        incorrect_token("datatype",t,scanner);
+        error_unexpected_token("datatype",t);
         return SYNTAX_ERROR;
     }
 
     //there can be a value assignment
-    if(lookahead_token_attr(scanner,OPERATOR,"=")){ 
+    if(lookahead_token_attr(OPERATOR,"=")){ 
         get_next_token(scanner);
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
         int assignment = parse_expression(scanner);
         if(assignment != PARSE_SUCCESS)
-            incorrect_token("Valid expression",t,scanner);
+            error_unexpected_token("Valid expression",t);
         return assignment;
     }
     return PARSE_SUCCESS;
@@ -289,14 +295,17 @@ int parse_str(){
     if(t.token_type == STRING)
         return PARSE_SUCCESS;
     else
-        incorrect_token("STRING",t,scanner);
+        error_unexpected_token("STRING",t);
     return SYNTAX_ERROR;
 }
 int parse_function_def(){
-    
+
+    token_t id_fc = get_next_token(scanner);
     //parsing function definition signature
-    bool id = check_next_token(scanner,IDENTIFIER);
-    bool left_bracket = check_next_token_attr(scanner,SEPARATOR,"(");
+    bool id = (id_fc.token_type == (IDENTIFIER));
+    bool left_bracket = check_next_token_attr(SEPARATOR,"(");
+    int params = 0;
+    int returns = 0;
 
     // check if there are parameters
     token_t t = lookahead(scanner);
@@ -308,7 +317,7 @@ int parse_function_def(){
             //should be IDENTIFIER
             t = get_next_token(scanner);
             if( t.token_type != IDENTIFIER ){
-                incorrect_token("IDENTIFIER",t,scanner);
+                error_unexpected_token("IDENTIFIER",t);
                 finished = true;
                 return SYNTAX_ERROR;
             }
@@ -316,7 +325,7 @@ int parse_function_def(){
             //should be COLON
             t = get_next_token(scanner);
             if( !compare_token_attr(t,SEPARATOR,":") ){
-                incorrect_token("':'",t,scanner);
+                error_unexpected_token("':'",t);
                 finished = true;
                 return SYNTAX_ERROR;
             }
@@ -324,30 +333,32 @@ int parse_function_def(){
             //should be DATATYPE
             t = get_next_token(scanner);
             if( !is_datatype(t) ){
-                incorrect_token("DATA TYPE",t,scanner);
+                error_unexpected_token("DATA TYPE",t);
                 finished = true;
                 return SYNTAX_ERROR;
             }
 
             //if there is no comma we should be at the end of the list
-            bool comma = lookahead_token_attr(scanner, SEPARATOR,",");
+            bool comma = lookahead_token_attr(SEPARATOR,",");
             if(!comma)
                 finished = true;
             else{
                 //we go one token forward
                 get_next_token(scanner);
             }
+            params++;
         }
     }
 
-    bool right_bracket= check_next_token_attr(scanner,SEPARATOR,")");
+
+    bool right_bracket= check_next_token_attr(SEPARATOR,")");
     if(!(id && left_bracket && right_bracket)){
         debug_print("ERROR INVALID FUNCTION SINATURE!\n");
         return SYNTAX_ERROR;
     }
 
     //parsing types if there is colon
-    if(lookahead_token_attr(scanner, SEPARATOR, ":")){
+    if(lookahead_token_attr(SEPARATOR, ":")){
         //will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(scanner);
@@ -356,21 +367,25 @@ int parse_function_def(){
             //should be datatype
             t = get_next_token(scanner);
             if(!is_datatype(t)){
-                incorrect_token("data type",t,scanner);
+                error_unexpected_token("data type",t);
                 finished = true;
                 return SYNTAX_ERROR;
             }
             //if there is no comma we should be at the end of the list
-            bool comma = lookahead_token_attr(scanner, SEPARATOR,",");
+            bool comma = lookahead_token_attr(SEPARATOR,",");
             if(!comma)
                 finished = true;
             else{
                 //we go one token forward
                 get_next_token(scanner);
             }
+            returns++;
         }
     }
-    //TODO FIX OVERWRITING ERRORS 
+
+    sym_data_t symtab_data = {id_fc.attr, FUNC};
+    insert_sym(&(symtab), id_fc.attr, symtab_data);
+
     //parsing inside function
     debug_print("parsing inside function...\n");
     int res = statement_list();
@@ -382,19 +397,19 @@ int parse_function_def(){
             debug_print("Successfully ended function definition!\n");
             return res;
         }else{
-            incorrect_token("Wrong keyword! Only END",t, scanner);
-            return SYNTAX_ERROR;
+            error_unexpected_token("Wrong keyword! Only END",t);
+            return (res != PARSE_SUCCESS) ? res : SYNTAX_ERROR;
         }
-        incorrect_token("[]",t,scanner);
-        return SYNTAX_ERROR;
+        error_unexpected_token("[]",t);
+        return (res != PARSE_SUCCESS) ? res : SYNTAX_ERROR;
     }else{
-        incorrect_token("Better check the implementation! END",t,scanner);
+        error_unexpected_token("Better check the implementation! END",t);
     }
-    return SYNTAX_ERROR;
+    return (res != PARSE_SUCCESS) ? res : SYNTAX_ERROR;
 }
 int parse_function_call(){
     debug_print("parsing function call...\n");
-    bool opening_bracket = check_next_token_attr(scanner, SEPARATOR, "(");
+    bool opening_bracket = check_next_token_attr(SEPARATOR, "(");
     if(opening_bracket){
         int args = parse_function_arguments();
         debug_print("function args success %i\n",(int) args);
@@ -414,7 +429,7 @@ int parse_function_arguments(){
             closing_bracket = true;
             continue;
         }else{
-            incorrect_token("EXPRESSION",t,scanner);
+            error_unexpected_token("EXPRESSION",t);
         }
         t = get_next_token(scanner);
         if(compare_token_attr(t,SEPARATOR,",")){
@@ -423,7 +438,7 @@ int parse_function_arguments(){
             closing_bracket = true;
         }
         else{
-            incorrect_token("',' as a separator between args or ')' as an end of argument list",t,scanner);
+            error_unexpected_token("',' as a separator between args or ')' as an end of argument list",t);
             return SYNTAX_ERROR;
         }
     }
@@ -437,7 +452,7 @@ int parse_if(){
     if(condition != PARSE_SUCCESS)
         return SYNTAX_ERROR;
 
-    bool then = check_next_token_attr(scanner, KEYWORD, "then");
+    bool then = check_next_token_attr(KEYWORD, "then");
     if(!then)
         return SYNTAX_ERROR;
 
@@ -463,13 +478,13 @@ int parse_if(){
             if(else_branch_statement_list != PARSE_SUCCESS)
                 return else_branch_statement_list;
         }
-        incorrect_token("[2]",t,scanner);
-        return SYNTAX_ERROR;
+        error_unexpected_token("[2]",t);
+        return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
     }else{
-        incorrect_token("Better check the implementation! END",t,scanner);
-        return SYNTAX_ERROR;
+        error_unexpected_token("Better check the implementation! END",t);
+        return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
     }
-    return inside_statement_list;
+    return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
 }
 
 int parse_else(){
@@ -485,12 +500,12 @@ int parse_return(){
     //     //should be expression
     //     token_t t = get_next_token(scanner);
     //     if(!is_expression(t)){
-    //         incorrect_token("EXPRESSION",t,scanner);
+    //         error_unexpected_token("EXPRESSION",t);
     //         finished = true;
     //         return SEMANTIC_ERROR_ASSIGNMENT;
     //     }
     //     //if there is no comma we should be at the end of the list
-    //     bool comma = lookahead_token_attr(scanner, SEPARATOR,",");
+    //     bool comma = lookahead_token_attr(SEPARATOR,",");
     //     if(!comma)
     //         finished = true;
     //     else{
@@ -511,7 +526,7 @@ int parse_while(){
     int condition = parse_expression(scanner);
     if(condition != PARSE_SUCCESS)
         return condition;
-    bool then = check_next_token_attr(scanner, KEYWORD, "do");
+    bool then = check_next_token_attr( KEYWORD, "do");
     if(!then)
         return false;
     int inside_statement_list = statement_list();
@@ -522,13 +537,13 @@ int parse_while(){
             debug_print("Ended while\n");
             return inside_statement_list;
         }
-        incorrect_token("[]",t,scanner);
-        return SYNTAX_ERROR;
+        error_unexpected_token("[]",t);
+        return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
     }else{
-        incorrect_token("Better check the implementation! END",t,scanner);
-        return SYNTAX_ERROR;
+        error_unexpected_token("Better check the implementation! END",t);
+        return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
     }
-    return inside_statement_list;
+    return (inside_statement_list != PARSE_SUCCESS) ? inside_statement_list : SYNTAX_ERROR;
 }
 
 /**
@@ -553,7 +568,7 @@ rule_t determine_rule(token_t t){
             return statement_rules[i];
         }
     }
-    incorrect_token("NO RULE can be used to parse this token! Other",t,scanner);
+    error_unexpected_token("NO RULE can be used to parse this token! Other",t);
     return (rule_t) {error_rule, {-1,NULL}};
 }
 int error_rule(){
@@ -573,7 +588,7 @@ bool is_expression(token_t t){
 //     if(is_expression(t))
 //         return PARSE_SUCCESS;
 //     else
-//         incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,scanner);
+//         error_unexpected_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t);
 //     return SYNTAX_ERROR;
 // }
 bool is_datatype(token_t t){
@@ -583,21 +598,28 @@ int parse_datatype(){
     token_t t = get_next_token(scanner);
     if( is_datatype(t) )
         return PARSE_SUCCESS;
-    incorrect_token("DATATYPE keyword",t,scanner);
+    error_unexpected_token("DATATYPE keyword",t);
     return SYNTAX_ERROR;
 }
-void incorrect_token(char * expected, token_t t, scanner_t * scanner){
+void error_unexpected_token(char * expected, token_t t){
     fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Syntax error:\033[0m Wrong token! %s expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]),expected, (char *) t.attr, t.token_type);
 }
-bool lookahead_token(scanner_t * scanner,token_type_t expecting){
+void error_semantic(const char * _Format, ...){
+    va_list args;
+    va_start(args,_Format);
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Semantic error: \033[0m",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]));
+    vfprintf(stderr,_Format,args);
+    fprintf(stderr,"\n");
+}
+bool lookahead_token(token_type_t expecting){
     token_t t = lookahead(scanner);
     return compare_token(t, expecting);
 }
-bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting_type, char * expecting_attr){
+bool lookahead_token_attr(token_type_t expecting_type, char * expecting_attr){
     token_t t = lookahead(scanner);
     return compare_token_attr(t, expecting_type, expecting_attr);
 }
-bool check_next_token(scanner_t * scanner,token_type_t expecting){
+bool check_next_token(token_type_t expecting){
     token_t t = get_next_token(scanner);
     
     if(compare_token(t, expecting))
@@ -606,17 +628,17 @@ bool check_next_token(scanner_t * scanner,token_type_t expecting){
     parser->return_code = (t.token_type == ERROR_TYPE) ? LEXICAL_ERROR : SYNTAX_ERROR;
     char exp_str[3];
     sprintf(exp_str, "%d", expecting);
-    incorrect_token(exp_str, t, scanner);
+    error_unexpected_token(exp_str, t);
     return false;
 }
-bool check_next_token_attr(scanner_t * scanner, token_type_t expecting_type, char * expecting_attr){
+bool check_next_token_attr(token_type_t expecting_type, char * expecting_attr){
     token_t t = get_next_token(scanner);
 
     if( compare_token_attr(t, expecting_type, expecting_attr) )
         return true;
 
     parser->return_code = (t.token_type == ERROR_TYPE) ? LEXICAL_ERROR : SYNTAX_ERROR;
-    incorrect_token(expecting_attr, t, scanner);
+    error_unexpected_token(expecting_attr, t);
     return false;
 }
 bool compare_token(token_t t, token_type_t expecting){

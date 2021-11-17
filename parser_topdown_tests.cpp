@@ -451,6 +451,54 @@ TEST_F(complexity_moderate, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
+class function_check_global : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                end
+                mainN(true,1,0)
+            )";
+        }
+};
+
+TEST_F(function_check_global, sema) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class function_check_inside : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                end
+                function hello()
+                    mainN(true,1,0)
+                end
+            )";
+        }
+};
+
+TEST_F(function_check_inside, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class variable_check_local : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                    local a : number
+                    a = "Lorem ipsum dolor sit amet"
+                end
+            )";
+        }
+};
+
+TEST_F(variable_check_local, semantic) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
@@ -465,3 +513,4 @@ int main(int argc, char **argv) {
 
     return RUN_ALL_TESTS();
 }
+
