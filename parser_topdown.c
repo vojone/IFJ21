@@ -191,6 +191,7 @@ int statement () {
 int assignment(){
     int token_count = 0;
     bool foundAssignmentOp = false;
+
     //first loop checks and counts left side of the assignment
     while(!foundAssignmentOp) {
         //identifier should be first
@@ -225,17 +226,18 @@ int assignment(){
     for(int i = 0; i < token_count; i++){
         //check for valid expression
         debug_print("Calling precedence parser...\n");
-        if(parse_expression(scanner) == EXPRESSION_SUCCESS) {
+        int expr_retval = parse_expression(scanner);
+        if(expr_retval == EXPRESSION_SUCCESS) {
             //ok
         }
         else{
-            debug_print("Error while parsing expression for multiple assignemt\n");
-            return SYNTAX_ERROR;
+            debug_print("Error while parsing expression for multiple assignment\n");
+            return expr_retval;
         }
         //if we are not at the end check for comma
-        if(i+1 != token_count) {
+        if(i + 1 != token_count) {
             token_t t = get_next_token(scanner);
-            if( compare_token_attr(t,SEPARATOR,",")){
+            if(compare_token_attr(t, SEPARATOR, ",")) {
                 //ok
             }
             else{
@@ -646,13 +648,20 @@ bool is_expression(token_t t){
 //         incorrect_token("Current implementation of expression has INTEGER, STRING, NUMBER, ID",t,scanner);
 //     return SYNTAX_ERROR;
 // }
-bool is_datatype(token_t t){
-    return (compare_token_attr(t, KEYWORD, "string") || compare_token_attr(t, KEYWORD, "number") || compare_token_attr(t, KEYWORD, "integer") || compare_token_attr(t, KEYWORD, "bool"));
+bool is_datatype(token_t t) {
+    return (compare_token_attr(t, KEYWORD, "string") || 
+           compare_token_attr(t, KEYWORD, "number") || 
+           compare_token_attr(t, KEYWORD, "integer") || 
+           compare_token_attr(t, KEYWORD, "bool"));
 }
+
+
 int parse_datatype(){
     token_t t = get_next_token(scanner);
-    if( is_datatype(t) )
+    if( is_datatype(t)) {
         return PARSE_SUCCESS;
+    }
+
     incorrect_token("DATATYPE keyword",t,scanner);
     return SYNTAX_ERROR;
 }
@@ -663,19 +672,19 @@ void incorrect_token(char * expected, token_t t, scanner_t * scanner){
 }
 
 
-bool lookahead_token(scanner_t * scanner,token_type_t expecting){
+bool lookahead_token(scanner_t * scanner, token_type_t expecting){
     token_t t = lookahead(scanner);
     return compare_token(t, expecting);
 }
 
 
-bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting_type, char * expecting_attr){
+bool lookahead_token_attr(scanner_t * scanner, token_type_t expecting_type, char * expecting_attr){
     token_t t = lookahead(scanner);
     return compare_token_attr(t, expecting_type, expecting_attr);
 }
 
 
-bool check_next_token(scanner_t * scanner,token_type_t expecting){
+bool check_next_token(scanner_t * scanner, token_type_t expecting){
     token_t t = get_next_token(scanner);
     
     if(compare_token(t, expecting))

@@ -105,6 +105,11 @@ void destroy_tab(symtab_t *tab);
  */ 
 tree_node_t *search(symtab_t *tab, const char *key);
 
+/**
+ * @brief Converts character to sym_dtype enum
+ */
+sym_dtype_t char_to_dtype(char type_c);
+
 
 #endif
 

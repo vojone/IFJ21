@@ -258,29 +258,6 @@ expr_rule_t *get_rule(unsigned int index) {
 }
 
 /**
- * @brief Converts character used in operand type grammar in get_rule() to sym_dtype enum
- */ 
-sym_dtype_t char_to_dtype(char type_c) {
-    sym_dtype_t type;
-    switch (type_c)
-    {
-    case 'n':
-        type = NUM;
-        break;
-    case 'i':
-        type = INT;
-        break;
-    case 's':
-        type = STR;
-        break;
-    default:
-        type = UNDEFINED;
-    }
-
-    return type;
-}
-
-/**
  * @brief Pops operand stack if it is not empty
  */ 
 expr_el_t safe_op_pop(bool *cur_ok, bool* check_res, pp_stack_t *op_stack) {

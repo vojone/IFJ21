@@ -177,4 +177,27 @@ void destroy_tab(tree_node_t **tab) {
   ts_stack_dtor(&stack);
 }
 
+/**
+ * @brief Converts character used in operand type grammar in get_rule() to sym_dtype enum
+ */ 
+sym_dtype_t char_to_dtype(char type_c) {
+    sym_dtype_t type;
+    switch (type_c)
+    {
+    case 'n':
+        type = NUM;
+        break;
+    case 'i':
+        type = INT;
+        break;
+    case 's':
+        type = STR;
+        break;
+    default:
+        type = UNDEFINED;
+    }
+
+    return type;
+}
+
 /***                          End of symtable.c                            ***/

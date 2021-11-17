@@ -474,8 +474,10 @@ class expression_sem_error : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(
+                    function h()
                     local a : integer
                     a = 8+1*"a"
+                    end
             )";
         }
 };
