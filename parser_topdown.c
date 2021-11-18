@@ -605,26 +605,26 @@ int parse_while() {
  */
 rule_t determine_rule(token_t t){
     rule_t statement_rules[] = {
-        {parse_local_var,   {KEYWORD,"local"}   },
-        {parse_global_var,  {KEYWORD,"global"}  },
-        {parse_if,          {KEYWORD,"if"}      },
-        {parse_else,        {KEYWORD,"else"}    },
-        {parse_while,       {KEYWORD,"while"}   },
-        {parse_return,      {KEYWORD,"return"}  },
-        {parse_end,         {KEYWORD,"end"}     }
+        {parse_local_var,   {KEYWORD, UNSET, "local"}   },
+        {parse_global_var,  {KEYWORD, UNSET, "global"}  },
+        {parse_if,          {KEYWORD, UNSET, "if"}      },
+        {parse_else,        {KEYWORD, UNSET, "else"}    },
+        {parse_while,       {KEYWORD, UNSET, "while"}   },
+        {parse_return,      {KEYWORD, UNSET, "return"}  },
+        {parse_end,         {KEYWORD, UNSET, "end"}     }
     };
     size_t rules_n = sizeof(statement_rules) / sizeof(rule_t);
     for (size_t i = 0; i < rules_n; i++)
     {
         token_t expected = statement_rules[i].rule_first;
-        if(compare_token_attr(t,expected.token_type,expected.attr)) {
+        if(compare_token_attr(t, expected.token_type, expected.attr)) {
             statement_rules[i].rule_function();
             return statement_rules[i];
         }
     }
 
     incorrect_token("NO RULE can be used to parse this token! Other",t,scanner);
-    return (rule_t) {error_rule, {-1,NULL}};
+    return (rule_t) {error_rule, {-1, UNSET, NULL}};
 }
 
 

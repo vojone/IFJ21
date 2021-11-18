@@ -111,11 +111,6 @@ class test_fixture : public ::testing::Test {
                 }
 
                 ASSERT_EQ(exp_types[i], temp.token_type);
-<<<<<<< HEAD
-
-                token_dtor(&temp);
-=======
->>>>>>> scanner_upgrade
             }
         }
 

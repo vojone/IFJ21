@@ -478,15 +478,12 @@ expr_el_t get_top_symbol(pp_stack_t *stack) {
  */ 
 void free_everything(pp_stack_t *stack, token_t *last, token_t *cur) {
     pp_stack_dtor(stack);
-    token_dtor(last);
-    token_dtor(cur);
 }
 
 /**
  * @brief Makes last token from current token and destructs old token
  */ 
 void token_aging(scanner_t *sc, token_t *last, token_t *cur) {
-    token_dtor(last);
     *last = *cur;
     *cur = get_next_token(sc);
 }
