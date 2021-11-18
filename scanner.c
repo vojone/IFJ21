@@ -23,6 +23,7 @@
 void token_init(token_t *token) {
     token->token_type = UNKNOWN;
     token->attr = NULL;
+    token->first_ch_index = UNSET;
 }
 
 /**
@@ -167,21 +168,7 @@ void got_comment(char c, token_t *token, scanner_t *sc) {
     sc->state = INIT;
 }
 
-
 /**
-<<<<<<< HEAD
-=======
- * @brief Sets initial values to token
- */ 
-void init_token(token_t *token) {
-    token->token_type = UNKNOWN;
-    token->attr = NULL;
-    token->first_ch_index = UNSET;
-}
-
-
-/**
->>>>>>> scanner_upgrade
  * @brief Tries to find token in table
  * @param tab_func Function with static table in which will be searching executed
  * @param token Current processed token

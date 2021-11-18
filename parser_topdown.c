@@ -88,14 +88,14 @@ int global_statement(){
         incorrect_token("This is global scope so keyword such as require or function definition or call expected", t, scanner);
         return false;
     }
-    else if(compare_token(t,IDENTIFIER)) {
-        if(lookahead_token_attr(scanner,SEPARATOR,"(")) {
+    else if(compare_token(t, IDENTIFIER)) {
+        if(lookahead_token_attr(scanner, SEPARATOR, "(")) {
             return parse_function_call();
         }
-        incorrect_token("function call",t,scanner);
+        incorrect_token("function call", t, scanner);
         return SYNTAX_ERROR;
     }
-    else if(compare_token(t,EOF_TYPE)) {
+    else if(compare_token(t, EOF_TYPE)) {
         parser->reached_EOF = true;
         return PARSE_SUCCESS;
     }
@@ -121,8 +121,8 @@ int statement () {
         // it is neccessary to look at the next lexeme also
         t = get_next_token(scanner);
         t = lookahead(scanner);
-        bool is_multiple_assignment = compare_token_attr(t,SEPARATOR,",");
-        bool is_single_assignment = compare_token_attr(t,OPERATOR,"=");
+        bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
+        bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
         //check if it is a function call
         if(compare_token_attr(t, SEPARATOR, "(")) {
             return parse_function_call();
@@ -134,6 +134,7 @@ int statement () {
             incorrect_token("After IDENTIFIER a function call or an assignment",t,scanner);
         }
         break;
+
     case KEYWORD:
         // true;
         // rule_t rule_to_use = determine_rule(t);
@@ -174,11 +175,13 @@ int statement () {
             return PARSE_SUCCESS;
         }
         break;
+
     case EOF_TYPE:
         incorrect_token("Reached EOF inside a function. Did you forget 'end'? END", t, scanner);
         parser->reached_EOF = true;
         return SYNTAX_ERROR;
         break;
+
     default:
         debug_print("NO RULE TO USE: Token type is: %i\n", t.token_type);
         return SYNTAX_ERROR;
@@ -188,7 +191,7 @@ int statement () {
 }
 
 
-int assignment(){
+int assignment() {
     int token_count = 0;
     bool foundAssignmentOp = false;
 
@@ -196,15 +199,18 @@ int assignment(){
     while(!foundAssignmentOp) {
         //identifier should be first
         token_t t;
+        token_init(&t);
+
         //first token is already read at the beginning, so we check wheter we are at the beginning
         if(token_count != 0) {
             t = get_next_token(scanner);
         }
+
         if(t.token_type == IDENTIFIER || token_count == 0) {
             token_count++;
         }
         else {
-            incorrect_token("IDENTIFIER",t,scanner);
+            incorrect_token("IDENTIFIER", t, scanner);
             return SYNTAX_ERROR;
         }
         //comma should follow, or assignment operator
@@ -450,7 +456,7 @@ int parse_function_call() {
     bool opening_bracket = check_next_token_attr(scanner, SEPARATOR, "(");
     if(opening_bracket) {
         int args = parse_function_arguments();
-        debug_print("function args success %i\n",(int) args);
+        debug_print("function args success %i\n", (int)args);
         return args;
     }
     else {
@@ -719,11 +725,12 @@ bool compare_token(token_t t, token_type_t expecting){
 
 
 bool compare_token_attr(token_t t, token_type_t expecting_type, char * expecting_attr){
-    if( t.token_type == expecting_type ){
-        if(strcmp(t.attr, expecting_attr) == 0){
+    if(t.token_type == expecting_type){
+        if(str_cmp(t.attr, expecting_attr) == 0){
             return true;
         }
     }
+
     return false;
 }
 
