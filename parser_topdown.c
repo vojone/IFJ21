@@ -167,7 +167,8 @@ int statement () {
             //<statement>             -> return <exp>
             t = get_next_token(scanner);
             debug_print("Calling precedence parser...\n");
-            return parse_expression(scanner);
+            sym_dtype_t ret_type;
+            return parse_expression(scanner, &ret_type);
         }else if(compare_token_attr(t,KEYWORD,"end")){
             return PARSE_SUCCESS;
         }
@@ -216,7 +217,8 @@ int assignment(){
     for(int i = 0; i < token_count;i++){
         //check for valid expression
         debug_print("Calling precedence parser...\n");
-        if(parse_expression(scanner) == PARSE_SUCCESS){
+        sym_dtype_t ret_type;
+        if(parse_expression(scanner, &ret_type) == PARSE_SUCCESS){
             //ok
         }else{
             debug_print("Error while parsing expression for multiple assignemt\n");
@@ -264,7 +266,8 @@ int parse_local_var(){
         get_next_token(scanner);
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
-        int assignment = parse_expression(scanner);
+        sym_dtype_t ret_type;
+        int assignment = parse_expression(scanner, &ret_type);
         if(assignment != PARSE_SUCCESS)
             incorrect_token("Valid expression",t,scanner);
         return assignment;
@@ -316,7 +319,8 @@ int parse_global_var(){
         get_next_token(scanner);
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
-        int assignment = parse_expression(scanner);
+        sym_dtype_t ret_type;
+        int assignment = parse_expression(scanner, &ret_type);
         if(assignment != PARSE_SUCCESS)
             incorrect_token("Valid expression",t,scanner);
         return assignment;
@@ -522,7 +526,8 @@ int parse_function_arguments(){
 
 int parse_if(){
     debug_print("Calling precedence parser...\n");
-    int condition = parse_expression(scanner);
+    sym_dtype_t ret_type;
+    int condition = parse_expression(scanner, &ret_type);
     
     if(condition != PARSE_SUCCESS)
         return SYNTAX_ERROR;
@@ -598,7 +603,8 @@ int parse_end(){
 
 int parse_while(){
     debug_print("Calling precedence parser...\n");
-    int condition = parse_expression(scanner);
+    sym_dtype_t ret_type;
+    int condition = parse_expression(scanner, &ret_type);
     if(condition != PARSE_SUCCESS)
         return condition;
     bool then = check_next_token_attr(scanner, KEYWORD, "do");
