@@ -24,6 +24,8 @@
 #include "dstring.h"
 #include "tables.h"
 
+#define UNSET -1
+
 /**
  * @brief All possible token types
  */
@@ -45,6 +47,7 @@ typedef enum token_type {
  */ 
 typedef struct token {
     token_type_t token_type;
+    size_t first_ch_index;
     void * attr;
 } token_t;
 
@@ -78,7 +81,8 @@ typedef enum pos_indexes {
  * @brief Scanner structure
  */ 
 typedef struct scanner {
-    string_t str_buffer; /**< Temporary string buffer used for collecting value of token */
+    string_t str_buffer; /**< String buffer used for collecting value of tokens */
+    size_t first_ch_index; /**< Index of first character of currently processed token */
 
     char input_buffer; /**< Sometimes is necessary to "push" character back to stdin*/
     bool is_input_buffer_full; /**< Flag that signalizes validity of data in input_buffer */
@@ -103,11 +107,11 @@ typedef void (*trans_func_t)(char, token_t *, scanner_t *);
  */ 
 void token_init(token_t *token);
 
-
 /**
- * @brief Correctly frees resources holds by token and sets it to initial state
+ * @brief Finds attribute of given token
+ * @return Pointer to token attribute (string)
  */ 
-void token_dtor(token_t *token);
+char * get_attr(token_t *token, scanner_t *sc);
 
 /**
  * @brief Reads characters from stdin (or from buffer) and tries to make token from it

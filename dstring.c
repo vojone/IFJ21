@@ -50,6 +50,15 @@ int app_char(char c, string_t *string) {
     return STR_SUCCESS;
 }
 
+void cut_string(string_t *string, size_t new_length) {
+    if(new_length >= string->length) {
+        return;
+    }
+
+    string->length = new_length;
+    string->str[string->length] = '\0';
+}
+
 
 int prep_char(char c, string_t *string) {
     if(string->alloc_size - 1 < string->length + 1) {
