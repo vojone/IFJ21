@@ -5,6 +5,7 @@ function hello()
 
 end
 function main()
-hells()
+local x : integer
+
 end
 

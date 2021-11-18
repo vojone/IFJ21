@@ -113,11 +113,6 @@ tree_node_t *search(symtab_t *tab, const char *key);
  */
 sym_dtype_t char_to_dtype(char type_c);
 
-/**
- * @brief Converts character used in operand type grammar in get_rule() to sym_dtype enum
- */ 
-sym_dtype_t char_to_dtype(char type_c);
-
 #endif
 
 

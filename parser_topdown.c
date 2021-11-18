@@ -238,6 +238,8 @@ int assignment(){
 int parse_local_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
+    char* var_id = t.attr;
+    debug_print("Var_ID is: %s <---------------\n\n", var_id);
     if(!compare_token(t,IDENTIFIER)){
         incorrect_token("identifier",t,scanner);
         return t.token_type == EOF_TYPE ? LEXICAL_ERROR : SYNTAX_ERROR;
@@ -249,6 +251,8 @@ int parse_local_var(){
 
     //should be a data type
     t = get_next_token(scanner);
+    char* var_type = t.attr;
+    debug_print("Var type is: %s <---------------\n\n", var_type);
     bool type = is_datatype(t);
     if(!type){
         incorrect_token("datatype",t,scanner);
@@ -265,11 +269,30 @@ int parse_local_var(){
             incorrect_token("Valid expression",t,scanner);
         return assignment;
     }
+    //  //  //
+    // TODO //
+    //  //  //
+    char* expr_type = "s";
+    debug_print("Data type of identifier %s vs %s <===================\n\n", var_type, expr_type);
+    
+    if (strcmp(var_type,expr_type) == 0){
+        debug_print("Var: %s Type: %s => TS\n\n", var_id, var_type);
+        //sym_data_t var_data = {var_id, var_type};
+        //insert_sym(&(symtab), var_id, var_data);
+    }else{
+        return SEMANTIC_ERROR_ASSIGNMENT;
+    }
+     
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
     return PARSE_SUCCESS;
 }
 int parse_global_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
+    char* var_id = t.attr;
     if(!compare_token(t,IDENTIFIER)){
         incorrect_token("identifier",t,scanner);
         return SYNTAX_ERROR;
@@ -281,6 +304,7 @@ int parse_global_var(){
 
     //should be a data type
     t = get_next_token(scanner);
+    char* var_type = t.attr;
     bool type = is_datatype(t);
     if(!type){
         incorrect_token("datatype",t,scanner);
@@ -297,6 +321,23 @@ int parse_global_var(){
             incorrect_token("Valid expression",t,scanner);
         return assignment;
     }
+    //  //  //
+    // TODO //
+    //  //  //
+    char* expr_type = "s";
+    debug_print("Data type of identifier %s vs %s <===================\n\n", var_type, expr_type);
+    
+    if (strcmp(var_type,expr_type) == 0){
+        debug_print("Var: %s Type: %s => TS\n\n", var_id, var_type);
+        //sym_data_t var_data = {var_id, var_type};
+        //insert_sym(&(symtab), var_id, var_data);
+    }else{
+        return SEMANTIC_ERROR_ASSIGNMENT;
+    }
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
     return PARSE_SUCCESS;
 }
 
@@ -311,6 +352,8 @@ int parse_str(){
 int parse_function_def(){
 
     token_t id_fc = get_next_token(scanner);
+    string_t datatype;
+    str_init(&datatype);
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
     bool left_bracket = check_next_token_attr(scanner,SEPARATOR,"(");
@@ -372,6 +415,24 @@ int parse_function_def(){
         //will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(scanner);
+
+        /*
+        if (strcmp(char_to_dtype((datatype.str)),"INT") == 1){
+
+        }else if (strcmp(char_to_dtype((datatype.str)),"STR") == 1){
+
+        }else if (strcmp(char_to_dtype((datatype.str)),"NUM") == 1){
+
+        }else{
+
+        }
+        */
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+
+        //app_char( písmeno, datatype);
         bool finished = false;
         while(!finished){
             //should be datatype
@@ -393,8 +454,12 @@ int parse_function_def(){
         }
     }
 
-    sym_data_t symtab_data = {id_fc.attr, FUNC};
+    sym_data_t symtab_data = {id_fc.attr, FUNC, datatype};
     insert_sym(&(symtab), id_fc.attr, symtab_data);
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
 
     //parsing inside function
     debug_print("parsing inside function...\n");
