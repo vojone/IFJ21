@@ -61,7 +61,7 @@ typedef struct expr_rule {
     char *error_message; /**< Error message that is showed when semantic error occured*/
 } expr_rule_t;
 
-int parse_expression(scanner_t *sc);
+int parse_expression(scanner_t *sc, sym_dtype_t *ret_type);
 
 #endif
 

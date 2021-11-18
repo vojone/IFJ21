@@ -74,6 +74,7 @@ class test_fixture : public :: testing :: Test {
     protected:
         std::string inp_filename = TMP_FILE_NAME;
         std::string scanner_input;
+        sym_dtype_t ret_type;
 
         scanner_t uut;
         bool init_success;
@@ -101,7 +102,7 @@ class test_fixture : public :: testing :: Test {
 };
 
 TEST_F(test_fixture, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
 }
 
 
@@ -115,7 +116,7 @@ class lexical_error : public test_fixture {
 };
 
 TEST_F(lexical_error, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), LEXICAL_ERROR);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), LEXICAL_ERROR);
 }
 
 class basic : public test_fixture {
@@ -128,7 +129,8 @@ class basic : public test_fixture {
 };
 
 TEST_F(basic, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 class str_parse : public test_fixture {
@@ -141,7 +143,8 @@ class str_parse : public test_fixture {
 };
 
 TEST_F(str_parse, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 class nested_parenthesis : public test_fixture {
@@ -154,7 +157,7 @@ class nested_parenthesis : public test_fixture {
 };
 
 TEST_F(nested_parenthesis, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
 }
 
 class relational_operators1 : public test_fixture {
@@ -167,7 +170,8 @@ class relational_operators1 : public test_fixture {
 };
 
 TEST_F(relational_operators1, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 
@@ -181,7 +185,8 @@ class relational_operators2 : public test_fixture {
 };
 
 TEST_F(relational_operators2, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 
@@ -195,7 +200,7 @@ class relational_operators3 : public test_fixture {
 };
 
 TEST_F(relational_operators3, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), SEM_ERROR_IN_EXPR);
 }
 
 class relational_operators4 : public test_fixture {
@@ -208,7 +213,7 @@ class relational_operators4 : public test_fixture {
 };
 
 TEST_F(relational_operators4, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), SEM_ERROR_IN_EXPR);
 }
 
 
@@ -222,7 +227,8 @@ class relational_operators5 : public test_fixture {
 };
 
 TEST_F(relational_operators5, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 
@@ -236,7 +242,7 @@ class relational_operators6 : public test_fixture {
 };
 
 TEST_F(relational_operators6, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), SEM_ERROR_IN_EXPR);
 }
 
 class relational_operators7 : public test_fixture {
@@ -249,7 +255,7 @@ class relational_operators7 : public test_fixture {
 };
 
 TEST_F(relational_operators7, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), SEM_ERROR_IN_EXPR);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), SEM_ERROR_IN_EXPR);
 }
 
 class parenthesis_err : public test_fixture {
@@ -262,7 +268,7 @@ class parenthesis_err : public test_fixture {
 };
 
 TEST_F(parenthesis_err, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 
@@ -276,7 +282,7 @@ class op_err1 : public test_fixture {
 };
 
 TEST_F(op_err1, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 class op_err2 : public test_fixture {
@@ -289,7 +295,7 @@ class op_err2 : public test_fixture {
 };
 
 TEST_F(op_err2, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 
@@ -303,7 +309,7 @@ class op_err3 : public test_fixture {
 };
 
 TEST_F(op_err3, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 
@@ -317,7 +323,7 @@ class op_not_err1 : public test_fixture {
 };
 
 TEST_F(op_not_err1, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 class op_err4 : public test_fixture {
@@ -330,7 +336,7 @@ class op_err4 : public test_fixture {
 };
 
 TEST_F(op_err4, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
 class op_ok : public test_fixture {
@@ -343,7 +349,8 @@ class op_ok : public test_fixture {
 };
 
 TEST_F(op_ok, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS);
+    ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 int main(int argc, char **argv) {
