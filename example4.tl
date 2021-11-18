@@ -5,7 +5,11 @@ function hello()
 
 end
 function main()
-local x : integer
+local x : number
 
+local y : string
+y = "s"
+local z : integer
+z = 4
+x = 3.2
 end
-

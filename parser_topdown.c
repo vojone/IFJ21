@@ -88,6 +88,8 @@ int global_statement(){
     }else if(compare_token(t,IDENTIFIER)){
         char *func = t.attr;
         tree_node_t *func_valid = search(&(symtab), func);
+
+        // Function is not declared
         if (func_valid == NULL){ //----------------------------------------------------------------------------
             return SEMANTIC_ERROR_DEFINITION;
         }
@@ -128,6 +130,8 @@ int statement () {
         if(compare_token_attr(t,SEPARATOR, "(")){
             debug_print("Call function %s\n", func);
             tree_node_t *func_valid = search(&(symtab), func);
+
+            // Function is not declared
             if (func_valid == NULL){ //----------------------------------------------------------------------------
                 return SEMANTIC_ERROR_DEFINITION;
             }
@@ -186,6 +190,14 @@ int statement () {
     return SYNTAX_ERROR;
 }
 int assignment(){
+    /*
+    token_t current_token;
+    token_init(&current_token);
+    */    
+
+    //char* var_id = last_token.attr;
+    //debug_print("\n\nvar_id: %s\n\n"); //current token);
+
     int token_count = 0;
     bool foundAssignmentOp = false;
     //first loop checks and counts left side of the assignment
@@ -212,13 +224,38 @@ int assignment(){
             return SYNTAX_ERROR;
         }
     }
+    /*
+    if (catch == "integer"){
+        dtype_ret_val = 0;
+    }else if (catch = "string"){
+        dtype_ret_val = 1;
+    }else if (catch = "number"){
+        dtype_ret_val = 0;
+    }else{
+        ? error ?
+    }
+    */
     debug_print("found %i assignment...\n", token_count);
+    int dtype_ret_val = 1;
+
     //checking the RHS part
     for(int i = 0; i < token_count;i++){
         //check for valid expression
         debug_print("Calling precedence parser...\n");
         sym_dtype_t ret_type;
         if(parse_expression(scanner, &ret_type) == PARSE_SUCCESS){
+            debug_print("\n%d   %d\n", ret_type, dtype_ret_val);
+
+
+            /*
+            if (ret_type == dtype_ret_val){
+                debug_print("Var: %s Type: %s => TS\n\n", var_id, var_type);
+                broken atm sym_data_t var_data = {var_id, var_type};
+                broken atm insert_sym(&(symtab), var_id, var_data);
+             }else{
+                 return SEMANTIC_ERROR_ASSIGNMENT;
+              }
+            */
             //ok
         }else{
             debug_print("Error while parsing expression for multiple assignemt\n");
@@ -234,14 +271,19 @@ int assignment(){
                 return SYNTAX_ERROR;
             }
         }
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
+    //-------------------------------------------------------------------------------------------------------
     }
+
     return PARSE_SUCCESS;
 }
 int parse_local_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
-    char* var_id = t.attr;
-    debug_print("Var_ID is: %s <---------------\n\n", var_id);
+    //char* var_id = t.attr;
+    //debug_print("Var_ID is: %s <---------------\n\n", var_id);
     if(!compare_token(t,IDENTIFIER)){
         incorrect_token("identifier",t,scanner);
         return t.token_type == EOF_TYPE ? LEXICAL_ERROR : SYNTAX_ERROR;
@@ -253,14 +295,13 @@ int parse_local_var(){
 
     //should be a data type
     t = get_next_token(scanner);
-    char* var_type = t.attr;
-    debug_print("Var type is: %s <---------------\n\n", var_type);
+    //char* var_type = t.attr;
+    //debug_print("Var type is: %s <---------------\n\n", var_type);
     bool type = is_datatype(t);
     if(!type){
         incorrect_token("datatype",t,scanner);
         return SYNTAX_ERROR;
     }
-
     //there can be a value assignment
     if(lookahead_token_attr(scanner,OPERATOR,"=")){ 
         get_next_token(scanner);
@@ -272,20 +313,8 @@ int parse_local_var(){
             incorrect_token("Valid expression",t,scanner);
         return assignment;
     }
-    //  //  //
-    // TODO //
-    //  //  //
-    char* expr_type = "s";
-    debug_print("Data type of identifier %s vs %s <===================\n\n", var_type, expr_type);
     
-    if (strcmp(var_type,expr_type) == 0){
-        debug_print("Var: %s Type: %s => TS\n\n", var_id, var_type);
-        //sym_data_t var_data = {var_id, var_type};
-        //insert_sym(&(symtab), var_id, var_data);
-    }else{
-        return SEMANTIC_ERROR_ASSIGNMENT;
-    }
-     
+    
     //-------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------
@@ -295,7 +324,10 @@ int parse_local_var(){
 int parse_global_var(){
     //should be identifier
     token_t t = get_next_token(scanner);
-    char* var_id = t.attr;
+
+    // Save identifier
+    //char* var_id = t.attr;
+
     if(!compare_token(t,IDENTIFIER)){
         incorrect_token("identifier",t,scanner);
         return SYNTAX_ERROR;
@@ -307,7 +339,9 @@ int parse_global_var(){
 
     //should be a data type
     t = get_next_token(scanner);
-    char* var_type = t.attr;
+
+
+
     bool type = is_datatype(t);
     if(!type){
         incorrect_token("datatype",t,scanner);
@@ -325,9 +359,14 @@ int parse_global_var(){
             incorrect_token("Valid expression",t,scanner);
         return assignment;
     }
+
+    //sym_data_t symdata_var = {var_id, VAR, .dtype = var_type};
+    //insert_sym(&(symtab), var_id, symdata_var);
+
     //  //  //
     // TODO //
     //  //  //
+    /*
     char* expr_type = "s";
     debug_print("Data type of identifier %s vs %s <===================\n\n", var_type, expr_type);
     
@@ -338,6 +377,7 @@ int parse_global_var(){
     }else{
         return SEMANTIC_ERROR_ASSIGNMENT;
     }
+    */
     //-------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------

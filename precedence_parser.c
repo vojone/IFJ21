@@ -532,7 +532,7 @@ void print_err_message(int return_value, scanner_t *sc,
         break;
     case EXPRESSION_FAILURE:
         fprintf(stderr, 
-                "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in epxression! (\"%s%s\")\n", 
+                "(%ld,%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in expression! (\"%s%s\")\n", 
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL],
                 (char *)last_tok->attr,
