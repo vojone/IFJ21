@@ -135,6 +135,7 @@ void delete_sym(symtab_t *tab, const char *key) {
                     *tab = NULL;
                 }
 
+                str_dtor(&(to_be_deleted->data.ret_types));
                 free(to_be_deleted->key);
                 free(to_be_deleted);
             }
@@ -169,12 +170,36 @@ void destroy_tab(tree_node_t **tab) {
             }
             *tab = (*tab)->l_ptr;
 
+            str_dtor(&(tmp->data.ret_types));
             free(tmp->key);
             free(tmp);
         }
   } while(*tab != NULL || !ts_is_empty(&stack));
 
   ts_stack_dtor(&stack);
+}
+
+/**
+ * @brief Converts character used in operand type grammar in get_rule() to sym_dtype enum
+ */ 
+sym_dtype_t char_to_dtype(char type_c) {
+    sym_dtype_t type;
+    switch (type_c)
+    {
+    case 'n':
+        type = NUM;
+        break;
+    case 'i':
+        type = INT;
+        break;
+    case 's':
+        type = STR;
+        break;
+    default:
+        type = UNDEFINED;
+    }
+
+    return type;
 }
 
 /***                          End of symtable.c                            ***/
