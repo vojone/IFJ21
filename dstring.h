@@ -58,6 +58,12 @@ int str_init(string_t *string);
 int app_char(char c, string_t *string);
 
 /**
+ * @brief Cuts string to given length
+ * @note if given length is same or greater than current length of string it does nothing
+ */ 
+void cut_string(string_t *string, size_t new_length);
+
+/**
  * @brief Brings string to the state after initialization  
  * @note Allocated space doesn't change!
  * @param string target string
