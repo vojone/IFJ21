@@ -57,7 +57,7 @@ unit_tests:  $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 	   		 $(SYMTAB_TEST_BIN)
 #			 ./$(PARSER_TEST_BIN)
 #			 ./$(SCAN_TEST_BIN)
-		 	 ./$(PP_TEST_BIN)
+#		 	 ./$(PP_TEST_BIN)
 #			./$(SYMTAB_TEST_BIN)
 
 

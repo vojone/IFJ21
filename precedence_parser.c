@@ -111,6 +111,7 @@ int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
 expr_el_t from_input_token(scanner_t *sc, token_t *last, token_t *current) {
     expr_el_t result;
     result.type = tok_to_type(sc, last, current);
+    result.value = NULL;
     
     switch (current->token_type)
     {
@@ -131,7 +132,8 @@ expr_el_t from_input_token(scanner_t *sc, token_t *last, token_t *current) {
         break;
     }
 
-    result.value = get_attr(current, sc);
+    char * curr_val = get_attr(current, sc);
+    str_cpy((char **)&result.value, curr_val, strlen(curr_val));
 
     return result;
 }
@@ -211,7 +213,7 @@ char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
 /**
  * @brief Additional function to get real expression element from enum type
  */ 
-char *to_char_seqence(expr_el_t expression_element) {
+char *to_char_sequence(expr_el_t expression_element) {
     static char * cher_seq[] = {
         "#", "_", "*", "/", "//", "+", "-", "..", "<", "<=", 
         ">", ">=", "==", "~=", "(", ")", "i", "$", "E", NULL
@@ -360,7 +362,7 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
             pp_push(op, from_top);
         }
 
-        char *char_seq = to_char_seqence(from_top);
+        char *char_seq = to_char_sequence(from_top);
         prep_str(to_be_red, char_seq);
         pp_pop(s);
     }
@@ -430,7 +432,7 @@ int reduce_top(pp_stack_t *s, char ** failed_operation) {
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     expr_rule_t *rule;
     for(int i = 0; (rule = get_rule(i)); i++) {
-        if(strcmp(to_str(&to_be_reduced), rule->right_side) == 0) {
+        if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
             retval = reduce(s, &operands, rule, failed_operation);
         }
     }
@@ -443,14 +445,19 @@ int reduce_top(pp_stack_t *s, char ** failed_operation) {
 
 /**
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
+ * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-expr_el_t get_input_symbol(scanner_t *sc, token_t *last, token_t *current) {
+expr_el_t get_input_symbol(scanner_t *sc, token_t *last,
+                           token_t *current, 
+                           pp_stack_t *garbage_stack) {
     expr_el_t on_input;
+
     if(is_EOE(sc, current)) {
         on_input = stop_symbol();
     }
     else {
         on_input = from_input_token(sc, last, current);
+        pp_push(garbage_stack, on_input);
     }
 
     return on_input;
@@ -475,7 +482,14 @@ expr_el_t get_top_symbol(pp_stack_t *stack) {
 /**
  * @brief Frees all resources (expecially dynamic allocated memory) of PP
  */ 
-void free_everything(pp_stack_t *stack, token_t *last, token_t *cur) {
+void free_everything(pp_stack_t *stack, pp_stack_t *garbage) {
+    while(!pp_is_empty(garbage))
+    {
+        expr_el_t current_el = pp_pop(garbage);
+        free(current_el.value);
+    }
+    
+    pp_stack_dtor(garbage);
     pp_stack_dtor(stack);
 }
 
@@ -553,7 +567,8 @@ int parse_expression(scanner_t *sc) {
     token_init(&current_token);
 
     pp_stack_t stack;
-    if(!pp_stack_init(&stack)) {
+    pp_stack_t garbage;
+    if(!pp_stack_init(&stack) || !pp_stack_init(&garbage)) {
         retval = INTERNAL_ERROR;
     }
 
@@ -569,7 +584,7 @@ int parse_expression(scanner_t *sc) {
             break;
         }
 
-        expr_el_t on_input = get_input_symbol(sc, &last_token, &current_token);
+        expr_el_t on_input = get_input_symbol(sc, &last_token, &current_token, &garbage);
         expr_el_t on_top = get_top_symbol(&stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
@@ -599,7 +614,7 @@ int parse_expression(scanner_t *sc) {
     }
 
     print_err_message(retval, sc, &last_token, &current_token, &failed_op);
-    free_everything(&stack, &last_token, &current_token);
+    free_everything(&stack, &garbage);
     //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }
