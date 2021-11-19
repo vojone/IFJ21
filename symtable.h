@@ -17,6 +17,8 @@
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 
+#define UNSET -1
+
 /**
  * @brief Specifies type of symbol
  */ 
@@ -62,7 +64,10 @@ typedef struct tree_node {
 /**
  * @brief Symbol table data type
  */
-typedef tree_node_t* symtab_t; 
+typedef struct symtab {
+    tree_node_t * t;
+    int parent_ind;
+} symtab_t; 
 
 /**
  * @brief Initializes symbol table

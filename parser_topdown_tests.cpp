@@ -87,7 +87,8 @@ class test_fixture : public :: testing :: Test {
 
 
         virtual void SetUp() {
-            setData(); 
+            setData();
+            init_tab(&tab);
             init_success = prepare_tests(&inp_filename, &scanner_input, &uut, &pt, &tab);
             if(!init_success) {
                 scanner_dtor(&uut);
@@ -153,6 +154,49 @@ class if_parse : public test_fixture {
 };
 
 TEST_F(if_parse, only_parse) {
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class if_parse_err1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(require "help.tl" 
+            function main() 
+                local s1 : integer 
+                if true then 
+                    local s2 : string = ", ktery jeste trochu obohatime" 
+                else
+                    s2 = 0
+                end
+            end
+            )";
+        }
+};
+
+TEST_F(if_parse_err1, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+}
+
+
+class if_parse_not_err : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(require "help.tl" 
+            function main() 
+                local s1 : integer 
+                if true then 
+                    local s1 : string = ", ktery jeste trochu obohatime" 
+                else
+                    s1 = 0
+                end
+            end
+            )";
+        }
+};
+
+TEST_F(if_parse_not_err, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 

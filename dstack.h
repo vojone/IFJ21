@@ -79,6 +79,17 @@ TYPE NAME##_pop(NAME##_stack_t *s);                         \
  */                                                         \
 TYPE NAME##_top(NAME##_stack_t *s);                         \
                                                             \
+/**                                                         \
+ *@brief Return pointer to the element in the stack         \
+ *@note Pointer couldn't be stored if there is possibility of pushing new elements (the stack can be reallocated)\
+ */                                                         \
+TYPE * NAME##_get_ptr(NAME##_stack_t *s, int index);        \
+                                                            \
+/**                                                         \
+ * @brief Returns index of element, that is currently on the top \
+ * @note This index is not changing unless element is popped (in contrast with pointer)\
+ */                                                         \
+unsigned int NAME##_get_top_ind(NAME##_stack_t *s);         \
                                                             \
 /**                                                         \
  * @brief Prints content of stack (Just for easier debugging)\
@@ -89,6 +100,8 @@ void NAME##_show(NAME##_stack_t *s);                        \
 DSTACK_DECL(expr_el_t, pp)
 
 DSTACK_DECL(tree_node_t*, ts)
+
+DSTACK_DECL(symtab_t, symtabs)
 
 #endif
 

@@ -68,7 +68,7 @@ class empty_symtable : public ::testing::Test {
 
     virtual void TearDown() {
         if(verbose_mode) {
-            print_tab(uut);
+            print_tab(uut.t);
         }
 
         destroy_tab(&uut);
@@ -76,17 +76,17 @@ class empty_symtable : public ::testing::Test {
 };
 
 TEST_F(empty_symtable, insert) {
-    ASSERT_EQ(uut, (void *)NULL);
+    ASSERT_EQ(uut.t, (void *)NULL);
     insert_sym(&uut, "new", {(char *)"new", VAR, NUM, DECLARED});
-    ASSERT_EQ(strcmp(uut->key, "new"), 0);
-    ASSERT_EQ(uut->l_ptr, (void *)NULL);
-    ASSERT_EQ(uut->r_ptr, (void *)NULL);
+    ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
+    ASSERT_EQ(uut.t->l_ptr, (void *)NULL);
+    ASSERT_EQ(uut.t->r_ptr, (void *)NULL);
 }
 
 TEST_F(empty_symtable, search) {
     ASSERT_EQ((void *)NULL, search(&uut, "inserted"));
     insert_sym(&uut, "inserted", {(char *)"inserted", VAR, NUM, DECLARED});
-    ASSERT_EQ(uut, search(&uut, "inserted"));
+    ASSERT_EQ(uut.t, search(&uut, "inserted"));
 
     insert_sym(&uut, "a", {(char *)"a", VAR, NUM, DECLARED});
     ASSERT_NE((void *)NULL, search(&uut, "a"));
@@ -96,18 +96,18 @@ TEST_F(empty_symtable, delete_s) {
     delete_sym(&uut, "nonexisting");
 
     insert_sym(&uut, "inserted", {(char *)"inserted", VAR, NUM, DECLARED});
-    ASSERT_EQ(strcmp(uut->key, "inserted"), 0);
+    ASSERT_EQ(strcmp(uut.t->key, "inserted"), 0);
     delete_sym(&uut, "inserted");
-    ASSERT_EQ(uut, (void *)NULL);
+    ASSERT_EQ(uut.t, (void *)NULL);
 }
 
 TEST_F(empty_symtable, set) {
     sym_data_t new_symbol_data = {(char *)"new", VAR, NUM, DECLARED};
     insert_sym(&uut, "new", new_symbol_data);
-    ASSERT_EQ(strcmp(uut->key, "new"), 0);
-    ASSERT_EQ(uut->data.dtype, NUM);
-    ASSERT_EQ(uut->data.type, VAR);
-    ASSERT_EQ(uut->data.status, DECLARED);
+    ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
+    ASSERT_EQ(uut.t->data.dtype, NUM);
+    ASSERT_EQ(uut.t->data.type, VAR);
+    ASSERT_EQ(uut.t->data.status, DECLARED);
 }
 
 
@@ -132,10 +132,10 @@ class normal_tests1 : public ::testing::Test {
 
     virtual void TearDown() {
         if(verbose_mode) {
-            print_tab(uut);
+            print_tab(uut.t);
         }
 
-        if(uut != NULL) {
+        if(uut.t != NULL) {
             destroy_tab(&uut);
         }
     }
@@ -162,7 +162,7 @@ TEST_F(normal_tests1, delete_test) {
 
 TEST_F(normal_tests1, dispose_whole_table) {
     destroy_tab(&uut);
-    ASSERT_EQ(uut, (void *)NULL);
+    ASSERT_EQ(uut.t, (void *)NULL);
 }
 
 
@@ -188,10 +188,10 @@ class normal_tests2 : public ::testing::Test {
 
     virtual void TearDown() {
         if(verbose_mode) {
-            print_tab(uut);
+            print_tab(uut.t);
         }
 
-        if(uut != NULL) {
+        if(uut.t != NULL) {
             destroy_tab(&uut);
         }
     }
@@ -218,7 +218,7 @@ TEST_F(normal_tests2, delete_test) {
     ASSERT_NE(search(&uut, "D"), (void *)NULL);
 
     destroy_tab(&uut);
-    ASSERT_EQ(uut, (void *)NULL);
+    ASSERT_EQ(uut.t, (void *)NULL);
 }
 
 TEST_F(normal_tests2, insert_test) {
