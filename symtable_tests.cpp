@@ -77,7 +77,6 @@ class empty_symtable : public ::testing::Test {
 
 TEST_F(empty_symtable, insert) {
     ASSERT_EQ(uut, (void *)NULL);
-
     insert_sym(&uut, "new", {(char *)"new", VAR, NUM, DECLARED});
     ASSERT_EQ(strcmp(uut->key, "new"), 0);
     ASSERT_EQ(uut->l_ptr, (void *)NULL);

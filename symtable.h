@@ -45,10 +45,8 @@ typedef enum sym_status {
 typedef struct sym_data {
     char * name;
     sym_type_t type;
-    //sym_dtype_t dtype;
-    //sym_status_t status;
-    //sym_params_t params;
-    //sym_returns_t returns;
+    sym_dtype_t dtype;
+    sym_status_t status;
 } sym_data_t;
 
 /**
