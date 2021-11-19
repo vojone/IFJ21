@@ -50,6 +50,15 @@ int app_char(char c, string_t *string) {
     return STR_SUCCESS;
 }
 
+void cut_string(string_t *string, size_t new_length) {
+    if(new_length >= string->length) {
+        return;
+    }
+
+    string->length = new_length;
+    string->str[string->length] = '\0';
+}
+
 
 int prep_char(char c, string_t *string) {
     if(string->alloc_size - 1 < string->length + 1) {
@@ -143,6 +152,11 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
 int str_cmp(const char *str1, const char *str2) {
     return strcmp(str1, str2);
 }
+
+size_t len(string_t *str) {
+    return str->length;
+}
+
 
 
 int dstring_cmp(string_t* str1, string_t* str2) {

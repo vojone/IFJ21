@@ -70,6 +70,15 @@ bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut) {
     return true;
 }
 
+void show_buffer(scanner_t *uut) {
+    for(size_t i = 0; i <= uut->str_buffer.length; i++) {
+        fprintf(stderr, "%d|", uut->str_buffer.str[i]);
+    }
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Length: %ld ( + \\0 at the end)", uut->str_buffer.length);
+    fprintf(stderr, "\n");    
+}
+ 
 class test_fixture : public ::testing::Test {
     protected:
         std::string inp_filename = TMP_FILE_NAME;
@@ -97,13 +106,11 @@ class test_fixture : public ::testing::Test {
                 if(verbose_mode) {
                     printf("[%ld]\t%d\t%d", i, temp.token_type, exp_types[i]);
                     //printf("\t%lu %lu", uut.cursor_pos[ROW], uut.cursor_pos[COL]);
-                    printf("\t%s", (char *)temp.attr);
+                    printf("\t%s", (char *)get_attr(&temp, &uut));
                     printf("\n");
                 }
 
                 ASSERT_EQ(exp_types[i], temp.token_type);
-
-                token_dtor(&temp);
             }
         }
 
@@ -123,14 +130,8 @@ class test_fixture : public ::testing::Test {
                     printf("\n");
                 }
 
-                std::string tmp_str((char *)temp.attr);
+                std::string tmp_str((char *)get_attr(&temp, &uut));
                 ASSERT_EQ(exp_attrs[i], tmp_str);
-
-                if(temp.token_type != KEYWORD && 
-                   temp.token_type != OPERATOR && 
-                   temp.token_type != SEPARATOR) {
-                    free(temp.attr);
-                }
             }
         }
 
@@ -557,7 +558,7 @@ class scanning_with_lookahead : public test_fixture {
             };
         }
 
-        void printRow(size_t index, token_t *token) {
+        void printRow(size_t index, token_t *token, scanner_t *uut) {
             if(verbose_mode) {
                 if(index % 3 == 0) {
                     printf("*");
@@ -565,7 +566,7 @@ class scanning_with_lookahead : public test_fixture {
 
                 printf("[%ld]\t%d\t%d", index, token->token_type, exp_types[index]);
                 //printf("\t%lu %lu", uut.cursor_pos[ROW], uut.cursor_pos[COL]);
-                printf("\t%s", (char *)token->attr);
+                printf("\t%s", get_attr(token, uut));
                 printf("\n");
             }
         }
@@ -585,15 +586,9 @@ class scanning_with_lookahead : public test_fixture {
                     temp = get_next_token(&uut);
                 }
 
-                printRow(token_i, &temp);
+                printRow(token_i, &temp, &uut);
                 ASSERT_EQ(temp.token_type, exp_types[token_i]);
 
-                if(temp.token_type != KEYWORD && 
-                   temp.token_type != OPERATOR && 
-                   temp.token_type != SEPARATOR && 
-                   token_i % 3 != 0) {
-                    free(temp.attr);
-                }
             }
         }
 };

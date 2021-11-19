@@ -326,7 +326,7 @@ TEST_F(op_not_err1, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 
-class op_err4 : public test_fixture {
+class op_not_err2 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
@@ -335,7 +335,7 @@ class op_err4 : public test_fixture {
         }
 };
 
-TEST_F(op_err4, only_parse) {
+TEST_F(op_not_err2, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &ret_type), EXPRESSION_FAILURE);
 }
 

@@ -23,6 +23,7 @@
 void token_init(token_t *token) {
     token->token_type = UNKNOWN;
     token->attr = NULL;
+    token->first_ch_index = UNSET;
 }
 
 /**
@@ -48,6 +49,16 @@ void token_dtor(token_t *token) {
     token->token_type = UNKNOWN;
 }
 
+char * get_attr(token_t *token, scanner_t *sc) {
+    if(token->attr) {
+        return token->attr;
+    }
+    else {
+        return &(to_str(&sc->str_buffer)[token->first_ch_index]);
+    }
+}
+
+
 /**
  * @brief Prepares scanner structure and sets its attributes to initial values
  */
@@ -64,9 +75,12 @@ void scanner_init(scanner_t *sc) {
     if(ret == STR_FAILURE) {
         return;
     }
+
+    sc->first_ch_index = UNSET;
 }
 
 void scanner_dtor(scanner_t *sc) {
+    sc->first_ch_index = UNSET;
     str_dtor(&sc->str_buffer);
 }
 
@@ -108,6 +122,7 @@ char next_char(scanner_t *sc) {
     }
     else {
         next = getchar();
+        update_cursor_pos(next, sc);
     }
 
     return next;
@@ -122,12 +137,17 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
         ungetchar(c, sc);
     }
 
-    if(sc->str_buffer.length != 0) {
-        str_cpy((char **)&token->attr, 
-                to_str(&sc->str_buffer), 
-                sc->str_buffer.length);
+    if(type == EOF_TYPE) {
+        cut_string(&sc->str_buffer, sc->first_ch_index);
+        sc->first_ch_index = UNSET;
 
-        str_clear(&sc->str_buffer);
+        token->attr = "\255";
+    }
+    else if(sc->first_ch_index != UNSET) {
+        token->first_ch_index = sc->first_ch_index;
+
+        app_char('\0', &(sc->str_buffer));
+        sc->first_ch_index = UNSET;
     }
     
     token->token_type = type;
@@ -141,10 +161,12 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
  */ 
 void got_comment(char c, token_t *token, scanner_t *sc) {
     ungetchar(c, sc);
-    str_clear(&sc->str_buffer);
+
+    cut_string(&(sc->str_buffer), sc->first_ch_index);
+    sc->first_ch_index = UNSET;
+
     sc->state = INIT;
 }
-
 
 /**
  * @brief Tries to find token in table
@@ -154,6 +176,9 @@ void got_comment(char c, token_t *token, scanner_t *sc) {
  * @return True if string was found in given table
  */ 
 bool from_tab(char *(*tab_func)(unsigned int), token_t *token, scanner_t *sc) {
+    if(sc->first_ch_index == UNSET) {
+        return false;
+    }
 
     size_t table_size;
     if(tab_func == get_keyword) {
@@ -166,11 +191,13 @@ bool from_tab(char *(*tab_func)(unsigned int), token_t *token, scanner_t *sc) {
         table_size = SEPARATOR_TABLE_SIZE;
     }
 
-    char * table_token = NULL;
-    table_token = match(to_str(&sc->str_buffer), tab_func, table_size);
-    if(table_token != NULL) {
-        str_clear(&sc->str_buffer);
-        token->attr = table_token;
+    char * tab_token = NULL;
+    char * first_ch = &((to_str(&sc->str_buffer))[sc->first_ch_index]);
+    tab_token = match(first_ch, tab_func, table_size);
+    if(tab_token != NULL) {
+        token->attr = tab_token;
+        cut_string(&sc->str_buffer, sc->first_ch_index);
+        sc->first_ch_index = UNSET;
 
         return true;
     }
@@ -222,6 +249,10 @@ void INIT_trans(char c, token_t * token, scanner_t *sc) {
         sc->state = EOF_F;
     }
     else {
+        if(sc->first_ch_index == UNSET) {
+            sc->first_ch_index = sc->str_buffer.length;
+        }
+
         app_char(c, &sc->str_buffer); //Saving error token to show it to user
         got_token(ERROR_TYPE, c, token, sc);
     }
@@ -554,19 +585,22 @@ token_t get_next_token(scanner_t *sc) {
 
     while(result.token_type == UNKNOWN) {
         char c = next_char(sc);
-        update_cursor_pos(c, sc);
 
         //Get transitions from current state
         trans_func_t do_transition = get_trans(sc->state);
         do_transition(c, &result, sc);
 
         if(sc->state != INIT) {
+            if(sc->first_ch_index == UNSET) {
+                sc->first_ch_index = sc->str_buffer.length;
+            }
+
             app_char(c, &sc->str_buffer);
         }
 
     } //while(result.token_type == UNKNOWN)
     
-    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type,(char *) result.attr);
+    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 

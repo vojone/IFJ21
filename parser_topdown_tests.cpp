@@ -55,7 +55,7 @@ FILE * create_input_file(std::string *name, std::string *content) {
     return input_file;
 }
 
-bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, parser_t *pt) {
+bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, parser_t *pt, symtab_t *tab) {
     FILE * input = NULL;
     input = create_input_file(fname, content);
     if(!input) {
@@ -66,7 +66,7 @@ bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, par
     freopen(fname->c_str(), "r", stdin);
 
     scanner_init(dut);
-    parser_setup(pt,dut);
+    parser_setup(pt, dut, tab);
 
     return true;
 }
@@ -77,6 +77,7 @@ class test_fixture : public :: testing :: Test {
         std::string scanner_input;
 
         scanner_t uut;
+        symtab_t tab;
         parser_t pt;
         bool init_success;
 
@@ -87,9 +88,10 @@ class test_fixture : public :: testing :: Test {
 
         virtual void SetUp() {
             setData(); 
-            init_success = prepare_tests(&inp_filename, &scanner_input, &uut, &pt);
+            init_success = prepare_tests(&inp_filename, &scanner_input, &uut, &pt, &tab);
             if(!init_success) {
                 scanner_dtor(&uut);
+                destroy_tab(&tab);
                 exit(EXIT_FAILURE);
             }
         }
@@ -97,6 +99,7 @@ class test_fixture : public :: testing :: Test {
         virtual void TearDown() {
             remove(inp_filename.c_str());
             scanner_dtor(&uut);
+            destroy_tab(&tab);
         }
 };
 
@@ -451,6 +454,54 @@ TEST_F(complexity_moderate, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
+class function_check_global : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                end
+                mainN(true,1,0)
+            )";
+        }
+};
+
+TEST_F(function_check_global, sema) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class function_check_inside : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                end
+                function hello()
+                    mainN(true,1,0)
+                end
+            )";
+        }
+};
+
+TEST_F(function_check_inside, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class variable_check_local : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( function main()
+                    local a : number
+                    a = "Lorem ipsum dolor sit amet"
+                end
+            )";
+        }
+};
+
+TEST_F(variable_check_local, semantic) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
@@ -465,3 +516,4 @@ int main(int argc, char **argv) {
 
     return RUN_ALL_TESTS();
 }
+

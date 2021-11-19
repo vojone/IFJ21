@@ -156,7 +156,7 @@ void delete_sym(symtab_t *tab, const char *key) {
 void destroy_tab(tree_node_t **tab) {
     ts_stack_t stack;
     ts_stack_init(&stack);
-
+    
     do {
         if(*tab == NULL) {
             if(!ts_is_empty(&stack)) {
@@ -174,6 +174,7 @@ void destroy_tab(tree_node_t **tab) {
             free(tmp->key);
             free(tmp);
         }
+
   } while(*tab != NULL || !ts_is_empty(&stack));
 
   ts_stack_dtor(&stack);

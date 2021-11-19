@@ -62,7 +62,7 @@ rule_t determine_rule(token_t t);
  * @brief sets the parser and scanner to use
  * @note there can be only one instance i guess, because of the parser static var
  */ 
-void parser_setup(parser_t *p, scanner_t *s);
+void parser_setup(parser_t *p, scanner_t *s, symtab_t *tab);
 
 /**
  * @brief Starts parsing
@@ -178,28 +178,35 @@ int parse_function_arguments();
  * @param expected the token which is expected
  * @param t the token which we got
  * */
-void incorrect_token(char * expected, token_t t, scanner_t * scanner);
+void error_unexpected_token(char * expected, token_t t);
+
+/**
+ * @brief Displays error from semantic check 
+ * @param message the text which is displayed
+ * @param t the token which we got
+ * */
+void error_semantic(const char * _Format, ...);
 
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the expected token type is at the next place
  * @return returns true the expected token type is there
  **/
-bool lookahead_token(scanner_t * scanner,token_type_t expecting);
+bool lookahead_token(token_type_t expecting);
 
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the next token has the specified type and attribute
  * @return returns true if both expected type and attribute are equal to real ones
  **/
-bool lookahead_token_attr(scanner_t * scanner,token_type_t expecting, char * expecting_attr);
+bool lookahead_token_attr(token_type_t expecting, char * expecting_attr);
 
 /**
  * @param expecting The token type to expect
  * @brief Shows error if there is an unexpected token type
  * @return returns true the expected token type is there
  **/
-bool check_next_token(scanner_t * scanner,token_type_t expecting);
+bool check_next_token(token_type_t expecting);
 
 /**
  * @param expecting The token type to expect
@@ -207,7 +214,7 @@ bool check_next_token(scanner_t * scanner,token_type_t expecting);
  * @brief Shows error if there is an unexpected token type or attribute
  * @return returns true the expected token is there
  **/
-bool check_next_token_attr(scanner_t * scanner, token_type_t expecting_type, char * expecting_attr);
+bool check_next_token_attr(token_type_t expecting_type, char * expecting_attr);
 
 /**
  * @param expecting The token type to expect

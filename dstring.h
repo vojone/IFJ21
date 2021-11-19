@@ -62,6 +62,12 @@ int prep_char(char c, string_t *string);
 int prep_str(string_t *dst, char *src);
 
 /**
+ * @brief Cuts string to given length
+ * @note if given length is same or greater than current length of string it does nothing
+ */ 
+void cut_string(string_t *string, size_t new_length);
+
+/**
  * @brief Brings string to the state after initialization  
  * @note Allocated space doesn't change!
  * @param string target string
@@ -106,6 +112,9 @@ int get_chtype(const char c);
  * @return 0 if strings are same
  */ 
 int str_cmp(const char *str1, const char *str2);
+
+
+size_t len(string_t *str);
 
 
 int dstring_cmp(string_t* str1, string_t* str2);
