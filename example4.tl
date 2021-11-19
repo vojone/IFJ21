@@ -5,6 +5,11 @@ function hello()
 
 end
 function main()
-hells()
+local x : number
+x = 2.2
+global y : string
+local z : integer
+y = "s"
+z = 2
 end
 

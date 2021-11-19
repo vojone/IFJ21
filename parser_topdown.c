@@ -232,7 +232,17 @@ int assignment() {
             return SYNTAX_ERROR;
         }
     }
-
+    /*
+    if (catch == "integer"){
+        dtype_ret_val = 0;
+    }else if (catch = "string"){
+        dtype_ret_val = 1;
+    }else if (catch = "number"){
+        dtype_ret_val = 0;
+    }else{
+        ? error ?
+    }
+    */
     debug_print("found %i assignment...\n", token_count);
     //checking the RHS part
     for(int i = 0; i < token_count; i++){
@@ -240,6 +250,15 @@ int assignment() {
         debug_print("Calling precedence parser...\n");
         int expr_retval = parse_expression(scanner);
         if(expr_retval == EXPRESSION_SUCCESS) {
+            /*
+            if (ret_type == dtype_ret_val){
+                debug_print("Var: %s Type: %s => TS\n\n", var_id, var_type);
+                broken atm sym_data_t var_data = {var_id, var_type};
+                broken atm insert_sym(&(symtab), var_id, var_data);
+             }else{
+                 return SEMANTIC_ERROR_ASSIGNMENT;
+              }
+            */
             //ok
         }
         else{
@@ -300,6 +319,8 @@ int parse_local_var(){
 int parse_global_var() {
     //should be identifier
     token_t t = get_next_token(scanner);
+    // Save identifier
+    char* var_id = get_attr(&(t),scanner);
     if(!compare_token(t, IDENTIFIER)) {
         error_unexpected_token("identifier", t);
         return SYNTAX_ERROR;
@@ -312,6 +333,17 @@ int parse_global_var() {
 
     //should be a data type
     t = get_next_token(scanner);
+
+    // Save data type
+    int var_type;
+    if (str_cmp(t.attr,"string") == 0){
+        var_type = 2;
+    }else if(str_cmp(t.attr,"integer") == 0){
+        var_type = 1;
+    }else if(str_cmp(t.attr, "number") == 0){
+        var_type = 1;
+    }
+
     bool type = is_datatype(t);
     if(!type) {
         error_unexpected_token("datatype", t);
@@ -328,7 +360,13 @@ int parse_global_var() {
             error_unexpected_token("Valid expression", t);
         return assignment;
     }
+    // semantics
+    debug_print("\n\n VAR: %s\t%d\n\n",var_id,var_type);
+    //sym_data_t symdata_var = {var_id, VAR, .dtype = var_type};
+    //insert_sym((symtab), var_id, symdata_var);
+    //zree_node_t* whatever = search((symtab),var_id);
 
+    //debug_print("\n%s\t%d\n\n",whatever->data.name,whatever->data.dtype);
     return PARSE_SUCCESS;
 }
 
@@ -346,6 +384,9 @@ int parse_str() {
 
 int parse_function_def() {
     token_t id_fc = get_next_token(scanner);
+    // Semantics
+    string_t datatype;
+    str_init(&datatype);
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
     bool left_bracket = check_next_token_attr(SEPARATOR, "(");
