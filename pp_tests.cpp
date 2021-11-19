@@ -438,6 +438,7 @@ TEST_F(declared2, only_parse) {
     insert_sym(&symtab, "a", {(char *)"a", VAR, INT, DECLARED});
     insert_sym(&symtab, "b", {(char *)"b", VAR, NUM, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, NUM);
 }
 
 

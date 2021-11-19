@@ -44,16 +44,19 @@ bool is_unary_minus(scanner_t *sc, token_t *last_token) {
 /**
  * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
  */ 
-int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
-    if(token->token_type == IDENTIFIER || token->token_type == NUMBER ||
-       token->token_type == STRING || token->token_type == INTEGER) {
+int tok_to_type(tok_buffer_t *tok_b) {
+    token_t token = tok_b->current;
+
+    if(token.token_type == IDENTIFIER || token.token_type == NUMBER ||
+       token.token_type == STRING || token.token_type == INTEGER) {
            return OPERAND;
     }
-    else if(token->token_type == OPERATOR || 
-            token->token_type == SEPARATOR) {
+    else if(token.token_type == OPERATOR || 
+            token.token_type == SEPARATOR) {
+
         int char_num = 0;
-        char first_ch = (get_attr(token, sc))[char_num++],
-        next_ch = (get_attr(token, sc))[char_num];
+        char first_ch = (get_attr(&token, tok_b->scanner))[char_num++],
+        next_ch = (get_attr(&token, tok_b->scanner))[char_num];
 
         switch (first_ch)
         {
@@ -62,7 +65,7 @@ int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
         case '*':
             return MULT;
         case '-':
-            if(is_unary_minus(sc, last_token)) {
+            if(is_unary_minus(tok_b->scanner, &(tok_b->last))) {
                 return MINUS;
             }
             return SUB;
@@ -108,13 +111,14 @@ int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
 /**
  * @brief Creates expression element from current and last token
  */ 
-int from_input_token(expr_el_t *result, scanner_t *sc, symtab_t *symtab,
-                     token_t *last, token_t *current) {
+int from_input_token(expr_el_t *result, 
+                     tok_buffer_t *tok_b, 
+                     symtab_t *symtab) {
 
-    result->type = tok_to_type(sc, last, current);
+    result->type = tok_to_type(tok_b);
     result->value = NULL;
     tree_node_t * symbol;
-    switch (current->token_type)
+    switch (tok_b->current.token_type)
     {
     case INTEGER:
         result->dtype = INT;
@@ -126,7 +130,7 @@ int from_input_token(expr_el_t *result, scanner_t *sc, symtab_t *symtab,
         result->dtype = STR;
         break;
     case IDENTIFIER:
-        symbol = search(symtab, get_attr(current, sc));
+        symbol = search(symtab, get_attr(&(tok_b->current), tok_b->scanner));
         if(symbol == NULL) {
             return UNDECLARED_IDENTIFIER;
         }
@@ -138,7 +142,7 @@ int from_input_token(expr_el_t *result, scanner_t *sc, symtab_t *symtab,
         break;
     }
 
-    char * curr_val = get_attr(current, sc);
+    char * curr_val = get_attr(&(tok_b->current), tok_b->scanner);
     str_cpy((char **)&result->value, curr_val, strlen(curr_val));
 
     return EXPRESSION_SUCCESS;
@@ -309,6 +313,10 @@ void resolve_res_type(sym_dtype_t *res, expr_rule_t *rule,
     }
 }
 
+/**
+ * @brief Performs type checking when precedence parser reducing the top of the stac
+ * @note Type check is based on rules writen in get_rule() ( @see get_rule())
+ */ 
 bool type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
 
     expr_el_t current = pp_pop(&op_stack);
@@ -322,6 +330,7 @@ bool type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
             break;
         }
         else if(c == '|' || c == '(') {
+            
             if(c == '|')
                 current = safe_op_pop(&is_curr_op_ok, &result, &op_stack);
             else
@@ -334,21 +343,22 @@ bool type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
         if(must_be_flag && 
           (is_compatible(current.dtype, must_be) || must_be == UNDEFINED)) {
             is_curr_op_ok = true;
-            if(must_be == UNDEFINED && current.dtype == char_to_dtype(c)) {
+
+            if(must_be == UNDEFINED && current.dtype == char_to_dtype(c))
                 must_be = current.dtype;
-            }
+
         }
         else if(!must_be_flag) { 
-            if(c == '*' || current.dtype == char_to_dtype(c)) {
+
+            if(c == '*' || current.dtype == char_to_dtype(c))
                 is_curr_op_ok = true; //Operand type corresponds with current possiblity
-            }
+
         }
 
         resolve_res_type(&tmp_res_type, rule, current, is_curr_op_ok);
     }
 
     result = (!is_curr_op_ok && c == '\0') ?  false : result;
-
     *res_t = tmp_res_type;
     return result;
 }
@@ -402,20 +412,11 @@ expr_el_t non_term(sym_dtype_t data_type) {
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
  */ 
-int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, 
-           sym_dtype_t *result_type, char **err_m) {
-
-    *err_m = NULL;
-
-    bool t_check_res = type_check(*ops, rule, result_type);
-    if(!t_check_res) { /**< Type check was not succesfull */
-        *err_m = rule->error_message;
-        return SEM_ERROR_IN_EXPR;
-    }
+int reduce(pp_stack_t *st, pp_stack_t *ops, 
+           expr_rule_t *rule,
+           sym_dtype_t *result_type) {
 
     print_operands(ops); /**< It will be probably substituted for code generating */
-
-    pp_show(ops); //TODO
 
     if(!pp_push(st, non_term(*result_type))) {
         return INTERNAL_ERROR;
@@ -427,7 +428,7 @@ int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule,
 /**
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
-int reduce_top(pp_stack_t *s, char ** failed_operation, sym_dtype_t *ret_type) {
+int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
@@ -440,8 +441,17 @@ int reduce_top(pp_stack_t *s, char ** failed_operation, sym_dtype_t *ret_type) {
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     expr_rule_t *rule;
     for(int i = 0; (rule = get_rule(i)); i++) {
-        if(strcmp(to_str(&to_be_reduced), rule->right_side) == 0) {
-            retval = reduce(s, &operands, rule, ret_type, failed_operation);
+        if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
+
+            bool t_check_res = type_check(operands, rule, ret_type);
+            if(!t_check_res) { /**< Type check was not succesfull */
+                *failed_op_msg = rule->error_message;
+                retval = SEM_ERROR_IN_EXPR;
+            }
+            else {
+                retval = reduce(s, &operands, rule, ret_type);
+            }
+
         }
     }
 
@@ -455,16 +465,17 @@ int reduce_top(pp_stack_t *s, char ** failed_operation, sym_dtype_t *ret_type) {
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-int get_input_symbol(expr_el_t *on_input, scanner_t *sc, token_t *last,
-                           token_t *current, symtab_t * symtab,
-                           pp_stack_t *garbage_stack) {
+int get_input_symbol(expr_el_t *on_input, 
+                     tok_buffer_t *t_buff, 
+                     symtab_t *symtab,
+                     pp_stack_t *garbage_stack) {
 
     int retval = EXPRESSION_SUCCESS;
-    if(is_EOE(sc, current)) {
+    if(is_EOE(t_buff->scanner, &(t_buff->current))) {
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, sc, symtab, last, current);
+        retval = from_input_token(on_input, t_buff, symtab);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -504,9 +515,9 @@ void free_everything(pp_stack_t *stack, pp_stack_t *garbage) {
 /**
  * @brief Makes last token from current token and destructs old token
  */ 
-void token_aging(scanner_t *sc, token_t *last, token_t *cur) {
-    *last = *cur;
-    *cur = get_next_token(sc);
+void token_aging(tok_buffer_t *token_buffer) {
+    token_buffer->last = token_buffer->current;
+    token_buffer->current = get_next_token(token_buffer->scanner);
 }
 
 /**
@@ -530,78 +541,95 @@ void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
 /**
  * @brief Prints error message due to return value
  */ 
-void print_err_message(int return_value, scanner_t *sc, 
-                       token_t *last_tok, token_t *cur_tok, 
+void print_err_message(int return_value, 
+                       tok_buffer_t *token_buffer, 
                        char **err_m) {
+
+    pos_t r = token_buffer->scanner->cursor_pos[ROW];
+    pos_t c = token_buffer->scanner->cursor_pos[COL];
+    char * attr = get_attr(&(token_buffer->current), token_buffer->scanner);
+    char * lattr = get_attr(&(token_buffer->last), token_buffer->scanner);
 
     switch(return_value)
     {
     case LEXICAL_ERROR:
-        fprintf(stderr, 
-                "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token! (\"%s\")\n",
-                sc->cursor_pos[ROW], 
-                sc->cursor_pos[COL], 
-                get_attr(cur_tok, sc));
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m ", r, c);
+        fprintf(stderr, "Not recognized token! (\"%s\")\n", attr);
         break;
+
     case SEM_ERROR_IN_EXPR:
-        fprintf(stderr, 
-                "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m Bad data types in expression!\n",
-                sc->cursor_pos[ROW], 
-                sc->cursor_pos[COL]);
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
+        fprintf(stderr, "Bad data types in expression!\n");
         if(*err_m) {
             fprintf(stderr, "\t| %s\n", *err_m);
         }
 
         break;
+
     case UNDECLARED_IDENTIFIER:
-        fprintf(stderr, 
-                "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m Undeclared identifier \"%s\"!\n",
-                sc->cursor_pos[ROW], 
-                sc->cursor_pos[COL],
-                get_attr(cur_tok, sc));
-
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
+        fprintf(stderr, "Undeclared identifier \"%s\"!\n", attr);
         break;
+
     case EXPRESSION_FAILURE:
-        fprintf(stderr, 
-                "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in expression! (\"%s%s\")\n", 
-                sc->cursor_pos[ROW], 
-                sc->cursor_pos[COL],
-                get_attr(last_tok, sc),
-                get_attr(cur_tok, sc));
-
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
+        fprintf(stderr, "Invalid combination of tokens in expression! (\"%s%s\")\n", attr, lattr);
         break;
+
     default:
         break;
     }
 }
 
-int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
-    int retval = EXPRESSION_SUCCESS;
-    char *failed_op = NULL;
-    token_t current_token, last_token;
-    token_init(&last_token);
-    token_init(&current_token);
+/**
+ * @brief Inits all parts of auxiliary structure tok_buffer_t
+ */ 
+void prepare_buffer(scanner_t *sc, tok_buffer_t *tok_b) {
+    tok_b->scanner = sc;
+    token_init(&(tok_b->current));
+    token_init(&(tok_b->last));
+}
 
-    pp_stack_t stack;
-    pp_stack_t garbage;
-    if(!pp_stack_init(&stack) || !pp_stack_init(&garbage)) {
-        retval = INTERNAL_ERROR;
+/**
+ * @brief Prepare necessary stacks before their usage in precedence parser
+ */ 
+int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
+    if(!pp_stack_init(main_stack) || !pp_stack_init(garbage_stack)) {
+        return INTERNAL_ERROR;
     }
 
-    if(!pp_push(&stack, stop_symbol())) {
-        retval = INTERNAL_ERROR;
+    if(!pp_push(main_stack, stop_symbol())) {
+        return INTERNAL_ERROR;
+    }
+
+    return EXPRESSION_SUCCESS;
+}
+
+
+int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
+    int retval = EXPRESSION_SUCCESS;
+    char *failed_op_msg = NULL;
+
+    tok_buffer_t tok_buffer;
+    pp_stack_t stack;
+    pp_stack_t garbage;
+    
+    prepare_buffer(sc, &tok_buffer);
+    retval = prepare_stacks(&stack, &garbage);
+    if(retval != EXPRESSION_SUCCESS) {
+        return retval;
     }
     
     while(retval == EXPRESSION_SUCCESS) {
-        current_token = lookahead(sc);
+        tok_buffer.current = lookahead(sc);
 
-        if(current_token.token_type == ERROR_TYPE) {
+        if(tok_buffer.current.token_type == ERROR_TYPE) {
             retval = LEXICAL_ERROR;
             break;
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(&on_input, sc, &last_token, &current_token, symtab, &garbage);
+        retval = get_input_symbol(&on_input, &tok_buffer, symtab, &garbage);
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
@@ -612,6 +640,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
             retval = EXPRESSION_SUCCESS;
             break;
         }
+
         char precedence = get_precedence(on_top, on_input);
         //fprintf(stderr, "%s: %c %d %d\n", get_attr(&current_token, sc), precedence, on_top.type, on_input.type);
         if(precedence == '=') {
@@ -619,14 +648,14 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
                 retval = INTERNAL_ERROR;
             }
 
-            token_aging(sc, &last_token, &current_token); //TODO
+            token_aging(&tok_buffer); /**< Make last token from current token */
         }
         else if(precedence == '<') {  /**< Put input symbol to the top of the stack*/
             has_lower_prec(&stack, on_input);
-            token_aging(sc, &last_token, &current_token); //TODO
+            token_aging(&tok_buffer);
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, &failed_op, ret_type);
+            retval = reduce_top(&stack, &failed_op_msg, ret_type);
         }
         else {
             retval = EXPRESSION_SUCCESS;
@@ -634,8 +663,9 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
     }
 
-    print_err_message(retval, sc, &last_token, &current_token, &failed_op);
+    print_err_message(retval, &tok_buffer, &failed_op_msg);
     free_everything(&stack, &garbage);
+
     //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }

@@ -30,6 +30,17 @@
 
 
 /**
+ * @brief Structure, that groups token buffer with given scanner to get tokens and their attributes easily
+ * @note Used especialy for propagating tokens to precedence parser functions
+ */ 
+typedef struct tok_buffer {
+    scanner_t *scanner;
+    token_t last;
+    token_t current;
+} tok_buffer_t;
+
+
+/**
  * @brief Type of element in expression (and in operator grammar)
  */ 
 typedef enum grm_sym_type {
