@@ -108,34 +108,40 @@ int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
 /**
  * @brief Creates expression element from current and last token
  */ 
-expr_el_t from_input_token(scanner_t *sc, token_t *last, token_t *current) {
-    expr_el_t result;
-    result.type = tok_to_type(sc, last, current);
-    result.value = NULL;
-    
+int from_input_token(expr_el_t *result, scanner_t *sc, symtab_t *symtab,
+                     token_t *last, token_t *current) {
+
+    result->type = tok_to_type(sc, last, current);
+    result->value = NULL;
+    tree_node_t * symbol;
     switch (current->token_type)
     {
     case INTEGER:
-        result.dtype = INT;
+        result->dtype = INT;
         break;
     case NUMBER:
-        result.dtype = NUM;
+        result->dtype = NUM;
         break;
     case STRING:
-        result.dtype = STR;
+        result->dtype = STR;
         break;
     case IDENTIFIER:
-        result.dtype = NUM;
+        symbol = search(symtab, get_attr(current, sc));
+        if(symbol == NULL) {
+            return UNDECLARED_IDENTIFIER;
+        }
+
+        result->dtype = symbol->data.dtype;
         break;
     default:
-        result.dtype = UNDEFINED;
+        result->dtype = UNDEFINED;
         break;
     }
 
     char * curr_val = get_attr(current, sc);
-    str_cpy((char **)&result.value, curr_val, strlen(curr_val));
+    str_cpy((char **)&result->value, curr_val, strlen(curr_val));
 
-    return result;
+    return EXPRESSION_SUCCESS;
 }
 
 /**
@@ -447,36 +453,36 @@ int reduce_top(pp_stack_t *s, char ** failed_operation) {
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-expr_el_t get_input_symbol(scanner_t *sc, token_t *last,
-                           token_t *current, 
+int get_input_symbol(expr_el_t *on_input, scanner_t *sc, token_t *last,
+                           token_t *current, symtab_t * symtab,
                            pp_stack_t *garbage_stack) {
-    expr_el_t on_input;
 
+    int retval = EXPRESSION_SUCCESS;
     if(is_EOE(sc, current)) {
-        on_input = stop_symbol();
+        *on_input = stop_symbol();
     }
     else {
-        on_input = from_input_token(sc, last, current);
-        pp_push(garbage_stack, on_input);
+        retval = from_input_token(on_input, sc, symtab, last, current);
+        pp_push(garbage_stack, *on_input);
     }
 
-    return on_input;
+    return retval;
 }
 
 /**
  * @brief Gets first nonterminal from top of the stack (There can't be sequence of them) 
  */ 
-expr_el_t get_top_symbol(pp_stack_t *stack) {
-    expr_el_t on_top = pp_top(stack);
+void get_top_symbol(expr_el_t *on_top, pp_stack_t *stack) {
+    expr_el_t on_top_tmp = pp_top(stack);
     expr_el_t tmp;
-    if(on_top.type == NON_TERM) {
+    if(on_top_tmp.type == NON_TERM) { //Ignore nonterminal if there is 
         tmp = pp_pop(stack);
-        on_top = pp_pop(stack);
-        pp_push(stack, on_top);
+        on_top_tmp = pp_pop(stack);
+        pp_push(stack, on_top_tmp);
         pp_push(stack, tmp);
     }
 
-    return on_top;
+    *on_top = on_top_tmp;
 }
 
 /**
@@ -545,6 +551,14 @@ void print_err_message(int return_value, scanner_t *sc,
         }
 
         break;
+    case UNDECLARED_IDENTIFIER:
+        fprintf(stderr, 
+                "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m Undeclared identifier \"%s\"!\n",
+                sc->cursor_pos[ROW], 
+                sc->cursor_pos[COL],
+                get_attr(cur_tok, sc));
+
+        break;
     case EXPRESSION_FAILURE:
         fprintf(stderr, 
                 "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in expression! (\"%s%s\")\n", 
@@ -559,9 +573,9 @@ void print_err_message(int return_value, scanner_t *sc,
     }
 }
 
-int parse_expression(scanner_t *sc) {
+int parse_expression(scanner_t *sc, symtab_t *symtab) {
     int retval = EXPRESSION_SUCCESS;
-    char *failed_op;
+    char *failed_op = NULL;
     token_t current_token, last_token;
     token_init(&last_token);
     token_init(&current_token);
@@ -584,8 +598,13 @@ int parse_expression(scanner_t *sc) {
             break;
         }
 
-        expr_el_t on_input = get_input_symbol(sc, &last_token, &current_token, &garbage);
-        expr_el_t on_top = get_top_symbol(&stack);
+        expr_el_t on_input, on_top;
+        retval = get_input_symbol(&on_input, sc, &last_token, &current_token, symtab, &garbage);
+        if(retval != EXPRESSION_SUCCESS) {
+            break;
+        }
+
+        get_top_symbol(&on_top, &stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
             retval = EXPRESSION_SUCCESS;

@@ -24,6 +24,7 @@
 #define EXPRESSION_SUCCESS 0
 #define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
+#define UNDECLARED_IDENTIFIER 3
 #define SEM_ERROR_IN_EXPR 6
 #define INTERNAL_ERROR 99
 
@@ -61,7 +62,7 @@ typedef struct expr_rule {
     char *error_message; /**< Error message that is showed when semantic error occured*/
 } expr_rule_t;
 
-int parse_expression(scanner_t *sc);
+int parse_expression(scanner_t *sc, symtab_t *symtab);
 
 #endif
 
