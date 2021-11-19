@@ -8,6 +8,7 @@ int main(){
     scanner_t scanner;
     scanner_init(&scanner);
     parser_t parser;
-    parser_setup(&parser, &scanner);
+    symtab_t tab;
+    parser_setup(&parser, &scanner, &tab);
     return parse_program();
 }
