@@ -118,7 +118,7 @@ int statement () {
         char *func = get_attr(&t, scanner);
         // it is neccessary to look at the next lexeme also
         t = get_next_token(scanner);
-        char* id_token = get_attr(&(t),scanner);
+        char* id_token = get_attr(&(t), scanner);
         t = lookahead(scanner);
         bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
         bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
@@ -137,7 +137,7 @@ int statement () {
             return parse_function_call();
         }
         else if(is_multiple_assignment || is_single_assignment) {
-            return assignment(func);
+            return assignment(id_token);
         }
         else {
             error_unexpected_token("After IDENTIFIER a function call or an assignment", t);
