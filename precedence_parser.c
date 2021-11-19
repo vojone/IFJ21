@@ -402,12 +402,12 @@ expr_el_t non_term(sym_dtype_t data_type) {
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
  */ 
-int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, char **err_m) {
+int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, 
+           sym_dtype_t *result_type, char **err_m) {
 
-    sym_dtype_t result_type;
     *err_m = NULL;
 
-    bool t_check_res = type_check(*ops, rule, &result_type);
+    bool t_check_res = type_check(*ops, rule, result_type);
     if(!t_check_res) { /**< Type check was not succesfull */
         *err_m = rule->error_message;
         return SEM_ERROR_IN_EXPR;
@@ -415,7 +415,9 @@ int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, char **err_m) {
 
     print_operands(ops); /**< It will be probably substituted for code generating */
 
-    if(!pp_push(st, non_term(result_type))) {
+    pp_show(ops); //TODO
+
+    if(!pp_push(st, non_term(*result_type))) {
         return INTERNAL_ERROR;
     }
 
@@ -425,7 +427,7 @@ int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, char **err_m) {
 /**
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
-int reduce_top(pp_stack_t *s, char ** failed_operation) {
+int reduce_top(pp_stack_t *s, char ** failed_operation, sym_dtype_t *ret_type) {
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
@@ -438,8 +440,8 @@ int reduce_top(pp_stack_t *s, char ** failed_operation) {
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     expr_rule_t *rule;
     for(int i = 0; (rule = get_rule(i)); i++) {
-        if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
-            retval = reduce(s, &operands, rule, failed_operation);
+        if(strcmp(to_str(&to_be_reduced), rule->right_side) == 0) {
+            retval = reduce(s, &operands, rule, ret_type, failed_operation);
         }
     }
 
@@ -573,7 +575,7 @@ void print_err_message(int return_value, scanner_t *sc,
     }
 }
 
-int parse_expression(scanner_t *sc, symtab_t *symtab) {
+int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
     int retval = EXPRESSION_SUCCESS;
     char *failed_op = NULL;
     token_t current_token, last_token;
@@ -624,7 +626,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab) {
             token_aging(sc, &last_token, &current_token); //TODO
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, &failed_op);
+            retval = reduce_top(&stack, &failed_op, ret_type);
         }
         else {
             retval = EXPRESSION_SUCCESS;
