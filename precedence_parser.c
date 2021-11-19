@@ -10,19 +10,20 @@
 
 #include "precedence_parser.h"
 
-bool is_allowed_separator(token_t *token) {
+bool is_allowed_separator(scanner_t *sc, token_t *token) {
     return token->token_type == SEPARATOR && 
-           (str_cmp(token->attr, ")") == 0 || str_cmp(token->attr, "(") == 0);
+           (str_cmp(get_attr(token, sc), ")") == 0 || 
+           str_cmp(get_attr(token, sc), "(") == 0);
 }
 
 /**
  * @brief Resolves if token can be part of expression
  */ 
-bool is_EOE(token_t *token) {
+bool is_EOE(scanner_t *sc, token_t *token) {
     token_type_t type = token->token_type;
 
     if(type == IDENTIFIER || type == OPERATOR ||
-       is_allowed_separator(token) || type == STRING ||
+       is_allowed_separator(sc, token) || type == STRING ||
        type == NUMBER || type == INTEGER) {
         return false;
     }
@@ -34,16 +35,16 @@ bool is_EOE(token_t *token) {
 /**
  * @brief Tries to determine if current token is unary or binary minus operator (due to last_token)
  */ 
-bool is_unary_minus(token_t *last_token) {
+bool is_unary_minus(scanner_t *sc, token_t *last_token) {
     return  last_token == UNKNOWN || 
-            strcmp(last_token->attr, "(") == 0 ||
+            str_cmp(get_attr(last_token, sc), "(") == 0 ||
             last_token->token_type == OPERATOR;
 }
 
 /**
  * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
  */ 
-int tok_to_type(token_t *last_token, token_t * token) {
+int tok_to_type(scanner_t *sc, token_t *last_token, token_t * token) {
     if(token->token_type == IDENTIFIER || token->token_type == NUMBER ||
        token->token_type == STRING || token->token_type == INTEGER) {
            return OPERAND;
@@ -51,8 +52,8 @@ int tok_to_type(token_t *last_token, token_t * token) {
     else if(token->token_type == OPERATOR || 
             token->token_type == SEPARATOR) {
         int char_num = 0;
-        char first_ch = ((char *)token->attr)[char_num++],
-        next_ch = ((char *)token->attr)[char_num];
+        char first_ch = (get_attr(token, sc))[char_num++],
+        next_ch = (get_attr(token, sc))[char_num];
 
         switch (first_ch)
         {
@@ -61,7 +62,7 @@ int tok_to_type(token_t *last_token, token_t * token) {
         case '*':
             return MULT;
         case '-':
-            if(is_unary_minus(last_token)) {
+            if(is_unary_minus(sc, last_token)) {
                 return MINUS;
             }
             return SUB;
@@ -107,9 +108,9 @@ int tok_to_type(token_t *last_token, token_t * token) {
 /**
  * @brief Creates expression element from current and last token
  */ 
-expr_el_t from_input_token(token_t *last, token_t *current) {
+expr_el_t from_input_token(scanner_t *sc, token_t *last, token_t *current) {
     expr_el_t result;
-    result.type = tok_to_type(last, current);
+    result.type = tok_to_type(sc, last, current);
     
     switch (current->token_type)
     {
@@ -130,7 +131,7 @@ expr_el_t from_input_token(token_t *last, token_t *current) {
         break;
     }
 
-    result.value = current->attr;
+    result.value = get_attr(current, sc);
 
     return result;
 }
@@ -406,8 +407,6 @@ int reduce(pp_stack_t *st, pp_stack_t *ops, expr_rule_t *rule, char **err_m) {
 
     print_operands(ops); /**< It will be probably substituted for code generating */
 
-    pp_show(ops); //TODO
-
     if(!pp_push(st, non_term(result_type))) {
         return INTERNAL_ERROR;
     }
@@ -445,13 +444,13 @@ int reduce_top(pp_stack_t *s, char ** failed_operation) {
 /**
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  */ 
-expr_el_t get_input_symbol(token_t *last, token_t *current) {
+expr_el_t get_input_symbol(scanner_t *sc, token_t *last, token_t *current) {
     expr_el_t on_input;
-    if(is_EOE(current)) {
+    if(is_EOE(sc, current)) {
         on_input = stop_symbol();
     }
     else {
-        on_input = from_input_token(last, current);
+        on_input = from_input_token(sc, last, current);
     }
 
     return on_input;
@@ -520,7 +519,7 @@ void print_err_message(int return_value, scanner_t *sc,
                 "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m Not recognized token! (\"%s\")\n",
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL], 
-                (char *)cur_tok->attr);
+                get_attr(cur_tok, sc));
         break;
     case SEM_ERROR_IN_EXPR:
         fprintf(stderr, 
@@ -534,11 +533,11 @@ void print_err_message(int return_value, scanner_t *sc,
         break;
     case EXPRESSION_FAILURE:
         fprintf(stderr, 
-                "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in epxression! (\"%s%s\")\n", 
+                "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m Invalid combination of tokens in expression! (\"%s%s\")\n", 
                 sc->cursor_pos[ROW], 
                 sc->cursor_pos[COL],
-                (char *)last_tok->attr,
-                (char *)cur_tok->attr);
+                get_attr(last_tok, sc),
+                get_attr(cur_tok, sc));
 
         break;
     default:
@@ -570,7 +569,7 @@ int parse_expression(scanner_t *sc) {
             break;
         }
 
-        expr_el_t on_input = get_input_symbol(&last_token, &current_token);
+        expr_el_t on_input = get_input_symbol(sc, &last_token, &current_token);
         expr_el_t on_top = get_top_symbol(&stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
@@ -578,7 +577,7 @@ int parse_expression(scanner_t *sc) {
             break;
         }
         char precedence = get_precedence(on_top, on_input);
-        fprintf(stderr, "%s: %c %d %d\n", (char *)current_token.attr, precedence, on_top.type, on_input.type);
+        //fprintf(stderr, "%s: %c %d %d\n", get_attr(&current_token, sc), precedence, on_top.type, on_input.type);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;
@@ -601,7 +600,7 @@ int parse_expression(scanner_t *sc) {
 
     print_err_message(retval, sc, &last_token, &current_token, &failed_op);
     free_everything(&stack, &last_token, &current_token);
-    //fprintf(stderr, "%s\n", (char *)lookahead(sc).attr);
+    //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }
 

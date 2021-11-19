@@ -262,7 +262,7 @@ class parenthesis_err : public test_fixture {
 };
 
 TEST_F(parenthesis_err, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS); /**< PP parser should return control to the topdown parser*/
 }
 
 
@@ -303,7 +303,7 @@ class op_err3 : public test_fixture {
 };
 
 TEST_F(op_err3, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS); /**< PP parser should return control to the topdown parser*/
 }
 
 
@@ -317,10 +317,10 @@ class op_not_err1 : public test_fixture {
 };
 
 TEST_F(op_not_err1, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS); /**< PP parser should return control to the topdown parser*/
 }
 
-class op_err4 : public test_fixture {
+class op_not_err2 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
@@ -329,8 +329,8 @@ class op_err4 : public test_fixture {
         }
 };
 
-TEST_F(op_err4, only_parse) {
-    ASSERT_EQ(parse_expression(&uut), EXPRESSION_FAILURE);
+TEST_F(op_not_err2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut), EXPRESSION_SUCCESS); /**< PP parser should return control to the topdown parser*/
 }
 
 class op_ok : public test_fixture {

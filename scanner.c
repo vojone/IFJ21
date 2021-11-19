@@ -600,7 +600,7 @@ token_t get_next_token(scanner_t *sc) {
 
     } //while(result.token_type == UNKNOWN)
     
-    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type,(char *) result.attr);
+    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 
