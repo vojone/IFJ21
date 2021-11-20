@@ -261,6 +261,7 @@ int assignment(token_t t) {
 
     //char* var_id = last_token.attr;
     //debug_print("\n\nvar_id: %s\n\n"); //current token);
+    token_t var_id = t;
 
     int token_count = 0;
     bool foundAssignmentOp = false;
@@ -292,7 +293,7 @@ int assignment(token_t t) {
             foundAssignmentOp = true;
 
             // Semantics for value assignment to variable
-            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&t, scanner));
+            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&var_id, scanner));
             if(!symtab_var) {
                 return SEMANTIC_ERROR_DEFINITION;
             }
