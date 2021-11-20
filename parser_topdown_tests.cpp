@@ -55,7 +55,7 @@ FILE * create_input_file(std::string *name, std::string *content) {
     return input_file;
 }
 
-bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, parser_t *pt, symtab_t *tab) {
+bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, parser_t *pt) {
     FILE * input = NULL;
     input = create_input_file(fname, content);
     if(!input) {
@@ -66,7 +66,7 @@ bool prepare_tests(std::string *fname, std::string *content, scanner_t *dut, par
     freopen(fname->c_str(), "r", stdin);
 
     scanner_init(dut);
-    parser_setup(pt, dut, tab);
+    parser_setup(pt, dut);
 
     return true;
 }
@@ -77,7 +77,6 @@ class test_fixture : public :: testing :: Test {
         std::string scanner_input;
 
         scanner_t uut;
-        symtab_t tab;
         parser_t pt;
         bool init_success;
 
@@ -87,11 +86,10 @@ class test_fixture : public :: testing :: Test {
 
 
         virtual void SetUp() {
-            setData(); 
-            init_success = prepare_tests(&inp_filename, &scanner_input, &uut, &pt, &tab);
+            setData();
+            init_success = prepare_tests(&inp_filename, &scanner_input, &uut, &pt);
             if(!init_success) {
                 scanner_dtor(&uut);
-                destroy_tab(&tab);
                 exit(EXIT_FAILURE);
             }
         }
@@ -99,7 +97,6 @@ class test_fixture : public :: testing :: Test {
         virtual void TearDown() {
             remove(inp_filename.c_str());
             scanner_dtor(&uut);
-            destroy_tab(&tab);
         }
 };
 
@@ -153,6 +150,70 @@ class if_parse : public test_fixture {
 };
 
 TEST_F(if_parse, only_parse) {
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class if_parse_err1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(require "help.tl" 
+            function main() 
+                local s1 : integer 
+                if true then 
+                    local s2 : string = ", ktery jeste trochu obohatime" 
+                else
+                    s2 = 0
+                end
+            end
+            )";
+        }
+};
+
+TEST_F(if_parse_err1, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+}
+
+class function_parse_err : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(require "help.tl" 
+
+            function abc()
+                local s1 : integer
+            end
+
+            function main()
+                s1 = 0
+            end
+            )";
+        }
+};
+
+TEST_F(function_parse_err, only_parse) {
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+}
+
+
+class if_parse_not_err : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(require "help.tl" 
+            function main() 
+                local s1 : integer 
+                if true then 
+                    local s1 : string = ", ktery jeste trochu obohatime" 
+                else
+                    s1 = 0
+                end
+            end
+            )";
+        }
+};
+
+TEST_F(if_parse_not_err, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 

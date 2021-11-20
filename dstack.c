@@ -77,6 +77,20 @@ TYPE NAME##_top(NAME##_stack_t *s) {            \
     return s->data[s->top - 1];                 \
 }                                               \
                                                 \
+TYPE * NAME##_get_ptr(NAME##_stack_t *s, int index) {               \
+    if(index > s->top - 1 || index < 0) {                           \
+        return NULL;                                                \
+    }                                                               \
+    else {                                                          \
+        return &(s->data[index]);                                   \
+    }                                                               \
+}                                                                   \
+                                                                    \
+                                                                    \
+unsigned int NAME##_get_top_ind(NAME##_stack_t *s) {                \
+        return s->top - 1;                                          \
+}                                                                   \
+                                                \
 void NAME##_show(NAME##_stack_t *s) {           \
     int i = 0;                                  \
     fprintf(stderr, "STACK: |");                \
@@ -93,6 +107,8 @@ void NAME##_show(NAME##_stack_t *s) {           \
 DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
 
 DSTACK(tree_node_t*, ts,)
+
+DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key))
 
 
 /***                        End of dstack.c                                ***/

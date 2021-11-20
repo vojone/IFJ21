@@ -41,6 +41,7 @@ typedef enum return_codes {
 
 
 typedef struct parser {
+    symtabs_stack_t symtabs;
     int return_code;
     bool reached_EOF;
 } parser_t;
@@ -62,7 +63,7 @@ rule_t determine_rule(token_t t);
  * @brief sets the parser and scanner to use
  * @note there can be only one instance i guess, because of the parser static var
  */ 
-void parser_setup(parser_t *p, scanner_t *s, symtab_t *tab);
+void parser_setup(parser_t *p, scanner_t *s);
 
 /**
  * @brief Starts parsing
