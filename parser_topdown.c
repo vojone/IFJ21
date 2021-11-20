@@ -169,16 +169,18 @@ int statement() {
     {
     case IDENTIFIER:
         true;
-        char *func = get_attr(&t, scanner);
+        token_t func_token = t;
+        char *func = get_attr(&func_token, scanner);
         // it is neccessary to look at the next lexeme also
         token_t id_token = get_next_token(scanner);
         t = lookahead(scanner);
         bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
         bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
         //check if it is a function call
-        debug_print("Calling function ------------");
+        debug_print("Calling function ------------\n");
         if(compare_token_attr(t, SEPARATOR, "(")) {
             debug_print("Call function %s\n", func);
+
             tree_node_t *func_valid = search_in_tables(&symtab, func);
 
             // Function is not declared
@@ -258,7 +260,7 @@ int assignment(token_t t) {
     token_t current_token;
     token_init(&current_token);
     */    
-
+    token_t var_id = t;
     //char* var_id = last_token.attr;
     //debug_print("\n\nvar_id: %s\n\n"); //current token);
 
@@ -267,6 +269,7 @@ int assignment(token_t t) {
 
     //first loop checks and counts left side of the assignment
     while(!foundAssignmentOp) {
+
         //first token is already read at the beginning, so we check wheter we are at the beginning
         if(token_count != 0) {
             t = get_next_token(scanner);
@@ -292,7 +295,9 @@ int assignment(token_t t) {
             foundAssignmentOp = true;
 
             // Semantics for value assignment to variable
-            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&t, scanner));
+            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&(var_id), scanner));
+            debug_print("\nSEARCH TS for dtype of: '%s' is '%d'\n\n", get_attr(&(var_id),scanner), symtab_var->data.dtype);
+
             if(!symtab_var) {
                 return SEMANTIC_ERROR_DEFINITION;
             }

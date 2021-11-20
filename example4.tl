@@ -1,4 +1,3 @@
--- Program 1: Vypocet faktorialu (iterativne)
 require "ifj21"
 
 function hello()
