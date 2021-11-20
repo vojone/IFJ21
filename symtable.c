@@ -203,6 +203,9 @@ sym_dtype_t char_to_dtype(char type_c) {
     case 's':
         type = STR;
         break;
+    case 'z':
+        type = NIL;
+        break;
     default:
         type = UNDEFINED;
     }

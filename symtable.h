@@ -30,7 +30,7 @@ typedef enum sym_type {
  * @brief Specifies data type of variable or return type of function 
  */ 
 typedef enum sym_dtype {
-    INT, NUM, STR
+    INT, NUM, STR, NIL, BOOL
 } sym_dtype_t;
 
 

@@ -175,7 +175,7 @@ class relational_operators1 : public test_fixture {
 
 TEST_F(relational_operators1, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
-    ASSERT_EQ(ret_type, INT);
+    ASSERT_EQ(ret_type, BOOL);
 }
 
 
@@ -190,7 +190,7 @@ class relational_operators2 : public test_fixture {
 
 TEST_F(relational_operators2, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
-    ASSERT_EQ(ret_type, INT);
+    ASSERT_EQ(ret_type, BOOL);
 }
 
 
@@ -232,7 +232,7 @@ class relational_operators5 : public test_fixture {
 
 TEST_F(relational_operators5, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
-    ASSERT_EQ(ret_type, INT);
+    ASSERT_EQ(ret_type, BOOL);
 }
 
 
@@ -455,6 +455,48 @@ TEST_F(declared3_sem_err, only_parse) {
     insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
     insert_sym(&symtab, "b", {(char *)"b", VAR, {0, 0, NULL}, STR, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), SEM_ERROR_IN_EXPR);
+}
+
+class nil1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"("abc" == nil)
+            )";
+        }
+};
+
+TEST_F(nil1, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+class nil2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a ~= nil
+            )";
+        }
+};
+
+TEST_F(nil2, only_parse) {
+    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
+class nil3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(nil + 5
+            )";
+        }
+};
+
+TEST_F(nil3, only_parse) {
+    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), NIL_ERROR);
 }
 
 /*****************************************************************************/

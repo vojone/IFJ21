@@ -10,11 +10,22 @@
 
 #include "precedence_parser.h"
 
+/**
+ * @brief Determines if is token separator, that can be used in expressions
+ */ 
 bool is_allowed_separator(scanner_t *sc, token_t *token) {
     return token->token_type == SEPARATOR && 
            (str_cmp(get_attr(token, sc), ")") == 0 || 
            str_cmp(get_attr(token, sc), "(") == 0);
 }
+
+/**
+ * @brief Determines whether is token nil keyword or not
+ */ 
+bool is_nil(scanner_t *sc, token_t *token) {
+    return token->token_type == KEYWORD && 
+           (str_cmp(get_attr(token, sc), "nil") == 0);
+}   
 
 /**
  * @brief Resolves if token can be part of expression
@@ -24,7 +35,7 @@ bool is_EOE(scanner_t *sc, token_t *token) {
 
     if(type == IDENTIFIER || type == OPERATOR ||
        is_allowed_separator(sc, token) || type == STRING ||
-       type == NUMBER || type == INTEGER) {
+       type == NUMBER || type == INTEGER || is_nil(sc, token)) {
         return false;
     }
     else {
@@ -41,25 +52,13 @@ bool is_unary_minus(scanner_t *sc, token_t *last_token) {
             last_token->token_type == OPERATOR;
 }
 
+
 /**
- * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
+ * @brief Resolves operator type
  */ 
-int tok_to_type(tok_buffer_t *tok_b) {
-    token_t token = tok_b->current;
-
-    if(token.token_type == IDENTIFIER || token.token_type == NUMBER ||
-       token.token_type == STRING || token.token_type == INTEGER) {
-           return OPERAND;
-    }
-    else if(token.token_type == OPERATOR || 
-            token.token_type == SEPARATOR) {
-
-        int char_num = 0;
-        char first_ch = (get_attr(&token, tok_b->scanner))[char_num++],
-        next_ch = (get_attr(&token, tok_b->scanner))[char_num];
-
-        switch (first_ch)
-        {
+grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
+    switch (first_c)
+    {
         case '#':
             return HASH;
         case '*':
@@ -70,24 +69,24 @@ int tok_to_type(tok_buffer_t *tok_b) {
             }
             return SUB;
         case '/':
-            if(next_ch == '/') {
+            if(sec_c == '/') {
                 return INT_DIV;
             }
             return DIV;
         case '+':
             return ADD;
         case '<':
-            if(next_ch == '=') {
+            if(sec_c == '=') {
                 return LTE;
             }
             return LT;
         case '>':
-            if(next_ch == '=') {
+            if(sec_c == '=') {
                 return GTE;
             }
             return GT;
         case '=':
-            if(next_ch == '=') {
+            if(sec_c == '=') {
                 return EQ;
             }
 
@@ -102,8 +101,28 @@ int tok_to_type(tok_buffer_t *tok_b) {
             return CONCAT;
         default:
             return UNDEFINED;
-        }
-    }//switch(first_ch)
+    }   //switch(first_ch)
+}
+
+/**
+ * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
+ */ 
+int tok_to_type(tok_buffer_t *tok_b) {
+    token_t token = tok_b->current;
+
+    if(token.token_type == IDENTIFIER || token.token_type == NUMBER ||
+       token.token_type == STRING || token.token_type == INTEGER || 
+       is_nil(tok_b->scanner, &tok_b->current)) {
+           return OPERAND;
+    }
+    else if(token.token_type == OPERATOR || token.token_type == SEPARATOR) {
+
+        int char_num = 0;
+        char first_ch = (get_attr(&token, tok_b->scanner))[char_num++],
+        next_ch = (get_attr(&token, tok_b->scanner))[char_num];
+
+        return operator_type(first_ch, next_ch, tok_b);
+    }
 
     return UNDEFINED;
 }
@@ -138,7 +157,13 @@ int from_input_token(expr_el_t *result,
         result->dtype = symbol->data.dtype;
         break;
     default:
-        result->dtype = UNDEFINED;
+        if(is_nil(tok_b->scanner, &tok_b->current)) {
+            result->dtype = NIL;
+        }
+        else {
+            result->dtype = UNDEFINED;
+        }
+
         break;
     }
 
@@ -240,7 +265,10 @@ char *to_char_sequence(expr_el_t expression_element) {
  *       n number
  *       i integer
  *       s string
+ *       0 nil
+ *       b bool
  *       ( types symbols after it defines type for resting operators (integer and number are compatible)
+ *       ) returns from "must_be" mode to normal mode 
  *       Example: (nis|nis = First and sec operand can be number/integer/string and if it's e. g. string second must be string too
  */ 
 expr_rule_t *get_rule(unsigned int index) {
@@ -258,12 +286,12 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E//E", "ni|ni", ORIGIN, "\"//\" expects number/integer as operands"},
         {"_E", "ni", ORIGIN, "Unary minus expects number/integer as operands"},
         {"#E", "s", INT, "Only string can be operand of \"#\""},
-        {"E<E", "(nis|nis", INT, "Incompatible operands of \"<\""},
-        {"E>E", "(nis|nis", INT, "Incompatible operands of \">\""},
-        {"E<=E", "(nis|nis", INT, "Incompatible operands of \"<=\""},
-        {"E>=E", "(nis|nis", INT, "Incompatible operands of \">=\""},
-        {"E==E", "(nis|nis", INT, "Incompatible operands of \"==\""},
-        {"E~=E", "(nis|nis", INT, "Incompatible operands of \"~=\""},
+        {"E<E", "(nis|nis", BOOL, "Incompatible operands of \"<\""},
+        {"E>E", "(nis|nis", BOOL, "Incompatible operands of \">\""},
+        {"E<=E", "(nis|nis", BOOL, "Incompatible operands of \"<=\""},
+        {"E>=E", "(nis|nis", BOOL, "Incompatible operands of \">=\""},
+        {"E==E", "z(nis|nis)z", BOOL, "Incompatible operands of \"==\""},
+        {"E~=E", "z(nis|nis)z", BOOL, "Incompatible operands of \"~=\""},
         {"E..E", "s|s", STR, "Operation \"..\" needs strings as operands"},
     };
 
@@ -273,13 +301,14 @@ expr_rule_t *get_rule(unsigned int index) {
 /**
  * @brief Pops operand stack if it is not empty
  */ 
-expr_el_t safe_op_pop(bool *cur_ok, bool* check_res, pp_stack_t *op_stack) {
+expr_el_t safe_op_pop(bool *cur_ok, int *check_result, pp_stack_t *op_stack) {
     if(!pp_is_empty(op_stack)) {
         *cur_ok = false;
         return pp_pop(op_stack);
     }
     else {
         *cur_ok = false;
+        *check_result = INTERNAL_ERROR;
         return stop_symbol();
     }
 }
@@ -313,53 +342,70 @@ void resolve_res_type(sym_dtype_t *res, expr_rule_t *rule,
     }
 }
 
+int get_tcheck_ret(expr_el_t *current_operand) {
+    int result;
+    if(current_operand->dtype == NIL) {
+        result = NIL_ERROR;
+    }
+    else {
+        result = SEM_ERROR_IN_EXPR;
+    }
+
+    return result;
+}
+
 /**
  * @brief Performs type checking when precedence parser reducing the top of the stac
  * @note Type check is based on rules writen in get_rule() ( @see get_rule())
  */ 
-bool type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
+int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
 
     expr_el_t current = pp_pop(&op_stack);
-    bool is_curr_op_ok = false, must_be_flag = false, result = true;
+    bool is_curr_ok = false, must_be_flag = false;
+    int result = EXPRESSION_SUCCESS;
     sym_dtype_t tmp_res_type = rule->return_type, must_be = UNDEFINED;
 
     char c;
-    for(int i = 0; (c = rule->operator_types[i]) != '\0'; i++) {
-        if(c == '|' && !is_curr_op_ok) { //Cannot found corresponding symbol for current datatype in rule
-            result = false;
+    for(int i = 0; (c = rule->operator_types[i]) != '\0' && !result; i++) {
+        if(c == '|' && !is_curr_ok) { //Cannot found corresponding symbol for current datatype in rule
+            result = get_tcheck_ret(&current);
             break;
         }
-        else if(c == '|' || c == '(') {
+        else if(c == '|' || (c == '(' && !is_curr_ok) || c == ')') { //There is special symbol in sequence
             
             if(c == '|')
-                current = safe_op_pop(&is_curr_op_ok, &result, &op_stack);
+                current = safe_op_pop(&is_curr_ok, &result, &op_stack);
+            else if(c == ')')
+                must_be_flag = false;
             else
                 must_be_flag = true;
 
+            continue;
+        }
+        else if(is_curr_ok && must_be != UNDEFINED && !must_be_flag) { //You can skip the rest of op. specifiers if everything is found
             continue;
         }
 
         //Operand before current op. defined type of resting operands
         if(must_be_flag && 
           (is_compatible(current.dtype, must_be) || must_be == UNDEFINED)) {
-            is_curr_op_ok = true;
+            is_curr_ok = true;
 
             if(must_be == UNDEFINED && current.dtype == char_to_dtype(c))
                 must_be = current.dtype;
 
         }
         else if(!must_be_flag) { 
-
             if(c == '*' || current.dtype == char_to_dtype(c))
-                is_curr_op_ok = true; //Operand type corresponds with current possiblity
-
+                is_curr_ok = true; //Operand type corresponds with current possiblity
         }
 
-        resolve_res_type(&tmp_res_type, rule, current, is_curr_op_ok);
+        resolve_res_type(&tmp_res_type, rule, current, is_curr_ok);
     }
 
-    result = (!is_curr_op_ok && c == '\0') ?  false : result;
+    result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
     *res_t = tmp_res_type;
+
     return result;
 }
 
@@ -442,11 +488,10 @@ int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
     expr_rule_t *rule;
     for(int i = 0; (rule = get_rule(i)); i++) {
         if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
-
-            bool t_check_res = type_check(operands, rule, ret_type);
-            if(!t_check_res) { /**< Type check was not succesfull */
+            int t_check_res = type_check(operands, rule, ret_type);
+            if(t_check_res != EXPRESSION_SUCCESS) { /**< Type check was not succesfull */
                 *failed_op_msg = rule->error_message;
-                retval = SEM_ERROR_IN_EXPR;
+                retval = t_check_res;
             }
             else {
                 retval = reduce(s, &operands, rule, ret_type);
