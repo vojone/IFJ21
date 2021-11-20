@@ -355,7 +355,7 @@ int get_tcheck_ret(expr_el_t *current_operand) {
 }
 
 /**
- * @brief Performs type checking when precedence parser reducing the top of the stac
+ * @brief Performs type checking when precedence parser reducing the top of the stack
  * @note Type check is based on rules writen in get_rule() ( @see get_rule())
  */ 
 int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
@@ -367,42 +367,44 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
 
     char c;
     for(int i = 0; (c = rule->operator_types[i]) != '\0' && !result; i++) {
-        if(c == '|' && !is_curr_ok) { //Cannot found corresponding symbol for current datatype in rule
-            result = get_tcheck_ret(&current);
-            break;
-        }
-        else if(c == '|' || (c == '(' && !is_curr_ok) || c == ')') { //There is special symbol in sequence
-            
-            if(c == '|')
+        if(c == '|') { /**< Next operator symbol */
+            if(!is_curr_ok) { /**< Specifier for current operator was not found -> error */
+                result = get_tcheck_ret(&current);
+                break;
+            }
+            else { /**< Specifier was found -> next check operator*/
                 current = safe_op_pop(&is_curr_ok, &result, &op_stack);
-            else if(c == ')')
-                must_be_flag = false;
-            else
+            }
+        }
+        else if(c == '(') { /**< Sets type checcker to must_be mode */
+            if(!is_curr_ok) {
                 must_be_flag = true;
-
-            continue;
+            }
         }
-        else if(is_curr_ok && must_be != UNDEFINED && !must_be_flag) { //You can skip the rest of op. specifiers if everything is found
-            continue;
+        else if(c == ')') { /**< Unsets must_be mode */
+            must_be_flag = false;
         }
+        else { /**< Current char is type specifier */
+            if(must_be_flag) { /**< Must_be mode is set */
+                if(must_be == UNDEFINED && current.dtype == char_to_dtype(c)) {
+                    must_be = current.dtype;
+                }
 
-        //Operand before current op. defined type of resting operands
-        if(must_be_flag && 
-          (is_compatible(current.dtype, must_be) || must_be == UNDEFINED)) {
-            is_curr_ok = true;
-
-            if(must_be == UNDEFINED && current.dtype == char_to_dtype(c))
-                must_be = current.dtype;
-
-        }
-        else if(!must_be_flag) { 
-            if(c == '*' || current.dtype == char_to_dtype(c))
-                is_curr_ok = true; //Operand type corresponds with current possiblity
+                if(is_compatible(current.dtype, must_be)) { /**< Type of current operator is compatible with type of earlier operator */
+                    is_curr_ok = true;
+                }
+            }
+            else { /**< Normal mode */
+                if(c == '*' || current.dtype == char_to_dtype(c)) {
+                    is_curr_ok = true; //Operand type corresponds with operator specifier
+                }
+            }
         }
 
         resolve_res_type(&tmp_res_type, rule, current, is_curr_ok);
     }
 
+    // Specifier string ended -> if specifier for last operator was not found -> error
     result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
     *res_t = tmp_res_type;
 
