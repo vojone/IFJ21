@@ -40,7 +40,7 @@ void to_outer_ctx(parser_t *p) {
 }
 
 /**
- * @brief Creates new symbolt able (new context) and sets symtable to it
+ * @brief Creates new symbol table (new context) and sets symtable to it
  */ 
 void to_inner_ctx(parser_t *p) {
     symtabs_push(&p->symtabs, symtab); //Save copy of old symtab to the stack of symtabs
@@ -65,6 +65,7 @@ void parser_setup(parser_t *p, scanner_t *s) {
     symtab = global;
 }
 
+//<program>               -> <global-statement-list>
 int parse_program() {
     //scanner_init(scanner);    
     
@@ -85,6 +86,7 @@ int parse_program() {
 
 }
 
+//<global-statement-list> -> <global-statement> <global-statement-list>
 int global_statement_list(){
     int ret = global_statement();
     
@@ -120,6 +122,7 @@ int statement_list(){
 }
 
 int global_statement() {
+    //TODO support for function declarations
     token_t t = get_next_token(scanner);
     if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "require")) {
@@ -155,105 +158,30 @@ int global_statement() {
         parser->reached_EOF = true;
         return PARSE_SUCCESS;
     }
-
     error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
     return SYNTAX_ERROR;
 }
 
 
-
 int statement() {
+    debug_print("parsing next statement...\n");
     token_t t = lookahead(scanner);
 
-    switch (t.token_type)
-    {
-    case IDENTIFIER:
-        true;
-        char *func = get_attr(&t, scanner);
-        // it is neccessary to look at the next lexeme also
-        token_t id_token = get_next_token(scanner);
-        t = lookahead(scanner);
-        bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
-        bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
-        //check if it is a function call
-        debug_print("Calling function ------------");
-        if(compare_token_attr(t, SEPARATOR, "(")) {
-            debug_print("Call function %s\n", func);
-            tree_node_t *func_valid = search_in_tables(&symtab, func);
+    //get the apropriate rule
+    rule_t rule_to_use = determine_rule(t);
+    
+    //call the right function
+    int res = rule_to_use.rule_function();
 
-            // Function is not declared
-            if (func_valid == NULL) { //----------------------------------------------------------------------------
-                error_semantic("Function name '%s' not defined!", func);
-                return SEMANTIC_ERROR_DEFINITION;
-            }
+    //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
+    debug_print("statement %s returned code %i\n",rule_to_use.rule_first.attr,res);
 
-            return parse_function_call();
-        }
-        else if(is_multiple_assignment || is_single_assignment) {
-            return assignment(id_token);
-        }
-        else {
-            error_unexpected_token("After IDENTIFIER a function call or an assignment", t);
-        }
-        break;
-
-    case KEYWORD:
-        // true;
-        // rule_t rule_to_use = determine_rule(t);
-        // t = get_next_token(scanner);
-        // int res = rule_to_use.rule_function();
-        // debug_print("Using rule %s, which returned %i\n",(char *)rule_to_use.rule_first.attr,res);
-        // return res;
-        if(compare_token_attr(t, KEYWORD, "local")) {
-            //<statement>             -> local  [id] : [type] <value-assignment>
-            t = get_next_token(scanner);
-            return parse_local_var();
-        }
-        else if(compare_token_attr(t, KEYWORD, "global")) {
-            //<statement>             -> global  [id] : [type] <value-assignment>
-            t = get_next_token(scanner);
-            debug_print("parsing global");
-            return parse_global_var();
-        }
-        else if(compare_token_attr(t, KEYWORD, "if")) {
-            //<statement>             -> return <exp>
-            t = get_next_token(scanner);
-            return parse_if();
-        }
-        else if(compare_token_attr(t, KEYWORD, "else")) {
-            return PARSE_SUCCESS;
-        }
-        else if(compare_token_attr(t, KEYWORD, "while")) {
-            t = get_next_token(scanner);
-            return parse_while();
-        }
-        else if(compare_token_attr(t, KEYWORD, "return")) {
-            //<statement>             -> return <exp>
-            t = get_next_token(scanner);
-            debug_print("Calling precedence parser...\n");
-            sym_dtype_t ret_type;
-            return parse_expression(scanner, &symtab, &ret_type);
-        }
-        else if(compare_token_attr(t, KEYWORD, "end")) {
-            return PARSE_SUCCESS;
-        }
-        break;
-
-    case EOF_TYPE:
-        error_unexpected_token("Reached EOF inside a function. Did you forget 'end'? END",t);
-        parser->reached_EOF = true;
-        return SYNTAX_ERROR;
-        break;
-
-    default:
-        debug_print("NO RULE TO USE: Token type is: %i\n", t.token_type);
-        return SYNTAX_ERROR;
-        break;
-    }
-    return SYNTAX_ERROR;
+    return res;
 }
 
 int assignment(token_t t) {
+    //this function expects that the current token is identifier
+    //so next token should be = or ,
     /*
     token_t current_token;
     token_init(&current_token);
@@ -262,21 +190,25 @@ int assignment(token_t t) {
     //char* var_id = last_token.attr;
     //debug_print("\n\nvar_id: %s\n\n"); //current token);
     token_t var_id = t;
+    debug_print("var id: %s\n",get_attr(&var_id,scanner));
 
     int token_count = 0;
     bool foundAssignmentOp = false;
 
+    //this should be either = or ,
+    // t = lookahead(scanner);
+    // debug_print("the token after identifer is %s\n",get_attr(&t,scanner));
     //first loop checks and counts left side of the assignment
     while(!foundAssignmentOp) {
         //first token is already read at the beginning, so we check wheter we are at the beginning
         if(token_count != 0) {
             t = get_next_token(scanner);
         }
-
-        if(t.token_type == IDENTIFIER || token_count == 0) {
+        //the next token should be identifier
+        if(t.token_type == IDENTIFIER) {
             token_count++;
             if(!search_in_tables(&symtab, get_attr(&t, scanner))) {
-                fprintf(stderr, "\n%d Undeclared: %s\n", symtab.parent_ind, get_attr(&t, scanner));
+                error_semantic("%d Undeclared: %s", symtab.parent_ind, get_attr(&t, scanner));
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
@@ -349,6 +281,9 @@ int assignment(token_t t) {
 
 
 int parse_local_var() {
+    //go one token forward
+    get_next_token(scanner);
+
     //should be identifier
     token_t t = get_next_token(scanner);
     token_t var_id = t;
@@ -398,16 +333,18 @@ int parse_local_var() {
             error_unexpected_token("Valid expression", t);
         return assignment;
     }
-    
     // Adding variable and its datatype into symtable
     sym_data_t symdata_var = {get_attr(&var_id, scanner), VAR, .dtype = var_type};
     insert_sym(&symtab, get_attr(&var_id, scanner), symdata_var);
-
+    
     return PARSE_SUCCESS;
 }
 
 
 int parse_global_var() {
+    //go one token forward
+    get_next_token(scanner);
+
     //should be identifier
     token_t t = get_next_token(scanner);
 
@@ -658,6 +595,9 @@ int parse_function_arguments() {
 }
 
 int parse_if(){
+    //go one token forward
+    get_next_token(scanner);
+
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
     int condition = parse_expression(scanner, &symtab, &ret_type);
@@ -717,6 +657,13 @@ int parse_else() {
 }
 
 int parse_return(){
+    //go one token forward
+    get_next_token(scanner);
+    
+    debug_print("Calling precedence parser...\n");
+    sym_dtype_t ret_type;
+    return parse_expression(scanner, &symtab, &ret_type);
+
     //TODO CHECK THE SYMTABLE TO KNOW HOW MANY EXPRESSIONS SHOULD BE RETURNED
     //! The ACTUAL return parsing is handled in statement() currently, it checks for exactly ONE expression
     //* SOMETHING LIKE THIS WILL BE HERE LATER
@@ -747,6 +694,9 @@ int parse_end(){
 }
 
 int parse_while() {
+    //go one token forward
+    get_next_token(scanner);
+    
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
     int condition = parse_expression(scanner, &symtab, &ret_type);
@@ -788,23 +738,32 @@ int parse_while() {
  */
 rule_t determine_rule(token_t t) {
     rule_t statement_rules[] = {
-        {parse_local_var,   {KEYWORD, UNSET, "local"}   },
-        {parse_global_var,  {KEYWORD, UNSET, "global"}  },
-        {parse_if,          {KEYWORD, UNSET, "if"}      },
-        {parse_else,        {KEYWORD, UNSET, "else"}    },
-        {parse_while,       {KEYWORD, UNSET, "while"}   },
-        {parse_return,      {KEYWORD, UNSET, "return"}  },
-        {parse_end,         {KEYWORD, UNSET, "end"}     }
+        {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
+        {parse_global_var,  {KEYWORD, UNSET, "global"}, true  },
+        {parse_if,          {KEYWORD, UNSET, "if"},     true  },
+        {parse_else,        {KEYWORD, UNSET, "else"},   true  },
+        {parse_while,       {KEYWORD, UNSET, "while"},  true  },
+        {parse_return,      {KEYWORD, UNSET, "return"}, true  },
+        {parse_end,         {KEYWORD, UNSET, "end"},    true  },
+        {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
+        {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
     };
 
     size_t rules_n = sizeof(statement_rules) / sizeof(rule_t);
     for (size_t i = 0; i < rules_n; i++)
     {
-        token_t expected = statement_rules[i].rule_first;
-        /**< Here can be .attr because the value of token is certainly referenced by pointer */
-        if(compare_token_attr(t, expected.token_type, expected.attr)) {
-            statement_rules[i].rule_function();
-            return statement_rules[i];
+        token_t to_be_checked = statement_rules[i].rule_first;
+        if(statement_rules[i].attrib_relevant){
+            //the atribute is relevant (rules with same token types)
+            /**< Here can be .attr because the value of token is certainly referenced by pointer */
+            if(compare_token_attr(t, to_be_checked.token_type, to_be_checked.attr)) {
+                return statement_rules[i];
+            }
+        }else{
+            //the atribute is irrelevant we check only for matching token type
+            if(compare_token(t, to_be_checked.token_type)) {
+                return statement_rules[i];
+            }
         }
     }
 
@@ -812,6 +771,48 @@ rule_t determine_rule(token_t t) {
     return (rule_t){error_rule, {-1, UNSET, NULL}};
 }
 
+int parse_identifier(){
+    //should be identifier
+    token_t id_token = get_next_token(scanner);
+    debug_print("got identifier\n");
+    char *func = get_attr(&id_token, scanner);
+    // it is neccessary to look at the next lexeme also
+    // token_t id_token = get_next_token(scanner);
+    token_t t = lookahead(scanner);
+    bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
+    bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
+    //check if it is a function call
+    if(compare_token_attr(t, SEPARATOR, "(")) {
+        debug_print("Call function %s\n", func);
+        tree_node_t *func_valid = search_in_tables(&symtab, func);
+
+        // Function is not declared
+        if (func_valid == NULL) { //----------------------------------------------------------------------------
+            error_semantic("Function name '%s' not defined!", func);
+            return SEMANTIC_ERROR_DEFINITION;
+        }
+
+        return parse_function_call();
+    }
+    else if(is_multiple_assignment || is_single_assignment) {
+        debug_print("parsing assignment...\n");
+        return assignment(id_token);
+    }
+    else {
+        error_unexpected_token("After IDENTIFIER a function call or an assignment", t);
+    }
+    return SYNTAX_ERROR;
+}
+
+int EOF_fun_rule(){
+    //will not actually get the token upon which has been decided to use this rule
+    //but will get the next token
+    //otherwise i would have to use params for each one of these rule functions
+    token_t t = lookahead(scanner);
+    error_unexpected_token("Reached EOF inside a function. Did you forget 'end'? END",t);
+    parser->reached_EOF = true;
+    return SYNTAX_ERROR;
+}
 
 int error_rule(){
     return SYNTAX_ERROR;

@@ -51,6 +51,7 @@ int error_rule();
 typedef struct rule {
     int (* rule_function)();
     token_t rule_first;
+    bool attrib_relevant;
 } rule_t;
 
 /**
@@ -88,6 +89,18 @@ int statement_list();
  * @brief Parses statements inside of a function
  */
 int statement();
+
+/**
+ * @brief parses an identifier inside a function
+ * @note decides wheter the rule to use is a function call or an assignment
+ */
+int parse_identifier(); 
+
+/**
+ * @brief parses an EOF inside a function
+ * @note basically an error rule with additional error message
+ */ 
+int EOF_fun_rule();
 
 /**
  * @brief Parses local variable definitions
