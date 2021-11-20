@@ -32,7 +32,6 @@
 
 /**
  * @brief Structure, that groups token buffer with given scanner to get tokens and their attributes easily
- * @note Used especialy for propagating tokens to precedence parser functions
  */ 
 typedef struct tok_buffer {
     scanner_t *scanner;

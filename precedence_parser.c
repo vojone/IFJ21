@@ -46,10 +46,10 @@ bool is_EOE(scanner_t *sc, token_t *token) {
 /**
  * @brief Tries to determine if current token is unary or binary minus operator (due to last_token)
  */ 
-bool is_unary_minus(scanner_t *sc, token_t *last_token) {
-    return  last_token == UNKNOWN || 
-            str_cmp(get_attr(last_token, sc), "(") == 0 ||
-            last_token->token_type == OPERATOR;
+bool is_unary_minus(tok_buffer_t *tok_b) {
+    return  tok_b->last.token_type == UNKNOWN || 
+            str_cmp(get_attr(&tok_b->last, tok_b->scanner), "(") == 0 ||
+            tok_b->last.token_type == OPERATOR;
 }
 
 
@@ -64,7 +64,7 @@ grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
         case '*':
             return MULT;
         case '-':
-            if(is_unary_minus(tok_b->scanner, &(tok_b->last))) {
+            if(is_unary_minus(tok_b)) {
                 return MINUS;
             }
             return SUB;
@@ -512,13 +512,14 @@ int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-int get_input_symbol(expr_el_t *on_input, 
+int get_input_symbol(bool stop_flag,
+                     expr_el_t *on_input, 
                      tok_buffer_t *t_buff, 
                      symtab_t *symtab,
                      pp_stack_t *garbage_stack) {
 
     int retval = EXPRESSION_SUCCESS;
-    if(is_EOE(t_buff->scanner, &(t_buff->current))) {
+    if(stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
         *on_input = stop_symbol();
     }
     else {
@@ -656,7 +657,7 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
-
+    
     tok_buffer_t tok_buffer;
     pp_stack_t stack;
     pp_stack_t garbage;
@@ -667,6 +668,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         return retval;
     }
     
+    bool stop_flag = false;
     while(retval == EXPRESSION_SUCCESS) {
         tok_buffer.current = lookahead(sc);
 
@@ -676,7 +678,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(&on_input, &tok_buffer, symtab, &garbage);
+        retval = get_input_symbol(stop_flag, &on_input, &tok_buffer, symtab, &garbage);
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
@@ -689,7 +691,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
 
         char precedence = get_precedence(on_top, on_input);
-        //fprintf(stderr, "%s: %c %d %d\n", get_attr(&current_token, sc), precedence, on_top.type, on_input.type);
+        fprintf(stderr, "%s: %c %d %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_input.type);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;
@@ -705,8 +707,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
             retval = reduce_top(&stack, &failed_op_msg, ret_type);
         }
         else {
-            retval = EXPRESSION_SUCCESS;
-            break;
+            stop_flag = true;
         }
     }
 
