@@ -1,17 +1,5 @@
--- Program 1: Vypocet faktorialu (iterativne)
-require "ifj21"
-
-function hello()
-
-end
-function main()
-local x : number
-x = 3.2
-local v : integer
-v = 2
-local y : string
-y = "s"
-local z : integer
-z = 4
-
+require ""
+function a ()
+    local b : string
+    b = "a"
 end
