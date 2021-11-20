@@ -12,6 +12,27 @@ static scanner_t * scanner;
 static parser_t * parser;
 static symtab_t symtab;
 
+static rule_t ruleset_global[] = {
+    {parse_require,             {KEYWORD, UNSET, "require"},  true },
+    {parse_function_dec,        {KEYWORD, UNSET, "global"},   true },
+    {parse_function_def,        {KEYWORD, UNSET, "function"}, true },
+    {parse_global_identifier,   {IDENTIFIER, UNSET, NULL},    false},
+    {EOF_global_rule,           {EOF_TYPE, UNSET, NULL},      false},
+};
+#define RULESET_GLOBAL_LENGTH 5
+
+static rule_t ruleset_inside[] = {
+    {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
+    {parse_if,          {KEYWORD, UNSET, "if"},     true  },
+    {parse_else,        {KEYWORD, UNSET, "else"},   true  },
+    {parse_while,       {KEYWORD, UNSET, "while"},  true  },
+    {parse_return,      {KEYWORD, UNSET, "return"}, true  },
+    {parse_end,         {KEYWORD, UNSET, "end"},    true  },
+    {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
+    {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
+};
+#define RULESET_INSIDE_LENGTH 8
+
 #define DEBUG true
 
 tree_node_t * search_in_tables(symtab_t *symbol_table, char *key) {
@@ -122,47 +143,21 @@ int statement_list(){
 }
 
 int global_statement() {
+    debug_print("parsing next global statement...\n");
+    token_t t = lookahead(scanner);
+
+    //get the apropriate rule
+    rule_t rule_to_use = determine_rule(t,ruleset_global);
     
-    token_t t = get_next_token(scanner);
-    if(compare_token(t, KEYWORD)) {
-        if(compare_token_attr(t, KEYWORD, "require")) {
-            //<global-statement>             -> require <str>
-            return parse_str();
-        }
-        else if(compare_token_attr(t, KEYWORD, "function")) {
-            //<global-statement>             -> function [id](<param-list>) : <type-list> <statement-list> end
-            debug_print("function definition...\n");
-            return parse_function_def();
-        }else if(compare_token_attr(t,KEYWORD,"global")){
-            //<global-statement>      -> global [id] : function(<param-list>) <type-list>
-            debug_print("function declaration...\n");
-            return parse_function_dec();
-        }
-        error_unexpected_token("This is global scope so keyword such as require or function definition or call expected", t);
-        return false;
-    }
-    else if(compare_token(t, IDENTIFIER)) {
-        char *func = get_attr(&t, scanner);
-        tree_node_t *func_valid = search(&symtab, func);
-        if (func_valid == NULL){ //----------------------------------------------------------------------------
-            error_semantic("Function name '%s' not defined!", func);
-            return SEMANTIC_ERROR_DEFINITION;
-        }
+    //call the right function
+    int res = rule_to_use.rule_function();
 
-        if(lookahead_token_attr(SEPARATOR,"(")) {
-            return parse_function_call();
-        }
-
-        error_unexpected_token("function call", t);
-        return SYNTAX_ERROR;
-
-    }
-    else if(compare_token(t, EOF_TYPE)) {
-        parser->reached_EOF = true;
-        return PARSE_SUCCESS;
-    }
-    error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
-    return SYNTAX_ERROR;
+    //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
+    debug_print("global statement %s returned code %i\n",rule_to_use.rule_first.attr,res);
+    if(res == SYNTAX_ERROR)
+        error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
+    
+    return res;
 }
 
 
@@ -171,7 +166,7 @@ int statement() {
     token_t t = lookahead(scanner);
 
     //get the apropriate rule
-    rule_t rule_to_use = determine_rule(t);
+    rule_t rule_to_use = determine_rule(t,ruleset_inside);
     
     //call the right function
     int res = rule_to_use.rule_function();
@@ -409,7 +404,10 @@ int parse_global_var() {
     return PARSE_SUCCESS;
 }
 
-int parse_str() {
+int parse_require() {
+    //go one token forward
+    get_next_token(scanner);
+
     token_t t = get_next_token(scanner);
     if(t.token_type == STRING) {
         return PARSE_SUCCESS;
@@ -423,6 +421,9 @@ int parse_str() {
 
 
 int parse_function_dec() {
+    //this token is just 'global' we skip it
+    get_next_token(scanner);
+
     token_t id = get_next_token(scanner);
     if(!compare_token(id,IDENTIFIER)){
         error_unexpected_token("IDENTIFIER",id);
@@ -500,6 +501,9 @@ int parse_function_dec() {
 
 
 int parse_function_def() {
+    //this token is just 'function' so we skip it
+    get_next_token(scanner);
+
     token_t id_fc = get_next_token(scanner);
 
     //parsing function definition signature
@@ -642,8 +646,6 @@ int parse_function_call() {
 
     return PARSE_SUCCESS;
 }
-
-
 int parse_function_arguments() {
     bool closing_bracket = false;
     while(!closing_bracket){
@@ -658,7 +660,6 @@ int parse_function_arguments() {
         else{
             error_unexpected_token("EXPRESSION", t);
         }
-
         t = get_next_token(scanner);
         if(compare_token_attr(t, SEPARATOR, ",")) {
             //ok
@@ -816,40 +817,45 @@ int parse_while() {
 
 /**
  * *MORE GENERAL RULE PARSING ATTEMPT
+ * Determines next rule based on first lexeme
  */
-rule_t determine_rule(token_t t) {
-    rule_t statement_rules[] = {
-        {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
-        {parse_global_var,  {KEYWORD, UNSET, "global"}, true  },
-        {parse_if,          {KEYWORD, UNSET, "if"},     true  },
-        {parse_else,        {KEYWORD, UNSET, "else"},   true  },
-        {parse_while,       {KEYWORD, UNSET, "while"},  true  },
-        {parse_return,      {KEYWORD, UNSET, "return"}, true  },
-        {parse_end,         {KEYWORD, UNSET, "end"},    true  },
-        {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
-        {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
-    };
-
-    size_t rules_n = sizeof(statement_rules) / sizeof(rule_t);
-    for (size_t i = 0; i < rules_n; i++)
+rule_t determine_rule(token_t t, rule_t ruleset[]) {
+    
+    // size_t rules_n = sizeof(ruleset) / sizeof(rule_t);
+    for (size_t i = 0; i < RULESET_INSIDE_LENGTH; i++)
     {
-        token_t to_be_checked = statement_rules[i].rule_first;
-        if(statement_rules[i].attrib_relevant){
+        token_t to_be_checked = ruleset[i].rule_first;
+        if(ruleset[i].attrib_relevant){
             //the atribute is relevant (rules with same token types)
             /**< Here can be .attr because the value of token is certainly referenced by pointer */
             if(compare_token_attr(t, to_be_checked.token_type, to_be_checked.attr)) {
-                return statement_rules[i];
+                return ruleset[i];
             }
         }else{
             //the atribute is irrelevant we check only for matching token type
             if(compare_token(t, to_be_checked.token_type)) {
-                return statement_rules[i];
+                return ruleset[i];
             }
         }
     }
 
     error_unexpected_token("NO RULE can be used to parse this token! Other", t);
     return (rule_t){error_rule, {-1, UNSET, NULL}};
+}
+int parse_global_identifier(){
+    token_t id_token = get_next_token(scanner);
+    debug_print("got identifier\n");
+    char *func = get_attr(&id_token, scanner);
+
+    debug_print("Call function %s\n", func);
+    tree_node_t *func_valid = search_in_tables(&symtab, func);
+
+    // Function is not declared
+    if (func_valid == NULL) { //----------------------------------------------------------------------------
+        error_semantic("Function name '%s' not defined!", func);
+        return SEMANTIC_ERROR_DEFINITION;
+    }
+    return parse_function_call();
 }
 
 int parse_identifier(){
@@ -893,6 +899,14 @@ int EOF_fun_rule(){
     error_unexpected_token("Reached EOF inside a function. Did you forget 'end'? END",t);
     parser->reached_EOF = true;
     return SYNTAX_ERROR;
+}
+
+int EOF_global_rule(){
+    //will not actually get the token upon which has been decided to use this rule
+    //but will get the next token
+    //otherwise i would have to use params for each one of these rule functions
+    parser->reached_EOF = true;
+    return PARSE_SUCCESS;
 }
 
 int error_rule(){

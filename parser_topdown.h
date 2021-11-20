@@ -57,8 +57,10 @@ typedef struct rule {
 /**
  * @brief Finds the appropriate rule
  * @return Returns reference to rule function
+ * @param t Token based on which is going to be decided what rule to use
+ * @param ruleset is an array of rules for particular context (ie. global or inside a function) 
  */ 
-rule_t determine_rule(token_t t);
+rule_t determine_rule(token_t t, rule_t ruleset[]);
 
 /**
  * @brief sets the parser and scanner to use
@@ -97,10 +99,22 @@ int statement();
 int parse_identifier(); 
 
 /**
+ * @brief parses an identifier in global scope
+ * @note workaround because parse_function_call expects the identifier to be already read
+ */
+int parse_global_identifier(); 
+
+/**
  * @brief parses an EOF inside a function
  * @note basically an error rule with additional error message
  */ 
 int EOF_fun_rule();
+
+/**
+ * @brief parses an EOF inside a function
+ * @note basically an error rule with additional error message
+ */ 
+int EOF_global_rule();
 
 /**
  * @brief Parses local variable definitions
@@ -165,9 +179,8 @@ int expression_list_1();
 
 /**
  * @brief Shows error if next token is not a STRING
- * @return true if token is string
  */ 
-int parse_str();
+int parse_require();
 
 /**
  * @brief Parses declaration of function (so just the signature)

@@ -1,4 +1,5 @@
-global a : function (number) : number
-function a (b : number) : number
-    return 10.1
+require ""
+function a ()
+    local b : string
+    b = "a"
 end
