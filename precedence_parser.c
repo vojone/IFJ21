@@ -283,7 +283,7 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E-E", "ni|ni", ORIGIN, "\"-\" expects number/integer as operands"},
         {"E*E", "ni|ni", ORIGIN, "\"*\" expects number/integer as operands"},
         {"E/E", "ni|ni", ORIGIN, "\"/\" expects number/integer as operands"},
-        {"E//E", "ni|ni", ORIGIN, "\"//\" expects number/integer as operands"},
+        {"E//E", "i|i", INT, "\"//\" expects number/integer as operands"},
         {"_E", "ni", ORIGIN, "Unary minus expects number/integer as operands"},
         {"#E", "s", INT, "Only string can be operand of \"#\""},
         {"E<E", "(nis|nis", BOOL, "Incompatible operands of \"<\""},
@@ -657,7 +657,7 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
-    
+
     tok_buffer_t tok_buffer;
     pp_stack_t stack;
     pp_stack_t garbage;
@@ -691,7 +691,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
 
         char precedence = get_precedence(on_top, on_input);
-        fprintf(stderr, "%s: %c %d %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_input.type);
+        //fprintf(stderr, "%s: %c %d %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_input.type);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;

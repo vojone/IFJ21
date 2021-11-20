@@ -303,7 +303,7 @@ TEST_F(op_err2, only_parse) {
 }
 
 
-class op_err3 : public test_fixture {
+class multiple_call1 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
@@ -312,8 +312,29 @@ class op_err3 : public test_fixture {
         }
 };
 
-TEST_F(op_err3, only_parse) {
+TEST_F(multiple_call1, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
+}
+
+class multiple_call2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a+b b//b
+            )";
+        }
+};
+
+TEST_F(multiple_call2, only_parse) {
+    insert_sym(&symtab, "a", {(char *)"b", VAR, {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&symtab, "b", {(char *)"b", VAR, {0, 0, NULL}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, NUM);
+    ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
+    ASSERT_EQ(ret_type, INT);
 }
 
 class op_no_err1 : public test_fixture {
