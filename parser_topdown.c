@@ -237,14 +237,21 @@ int assignment(char* id_token) {
         }
         else if(compare_token_attr(t, OPERATOR, "=")) {
             foundAssignmentOp = true;
-            token_t var_value = lookahead(scanner);
-            debug_print("\nVAR VALUE: %s\n\n", get_attr(&(var_value), scanner));
 
+            // Semantics for value assignment to variable
             tree_node_t* symtab_var = search(symtab, id_token);
-            debug_print("\nSEARCH TS for dtype of: %s, it is %d\n\n", id_token, symtab_var->data.dtype);
+            debug_print("\nSEARCH TS for dtype of: '%s' is '%d'\n\n", id_token, symtab_var->data.dtype);
 
-            // EXPERIMENTAL, didn't have a chance to try, will do on saturday
-            // int dtype = parse_expression(scanner, symtab_var->data.dtype); 
+            sym_dtype_t d_ret_type;
+            int dtype = parse_expression(scanner, &d_ret_type);
+            if (dtype == 0){
+                debug_print("\nDTYPE of EXP: '%d'\n\n",d_ret_type);
+                if (symtab_var->data.dtype != d_ret_type){
+                    return SEMANTIC_ERROR_ASSIGNMENT;
+                }    
+            }else{
+                return INTERNAL_ERROR_;
+            }
         }
         else {
             error_unexpected_token("SEPARATOR ',' or OPERATOR '='", t);
@@ -253,7 +260,6 @@ int assignment(char* id_token) {
     }
 
     debug_print("found %i assignment...\n", token_count);
-    int dtype_ret_val = 1;
 
     //checking the RHS part
     for(int i = 0; i < token_count; i++) {
@@ -262,8 +268,6 @@ int assignment(char* id_token) {
         sym_dtype_t ret_type;
         int expr_retval = parse_expression(scanner, &ret_type);
         if(expr_retval == PARSE_SUCCESS) {
-            debug_print("\n%d   %d\n", ret_type, dtype_ret_val);
-
             //ok
         }
         else {
@@ -311,7 +315,7 @@ int parse_local_var(){
         var_type = 2;
     }
     else if(str_cmp(t.attr,"integer") == 0) {
-        var_type = 1;
+        var_type = 0;
     }
     else if(str_cmp(t.attr, "number") == 0) {
         var_type = 1;
