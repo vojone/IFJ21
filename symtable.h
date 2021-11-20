@@ -47,6 +47,7 @@ typedef enum sym_status {
 typedef struct sym_data {
     char * name;
     sym_type_t type;
+    string_t ret_types;
     sym_dtype_t dtype;
     sym_status_t status;
 } sym_data_t;
@@ -114,7 +115,6 @@ tree_node_t *search(symtab_t *tab, const char *key);
  * @brief Converts character to sym_dtype enum
  */
 sym_dtype_t char_to_dtype(char type_c);
-
 
 #endif
 

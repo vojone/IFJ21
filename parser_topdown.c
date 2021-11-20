@@ -171,17 +171,18 @@ int statement() {
         true;
         char *func = get_attr(&t, scanner);
         // it is neccessary to look at the next lexeme also
-        token_t next = get_next_token(scanner);
-        next = lookahead(scanner);
-        bool is_multiple_assignment = compare_token_attr(next, SEPARATOR, ",");
-        bool is_single_assignment = compare_token_attr(next, OPERATOR, "=");
-
+        token_t id_token = get_next_token(scanner);
+        t = lookahead(scanner);
+        bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
+        bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
         //check if it is a function call
         debug_print("Calling function ------------");
-        if(compare_token_attr(next, SEPARATOR, "(")) {
+        if(compare_token_attr(t, SEPARATOR, "(")) {
             debug_print("Call function %s\n", func);
-            tree_node_t *func_valid = search(&symtab, func);
-            if (func_valid == NULL){ //----------------------------------------------------------------------------
+            tree_node_t *func_valid = search_in_tables(&symtab, func);
+
+            // Function is not declared
+            if (func_valid == NULL) { //----------------------------------------------------------------------------
                 error_semantic("Function name '%s' not defined!", func);
                 return SEMANTIC_ERROR_DEFINITION;
             }
@@ -189,10 +190,10 @@ int statement() {
             return parse_function_call();
         }
         else if(is_multiple_assignment || is_single_assignment) {
-            return assignment(t);
+            return assignment(id_token);
         }
-        else{
-            error_unexpected_token("After IDENTIFIER a function call or an assignment", next);
+        else {
+            error_unexpected_token("After IDENTIFIER a function call or an assignment", t);
         }
         break;
 
@@ -252,8 +253,15 @@ int statement() {
     return SYNTAX_ERROR;
 }
 
-
 int assignment(token_t t) {
+    /*
+    token_t current_token;
+    token_init(&current_token);
+    */    
+
+    //char* var_id = last_token.attr;
+    //debug_print("\n\nvar_id: %s\n\n"); //current token);
+
     int token_count = 0;
     bool foundAssignmentOp = false;
 
@@ -282,6 +290,24 @@ int assignment(token_t t) {
         }
         else if(compare_token_attr(t, OPERATOR, "=")) {
             foundAssignmentOp = true;
+
+            // Semantics for value assignment to variable
+            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&t, scanner));
+            if(!symtab_var) {
+                return SEMANTIC_ERROR_DEFINITION;
+            }
+
+            sym_dtype_t d_ret_type;
+            int dtype = parse_expression(scanner, &symtab, &d_ret_type);
+            if (dtype == 0){
+                debug_print("\nDTYPE of EXP: '%d'\n\n", d_ret_type);
+                if (symtab_var->data.dtype != d_ret_type){
+                    return SEMANTIC_ERROR_ASSIGNMENT;
+                }    
+            }
+            else{
+                return INTERNAL_ERROR_;
+            }
         }
         else {
             error_unexpected_token("SEPARATOR ',' or OPERATOR '='", t);
@@ -290,8 +316,9 @@ int assignment(token_t t) {
     }
 
     debug_print("found %i assignment...\n", token_count);
+
     //checking the RHS part
-    for(int i = 0; i < token_count; i++){
+    for(int i = 0; i < token_count; i++) {
         //check for valid expression
         debug_print("Calling precedence parser...\n");
         sym_dtype_t ret_type;
@@ -299,7 +326,7 @@ int assignment(token_t t) {
         if(expr_retval == EXPRESSION_SUCCESS) {
             //ok
         }
-        else{
+        else {
             debug_print("Error while parsing expression for multiple assignment\n");
             return expr_retval;
         }
@@ -315,13 +342,16 @@ int assignment(token_t t) {
             }
         }
     }
+
     return PARSE_SUCCESS;
 }
 
 
-int parse_local_var(){
+int parse_local_var() {
     //should be identifier
     token_t t = get_next_token(scanner);
+    token_t var_id = t;
+    //debug_print("Var_ID is: %s <---------------\n\n", var_id);
     if(!compare_token(t, IDENTIFIER)) {
         error_unexpected_token("identifier", t);
         return t.token_type == EOF_TYPE ? LEXICAL_ERROR : SYNTAX_ERROR;
@@ -338,12 +368,24 @@ int parse_local_var(){
 
     //should be a data type
     t = get_next_token(scanner);
+
+    // Determining data type of declared variable
+    int var_type;
+    if (str_cmp(get_attr(&t, scanner), "string") == 0) {
+        var_type = 2;
+    }
+    else if(str_cmp(get_attr(&t, scanner), "integer") == 0) {
+        var_type = 0;
+    }
+    else if(str_cmp(get_attr(&t, scanner), "number") == 0) {
+        var_type = 1;
+    }
+
     bool type = is_datatype(t);
     if(!type) {
         error_unexpected_token("datatype", t);
         return SYNTAX_ERROR;
     }
-
     //there can be a value assignment
     if(lookahead_token_attr(OPERATOR,"=")) { 
         get_next_token(scanner);
@@ -355,6 +397,10 @@ int parse_local_var(){
             error_unexpected_token("Valid expression", t);
         return assignment;
     }
+    
+    // Adding variable and its datatype into symtable
+    sym_data_t symdata_var = {get_attr(&var_id, scanner), VAR, .dtype = var_type};
+    insert_sym(&symtab, get_attr(&var_id, scanner), symdata_var);
 
     return PARSE_SUCCESS;
 }
@@ -363,6 +409,10 @@ int parse_local_var(){
 int parse_global_var() {
     //should be identifier
     token_t t = get_next_token(scanner);
+
+    // Save identifier
+    token_t var_id = t;
+
     if(!compare_token(t, IDENTIFIER)) {
         error_unexpected_token("identifier", t);
         return SYNTAX_ERROR;
@@ -379,6 +429,20 @@ int parse_global_var() {
 
     //should be a data type
     t = get_next_token(scanner);
+
+    // Save data type
+    int var_type;
+    if (str_cmp(get_attr(&t, scanner),"string") == 0) {
+        var_type = 2;
+        //debug_print("\n\n VAR: %s\tString\n\n",var_id);
+    }else if(str_cmp(get_attr(&t, scanner),"integer") == 0) {
+        var_type = 0;
+        //debug_print("\n\n VAR: %s\tInteger or num\n\n",var_id);
+    }else if(str_cmp(get_attr(&t, scanner), "number") == 0) {
+        var_type = 1;
+        //debug_print("\n\n VAR: %s\tNumber or int\n\n",var_id);
+    }
+
     bool type = is_datatype(t);
     if(!type) {
         error_unexpected_token("datatype", t);
@@ -396,6 +460,10 @@ int parse_global_var() {
             error_unexpected_token("Valid expression", t);
         return assignment;
     }
+
+    // semantics
+    sym_data_t symdata_var = {get_attr(&var_id, scanner), VAR, .dtype = var_type};
+    insert_sym(&symtab, get_attr(&var_id, scanner), symdata_var);
 
     return PARSE_SUCCESS;
 }
@@ -415,8 +483,6 @@ int parse_str() {
 int parse_function_def() {
     token_t id_fc = get_next_token(scanner);
 
-    sym_data_t new_data = {(char *)"inserted", FUNC};
-    insert_sym(&symtab, get_attr(&id_fc, scanner), new_data);
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
     bool left_bracket = check_next_token_attr(SEPARATOR, "(");
@@ -480,6 +546,8 @@ int parse_function_def() {
         //will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(scanner);
+
+        //app_char( písmeno, datatype);
         bool finished = false;
         while(!finished) {
             //should be datatype

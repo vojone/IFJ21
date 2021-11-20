@@ -4,11 +4,11 @@
 /**
  * @brief User for custom input into the parser
  */ 
-int main(){
+
+int main() {
     scanner_t scanner;
     scanner_init(&scanner);
     parser_t parser;
-    symtab_t tab;
-    parser_setup(&parser, &scanner, &tab);
+    parser_setup(&parser, &scanner);
     return parse_program();
 }

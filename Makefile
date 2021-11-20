@@ -3,7 +3,7 @@ EXECUTABLE = IFJ21
 PARSER_EXE = IFJ21Parser
 
 CC = gcc
-CFLAGS = -Werror -Wall -pedantic -std=c99
+CFLAGS = -Werror -Wall -pedantic -std=c99 -g
 
 
 SCANNER = scanner

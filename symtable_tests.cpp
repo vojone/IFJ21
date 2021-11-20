@@ -77,7 +77,7 @@ class empty_symtable : public ::testing::Test {
 
 TEST_F(empty_symtable, insert) {
     ASSERT_EQ(uut.t, (void *)NULL);
-    insert_sym(&uut, "new", {(char *)"new", VAR, NUM, DECLARED});
+    insert_sym(&uut, "new", {(char *)"new", VAR, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
     ASSERT_EQ(uut.t->l_ptr, (void *)NULL);
     ASSERT_EQ(uut.t->r_ptr, (void *)NULL);
@@ -85,7 +85,7 @@ TEST_F(empty_symtable, insert) {
 
 TEST_F(empty_symtable, search) {
     ASSERT_EQ((void *)NULL, search(&uut, "inserted"));
-    insert_sym(&uut, "inserted", {(char *)"inserted", VAR, NUM, DECLARED});
+    insert_sym(&uut, "inserted", {(char *)"inserted", VAR,  {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(uut.t, search(&uut, "inserted"));
 
     insert_sym(&uut, "a", {(char *)"a", VAR, NUM, DECLARED});
@@ -95,14 +95,14 @@ TEST_F(empty_symtable, search) {
 TEST_F(empty_symtable, delete_s) {
     delete_sym(&uut, "nonexisting");
 
-    insert_sym(&uut, "inserted", {(char *)"inserted", VAR, NUM, DECLARED});
+    insert_sym(&uut, "inserted", {(char *)"inserted", VAR, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(strcmp(uut.t->key, "inserted"), 0);
     delete_sym(&uut, "inserted");
     ASSERT_EQ(uut.t, (void *)NULL);
 }
 
 TEST_F(empty_symtable, set) {
-    sym_data_t new_symbol_data = {(char *)"new", VAR, NUM, DECLARED};
+    sym_data_t new_symbol_data = {(char *)"new", VAR, {0, 0, NULL}, NUM, DECLARED};
     insert_sym(&uut, "new", new_symbol_data);
     ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
     ASSERT_EQ(uut.t->data.dtype, NUM);
@@ -115,11 +115,11 @@ class normal_tests1 : public ::testing::Test {
     protected:
         symtab_t uut;
         std::vector<sym_data_t> symbols = {
-            {(char *)"Car", FUNC, INT, DECLARED},
-            {(char *)"Cat", VAR, INT, DECLARED},
-            {(char *)"Can", VAR, INT, DEFINED},
-            {(char *)"Dog", VAR, NUM, DECLARED},
-            {(char *)"Fish", VAR, STR, USED},
+            {(char *)"Car", FUNC, {0, 0, NULL}, INT, DECLARED},
+            {(char *)"Cat", VAR, {0, 0, NULL}, INT, DECLARED},
+            {(char *)"Can", VAR, {0, 0, NULL}, INT, DEFINED},
+            {(char *)"Dog", VAR, {0, 0, NULL}, NUM, DECLARED},
+            {(char *)"Fish", VAR, {0, 0, NULL}, STR, USED},
         };
 
     virtual void SetUp() {
@@ -170,12 +170,12 @@ class normal_tests2 : public ::testing::Test {
     protected:
         symtab_t uut;
         std::vector<sym_data_t> symbols = {
-            {(char *)"F", FUNC, INT, DECLARED},
-            {(char *)"B", VAR, INT, DECLARED},
-            {(char *)"C", VAR, INT, DEFINED},
-            {(char *)"A", VAR, NUM, DECLARED},
-            {(char *)"E", VAR, STR, USED},
-            {(char *)"D", VAR, STR, USED},
+            {(char *)"F", FUNC, {0, 0, NULL}, INT, DECLARED},
+            {(char *)"B", VAR, {0, 0, NULL}, INT, DECLARED},
+            {(char *)"C", VAR, {0, 0, NULL}, INT, DEFINED},
+            {(char *)"A", VAR, {0, 0, NULL}, NUM, DECLARED},
+            {(char *)"E", VAR, {0, 0, NULL}, STR, USED},
+            {(char *)"D", VAR, {0, 0, NULL}, STR, USED},
         };
 
     virtual void SetUp() {
@@ -222,7 +222,7 @@ TEST_F(normal_tests2, delete_test) {
 }
 
 TEST_F(normal_tests2, insert_test) {
-    insert_sym(&uut, "Blue", {(char*)"Blue", VAR, INT, DECLARED});
+    insert_sym(&uut, "Blue", {(char*)"Blue", VAR, {0, 0, NULL}, INT, DECLARED});
     ASSERT_NE(search(&uut, "Blue"), (void *)NULL);
 }
 
