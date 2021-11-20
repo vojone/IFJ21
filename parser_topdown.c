@@ -18,7 +18,6 @@ tree_node_t * search_in_tables(symtab_t *symbol_table, char *key) {
     symtab_t *curr_tab = symbol_table;
     
     while(curr_tab != NULL) {
-        fprintf(stderr, "A");
         tree_node_t * result_of_searching = search(curr_tab, key);
         if(result_of_searching) {
             return result_of_searching;
@@ -53,7 +52,7 @@ void to_inner_ctx(parser_t *p) {
     symtab = new_ctx;
 }
 
-void parser_setup(parser_t *p, scanner_t *s, symtab_t * tab) {
+void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
     p->reached_EOF = false;
     p->return_code = 0;
