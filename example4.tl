@@ -1,4 +1,4 @@
-function main()
-    local a : string
-    a = "1.1"
+global a : function (number) : number
+function a (b : number) : number
+    return 10.1
 end

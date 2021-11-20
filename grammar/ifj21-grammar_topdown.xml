@@ -21,11 +21,13 @@
 <statement-list>        -> [eps]
 <statement-list>        -> <function-call>
 
+<!-- function declaration -->
+<global-statement>      -> global [id] : function(<param-list>) <type-list>
+
 <!-- require -->
 <global-statement>      -> require [string]
 
 <!-- VARIABLES -->
-<statement>             -> global [id] : [type] <value-assignment>
 <statement>             -> local  [id] : [type] <value-assignment>
 <value-assignment>      -> [eps]
 <value-assignment>      -> = <expression>

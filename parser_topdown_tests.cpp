@@ -488,6 +488,24 @@ TEST_F(missing_bracket, only_parse) {
     ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
+
+class function_declaration : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"( global a : function (number) : number
+                function a (b : number) : number
+                    return 10.1
+                end
+            )";
+        }
+};
+
+TEST_F(function_declaration, only_parse) {
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
 class complexity_moderate : public test_fixture {
     protected:
         void setData() override {

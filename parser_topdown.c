@@ -122,19 +122,22 @@ int statement_list(){
 }
 
 int global_statement() {
-    //TODO support for function declarations
+    
     token_t t = get_next_token(scanner);
     if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "require")) {
-            //<statement>             -> require <str>
+            //<global-statement>             -> require <str>
             return parse_str();
         }
         else if(compare_token_attr(t, KEYWORD, "function")) {
-            //<statement>             -> function [id](<param-list>) : <type-list> <statement-list> end
-            debug_print("function ...\n");
+            //<global-statement>             -> function [id](<param-list>) : <type-list> <statement-list> end
+            debug_print("function definition...\n");
             return parse_function_def();
+        }else if(compare_token_attr(t,KEYWORD,"global")){
+            //<global-statement>      -> global [id] : function(<param-list>) <type-list>
+            debug_print("function declaration...\n");
+            return parse_function_dec();
         }
-            
         error_unexpected_token("This is global scope so keyword such as require or function definition or call expected", t);
         return false;
     }
@@ -417,6 +420,84 @@ int parse_str() {
 
     return SYNTAX_ERROR;
 }
+
+
+int parse_function_dec() {
+    token_t id = get_next_token(scanner);
+    if(!compare_token(id,IDENTIFIER)){
+        error_unexpected_token("IDENTIFIER",id);
+        return SYNTAX_ERROR;
+    }
+    
+    if(!check_next_token_attr(SEPARATOR,":"))
+        return SYNTAX_ERROR;
+    
+    if(!check_next_token_attr(KEYWORD,"function"))
+        return SYNTAX_ERROR;
+    
+    if(!check_next_token_attr(SEPARATOR,"("))
+        return SYNTAX_ERROR;
+
+    //parsing param types if there is param type
+    if(is_datatype(lookahead(scanner))){
+        debug_print("parsing function param types...\n");
+
+        bool finished = false;
+        while(!finished) {
+            //should be datatype
+            token_t t = get_next_token(scanner);
+            if(!is_datatype(t)){
+                error_unexpected_token("data type", t);
+                finished = true;
+                return SYNTAX_ERROR;
+            }
+
+            //if there is no comma we should be at the end of the list
+            bool comma = lookahead_token_attr(SEPARATOR, ",");
+            if(!comma) {
+                finished = true;
+            }
+            else {
+                //we go one token forward
+                get_next_token(scanner);
+            }
+        }
+    }
+
+    if(!check_next_token_attr(SEPARATOR,")"))
+        return SYNTAX_ERROR;
+
+    //parsing return types if there is colon
+    if(lookahead_token_attr(SEPARATOR, ":")){
+        //will just get the ':'
+        debug_print("parsing function return types...\n");
+        token_t t = get_next_token(scanner);
+
+        //app_char( písmeno, datatype);
+        bool finished = false;
+        while(!finished) {
+            //should be datatype
+            t = get_next_token(scanner);
+            if(!is_datatype(t)){
+                error_unexpected_token("data type", t);
+                finished = true;
+                return SYNTAX_ERROR;
+            }
+
+            //if there is no comma we should be at the end of the list
+            bool comma = lookahead_token_attr(SEPARATOR, ",");
+            if(!comma) {
+                finished = true;
+            }
+            else {
+                //we go one token forward
+                get_next_token(scanner);
+            }
+        }
+    }
+    return PARSE_SUCCESS;
+}
+
 
 int parse_function_def() {
     token_t id_fc = get_next_token(scanner);

@@ -170,6 +170,11 @@ int expression_list_1();
 int parse_str();
 
 /**
+ * @brief Parses declaration of function (so just the signature)
+ */ 
+int parse_function_dec();
+
+/**
  * @brief Parses function definition, checks for signature and then parses the inside of the function
  * 
  */ 
