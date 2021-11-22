@@ -1,0 +1,14 @@
+.IFJcode21
+jump $main
+label main
+CREATEFRAME
+DEFVAR TF@%VARa
+PUSHS int@01
+PUSHS int@1
+ADDS
+POPS TF@%VARa
+WRITE TF@%VARa
+CREATEFRAME
+RETURN
+LABEL $main
+CALL main
