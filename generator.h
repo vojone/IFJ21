@@ -22,10 +22,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "dstring.h"
+#include "symtable.h"
+#include "scanner.h"
 
 typedef struct gen {
-
+    void *(declare_variable);
 } gen_t;
+
+void declare_variable(const char * name, char dtype);
 
 #endif
 
