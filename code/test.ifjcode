@@ -1,24 +1,32 @@
 .IFJcode21
-jump $main
-label main
+
+
+JUMP $END_FUN$write
+#function $FUN$write ()
+label $FUN$write
 CREATEFRAME
-DEFVAR TF@%VARa
-DEFVAR TF@%VARb
-PUSHS int@5
-POPS TF@%VARb
-CLEARS
-PUSHS TF@%VARb
-PUSHS int@2
-ADDS
-POPS TF@%VARa
-CLEARS
-WRITE TF@%VARa
-DEFVAR TF@%VARtext
-PUSHS string@iHaveSomeTextHere
-POPS TF@%VARtext
-CLEARS
-WRITE TF@%VARtext
+
+
+DEFVAR TF@&VAR&str
+POPS TF@&VAR&str
+WRITE TF@&VAR&str
+
+
 CREATEFRAME
 RETURN
-LABEL $main
-CALL main
+label $END_FUN$write
+
+
+JUMP $END_FUN$main
+#function $FUN$main ()
+label $FUN$main
+CREATEFRAME
+
+
+
+
+CREATEFRAME
+RETURN
+label $END_FUN$main
+# main()
+CALL $FUN$main
