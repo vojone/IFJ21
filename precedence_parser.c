@@ -25,7 +25,26 @@ bool is_allowed_separator(scanner_t *sc, token_t *token) {
 bool is_nil(scanner_t *sc, token_t *token) {
     return token->token_type == KEYWORD && 
            (str_cmp(get_attr(token, sc), "nil") == 0);
-}   
+}
+
+/**
+ * @brief Determines if operand is zero
+ */ 
+bool is_zero(scanner_t *sc, token_t *token) {
+    char *value = get_attr(token, sc);
+    if(token->token_type == INTEGER || token->token_type == NUMBER) {
+        for(int i = 0; i < strlen(value); i++) {
+            if(value[i] != '0' && value[i] != '.') {
+                return false;
+            }
+        }
+    }
+    else {
+        return false;
+    }
+
+    return true;
+}
 
 /**
  * @brief Resolves if token can be part of expression
@@ -136,6 +155,7 @@ int from_input_token(expr_el_t *result,
 
     result->type = tok_to_type(tok_b);
     result->value = NULL;
+    result->is_zero = false;
     tree_node_t * symbol;
     switch (tok_b->current.token_type)
     {
@@ -167,6 +187,10 @@ int from_input_token(expr_el_t *result,
         break;
     }
 
+    if(is_zero(tok_b->scanner, &tok_b->current)) {
+        result->is_zero = true;
+    }
+
     char * curr_val = get_attr(&(tok_b->current), tok_b->scanner);
     str_cpy((char **)&result->value, curr_val, strlen(curr_val));
 
@@ -182,6 +206,7 @@ expr_el_t stop_symbol() {
     stop_symbol.type = STOP_SYM;
     stop_symbol.dtype = UNDEFINED;
     stop_symbol.value = NULL;
+    stop_symbol.is_zero = false;
 
     return stop_symbol;
 }
@@ -208,6 +233,7 @@ expr_el_t prec_sign(char sign) {
 
     precedence_sign.value = NULL;
     precedence_sign.dtype = UNDEFINED;
+    precedence_sign.is_zero = false;
 
     return precedence_sign;
 }
@@ -265,8 +291,9 @@ char *to_char_sequence(expr_el_t expression_element) {
  *       n number
  *       i integer
  *       s string
- *       0 nil
+ *       z nil
  *       b bool
+ *       ! inicates that cannot be zero
  *       ( types symbols after it defines type for resting operators (integer and number are compatible)
  *       ) returns from "must_be" mode to normal mode 
  *       Example: (nis|nis = First and sec operand can be number/integer/string and if it's e. g. string second must be string too
@@ -277,22 +304,22 @@ expr_rule_t *get_rule(unsigned int index) {
     }
 
     static expr_rule_t rules[REDUCTION_RULES_NUM] = {
-        {"(E)", "*", ORIGIN, NULL},
-        {"i", "*", ORIGIN, NULL},
-        {"E+E", "ni|ni", ORIGIN, "\"+\" expects number/integer as operands"},
-        {"E-E", "ni|ni", ORIGIN, "\"-\" expects number/integer as operands"},
-        {"E*E", "ni|ni", ORIGIN, "\"*\" expects number/integer as operands"},
-        {"E/E", "ni|ni", ORIGIN, "\"/\" expects number/integer as operands"},
-        {"E//E", "i|i", INT, "\"//\" expects number/integer as operands"},
-        {"_E", "ni", ORIGIN, "Unary minus expects number/integer as operands"},
-        {"#E", "s", INT, "Only string can be operand of \"#\""},
-        {"E<E", "(nis|nis", BOOL, "Incompatible operands of \"<\""},
-        {"E>E", "(nis|nis", BOOL, "Incompatible operands of \">\""},
-        {"E<=E", "(nis|nis", BOOL, "Incompatible operands of \"<=\""},
-        {"E>=E", "(nis|nis", BOOL, "Incompatible operands of \">=\""},
-        {"E==E", "z(nis|nis)z", BOOL, "Incompatible operands of \"==\""},
-        {"E~=E", "z(nis|nis)z", BOOL, "Incompatible operands of \"~=\""},
-        {"E..E", "s|s", STR, "Operation \"..\" needs strings as operands"},
+        {"(E)", "*", ORIGIN, FIRST ,NULL},
+        {"i", "*", ORIGIN, FIRST, NULL},
+        {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands"},
+        {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands"},
+        {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands"},
+        {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands"},
+        {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands"},
+        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands"},
+        {"#E", "s", INT, NONE, "Only string can be operand of \"#\""},
+        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\""},
+        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\""},
+        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\""},
+        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\""},
+        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\""},
+        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\""},
+        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands"},
     };
 
     return &(rules[index]);
@@ -384,6 +411,12 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
         else if(c == ')') { /**< Unsets must_be mode */
             must_be_flag = false;
         }
+        else if(c == '!') {
+            if(current.is_zero) {
+                result = DIV_BY_ZERO;
+                break;
+            }
+        }
         else { /**< Current char is type specifier */
             if(must_be_flag) { /**< Must_be mode is set */
                 if(must_be == UNDEFINED && current.dtype == char_to_dtype(c)) {
@@ -407,7 +440,6 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
     // Specifier string ended -> if specifier for last operator was not found -> error
     result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
     *res_t = tmp_res_type;
-
     return result;
 }
 
@@ -437,18 +469,65 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
 
 void print_operands(pp_stack_t *ops) {
     while(!pp_is_empty(ops)) {
-        fprintf(stderr, "Operand: %s\n", (char *)pp_pop(ops).value);
+        expr_el_t cur = pp_pop(ops);
+        fprintf(stderr, "Operand: %s (%d)\n", (char *)cur.value, cur.is_zero);
     }
+}
+
+/**
+ * @brief Determines if result of reduction will be zero value (in some cases it is possible to find out it if is)
+ */ 
+bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
+    switch(rule->zero_prop)
+    {
+    case NONE:
+        return false;
+        break;
+    case FIRST:
+        if(!pp_is_empty(&operands) && pp_pop(&operands).is_zero) { //Check if first operand is zero if it is -> result is zero
+            return true;
+        }
+        break;
+    case SECOND:
+        if(!pp_is_empty(&operands)) {
+            pp_pop(&operands);
+            if(!pp_is_empty(&operands) && pp_pop(&operands).is_zero) {
+                return true;
+            }
+        }
+        break;
+    case ALL:
+        while(!pp_is_empty(&operands)) {
+            if(!pp_pop(&operands).is_zero) {
+                return false;
+            }
+        }
+
+        return true;
+        break;
+    case ONE:
+        while(!pp_is_empty(&operands)) {
+            if(pp_pop(&operands).is_zero) {
+                return true;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 /**
  * @brief Creates non-terminal (E) expression symbol (there is only one non-terminal in rules)
  */ 
-expr_el_t non_term(sym_dtype_t data_type) {
+expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
     expr_el_t non_terminal;
     non_terminal.type = NON_TERM;
     non_terminal.dtype = data_type;
     non_terminal.value = "NONTERM";
+    non_terminal.is_zero = is_zero;
 
     return non_terminal;
 }
@@ -462,11 +541,12 @@ expr_el_t non_term(sym_dtype_t data_type) {
  */ 
 int reduce(pp_stack_t *st, pp_stack_t *ops, 
            expr_rule_t *rule,
-           sym_dtype_t *result_type) {
+           sym_dtype_t *result_type,
+           bool will_be_zero) {
 
     print_operands(ops); /**< It will be probably substituted for code generating */
 
-    if(!pp_push(st, non_term(*result_type))) {
+    if(!pp_push(st, non_term(*result_type, will_be_zero))) {
         return INTERNAL_ERROR;
     }
 
@@ -496,7 +576,8 @@ int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
                 retval = t_check_res;
             }
             else {
-                retval = reduce(s, &operands, rule, ret_type);
+                bool will_be_zero = resolve_res_zero(operands, rule);
+                retval = reduce(s, &operands, rule, ret_type, will_be_zero);
             }
 
         }
@@ -620,6 +701,16 @@ void print_err_message(int *return_value,
         fprintf(stderr, "Undeclared identifier \"\033[1;33m%s\033[0m\"!\n", attr);
         break;
 
+    case NIL_ERROR:
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic (nil) error:\033[0m ", r, c);
+        fprintf(stderr, "Cannot use nil in expression like this!\n");
+        break;
+    
+    case DIV_BY_ZERO:
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mDivision by zero:\033[0m ", r, c);
+        fprintf(stderr, "Cannot divide by zero!\n");
+        break;
+
     case EXPRESSION_FAILURE:
         fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
         fprintf(stderr, "Invalid combination of tokens in expression! (\"\033[1;33m%s%s\033[0m\")\n", attr, lattr);
@@ -699,7 +790,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
 
         char precedence = get_precedence(on_top, on_input);
-        //fprintf(stderr, "%s: %c %d %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_input.type);
+        //fprintf(stderr, "%s: %c %d(%d) %d(%d)\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;

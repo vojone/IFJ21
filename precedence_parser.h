@@ -29,6 +29,7 @@
 #define UNDECLARED_IDENTIFIER 3
 #define SEM_ERROR_IN_EXPR 6
 #define NIL_ERROR 8
+#define DIV_BY_ZERO 9
 #define INTERNAL_ERROR 99
 
 
@@ -59,12 +60,16 @@ typedef enum grm_sym_type {
 typedef struct expr_el {
     grm_sym_type_t type; /**< Determines type of element (and it is index to precedence table) */
     sym_dtype_t dtype; /**< Data type of element in expression (string, integer, number) */
+    bool is_zero;
     void *value; /**< Value of element (or pointer to symbol table) */
 } expr_el_t;
 
 #define UNDEFINED -1
 #define ORIGIN -1 /**< Says that after reduction has nonterminal oriiginal data typ (e.g. ("abc") -> E.type = STR) */
 
+typedef enum zero_prop_flags {
+    NONE, FIRST, SECOND, ALL, ONE
+} zero_prop_flags_t;
 
 #define REDUCTION_RULES_NUM 16
 
@@ -72,6 +77,7 @@ typedef struct expr_rule {
     char * right_side;
     char * operator_types; /**< Specification of operator types (see get_rule() in .c file)*/
     sym_dtype_t return_type;
+    zero_prop_flags_t zero_prop; /**< Specifies how is zero propagated */
     char *error_message; /**< Error message that is showed when semantic error occured*/
 } expr_rule_t;
 

@@ -353,6 +353,9 @@ sym_dtype_t keyword_to_dtype(token_t * t, scanner_t *sc) {
     else if(str_cmp(get_attr(t, scanner), "number") == 0) {
         return NUM;
     }
+    else if(str_cmp(get_attr(t, scanner), "nil") == 0) {
+        return NIL;
+    }
 
     return INT;
 }
@@ -1376,7 +1379,7 @@ bool is_datatype(token_t t) {
     return (compare_token_attr(t, KEYWORD, "string") || 
            compare_token_attr(t, KEYWORD, "number") || 
            compare_token_attr(t, KEYWORD, "integer") || 
-           compare_token_attr(t, KEYWORD, "bool"));
+           compare_token_attr(t, KEYWORD, "nil"));
 }
 
 

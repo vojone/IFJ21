@@ -1,10 +1,8 @@
 require ""
 global b : function(integer, string) : integer, integer, integer
 function a ()
-    local b : number = 8*"s"
-    local a : integer
-    a = 5
-    b = 7
+    local b : number = 8*7
+    local a : nil
 end
 
 function b(a:integer, b:string) : integer, integer, integer
