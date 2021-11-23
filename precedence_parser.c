@@ -304,22 +304,22 @@ expr_rule_t *get_rule(unsigned int index) {
     }
 
     static expr_rule_t rules[REDUCTION_RULES_NUM] = {
-        {"(E)", "*", ORIGIN, FIRST ,NULL},
-        {"i", "*", ORIGIN, FIRST, NULL},
-        {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands"},
-        {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands"},
-        {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands"},
-        {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands"},
-        {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands"},
-        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands"},
-        {"#E", "s", INT, NONE, "Only string can be operand of \"#\""},
-        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\""},
-        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\""},
-        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\""},
-        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\""},
-        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\""},
-        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\""},
-        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands"},
+        {"(E)", "*", ORIGIN, FIRST ,NULL,NULL},
+        {"i", "*", ORIGIN, FIRST, NULL,NULL},
+        {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands",generate_operation_add},
+        {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands",generate_operation_sub},
+        {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands",generate_operation_mul},
+        {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands",generate_operation_div},
+        {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands",generate_operation_idiv},
+        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands",NULL},
+        {"#E", "s", INT, NONE, "Only string can be operand of \"#\"",NULL},
+        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"",NULL},
+        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"",NULL},
+        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"",NULL},
+        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"",NULL},
+        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"",NULL},
+        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"",NULL},
+        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands",NULL},
     };
 
     return &(rules[index]);
@@ -539,11 +539,20 @@ expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
  */ 
+//TODO pushing i only works for static values
+//TODO we need to know wheter it is static value or a variable 
 int reduce(pp_stack_t *st, pp_stack_t *ops, 
            expr_rule_t *rule,
            sym_dtype_t *result_type,
            bool will_be_zero) {
 
+    if(strcmp(rule->right_side, "i") == 0){
+        expr_el_t e = pp_top(ops);
+        generate_value_push(VAL,e.dtype,e.value);
+    }
+    //generate operation code
+    if(rule->generator_function != NULL)
+        rule->generator_function();
     print_operands(ops); /**< It will be probably substituted for code generating */
 
     if(!pp_push(st, non_term(*result_type, will_be_zero))) {

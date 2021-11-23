@@ -9,6 +9,7 @@
  *****************************************************************************/ 
 
 #include "scanner.h"
+#include "generator.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -79,6 +80,7 @@ typedef struct expr_rule {
     sym_dtype_t return_type;
     zero_prop_flags_t zero_prop; /**< Specifies how is zero propagated */
     char *error_message; /**< Error message that is showed when semantic error occured*/
+    void (*generator_function)();
 } expr_rule_t;
 
 int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type);

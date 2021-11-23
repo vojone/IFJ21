@@ -2,11 +2,10 @@
 
 
 JUMP $END_FUN$write
-#function $FUN$write ()
+#function write ()
 label $FUN$write
 CREATEFRAME
-
-
+#define param str
 DEFVAR TF@&VAR&str
 POPS TF@&VAR&str
 WRITE TF@&VAR&str
@@ -17,16 +16,30 @@ RETURN
 label $END_FUN$write
 
 
+
 JUMP $END_FUN$main
-#function $FUN$main ()
+#function main ()
 label $FUN$main
 CREATEFRAME
-
-
+#define param b
+DEFVAR TF@&VAR&b
+POPS TF@&VAR&b
+#define param a
+DEFVAR TF@&VAR&a
+POPS TF@&VAR&a
+PUSHS int@a
+PUSHS int@b
+ADDS
+PUSHS int@b
 
 
 CREATEFRAME
 RETURN
 label $END_FUN$main
+
+PUSHS int@10
+PUSHS int@2
+ADDS
+PUSHS int@4
 # main()
 CALL $FUN$main

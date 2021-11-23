@@ -18,6 +18,8 @@
 //TODO work on function calling with arguments
 //TODO write tests (probably not in Google Tests)
 
+//!function call removes defined variables
+
 #include "generator.h"
 
 void generate_init(){
@@ -34,22 +36,25 @@ void generate_ending(){
 void generate_start_function(const char * name){
     code_print("\n");
     code_print("JUMP $END_FUN$%s",name);
-    code_print("#function $FUN$%s ()",name);
+    code_print("#function %s ()",name);
     code_print("label $FUN$%s", name);
     code_print("CREATEFRAME");
-    code_print("\n");
 }
 
-/*
-void generate_parameters(string_t params, int param_count){
-    for (int i = param_count-1; i >= 0; i--)
+
+void generate_parameters(tok_stack_t param_names, scanner_t * scanner){
+    
+    while (!tok_is_empty(&param_names))
     {
-        generate_parameter(params[i]);
+        token_t name_token = tok_pop(&param_names);
+        generate_parameter(get_attr(&name_token,scanner));
     }
+    
 }
-*/
+
 
 void generate_parameter(const char * name){
+    code_print("#define param %s",name);
     code_print("DEFVAR TF@&VAR&%s",name); //creates temporary variable
     code_print("POPS TF@&VAR&%s",name);   //assigns one argument from stack to temporary variable
 }
@@ -59,6 +64,7 @@ void generate_end_function(const char * name){
     code_print("CREATEFRAME");  
     code_print("RETURN");
     code_print("label $END_FUN$%s",name);
+    code_print("");
 }
 
 void generate_write_function(){
@@ -84,7 +90,25 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name 
         fprintf(stderr,"Code generation: Error not supported yet\n");
     }
 }
+void generate_operation_add(){
+    code_print("ADDS");
+}
 
+void generate_operation_sub(){
+    code_print("SUBS");
+}
+
+void generate_operation_mul(){
+    code_print("MULS");
+}
+
+void generate_operation_div(){
+    code_print("DIV");
+}
+
+void generate_operation_idiv(){
+    code_print("IDIV");
+}
 void generate_operation(grm_sym_type_t type){
     switch (type)
     {

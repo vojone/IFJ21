@@ -8,7 +8,7 @@ int main(){
     //function main(a,b)
     generate_start_function("main");
     const char *p[] = {"a","b"};
-    generate_parameters("a&b&",2);
+    // generate_parameters("a&b&",2);
 
     generate_value_push(VAR,INT,"a");
     generate_value_push(VAR,INT,"b");

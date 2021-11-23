@@ -16,6 +16,7 @@
 #include "precedence_parser.h"
 #include "symtable.h"
 #include "generator.h"
+#include "dstack.h"
 
 typedef struct result{
     bool success;
@@ -279,6 +280,12 @@ bool is_datatype(token_t t);
  * @brief checks if the next token is datatype
  */ 
 int parse_datatype();
+
+/**
+ * !probably temp
+ * @brief fix for 
+ */ 
+void semantic_init();
 
 /**
  * !temporary

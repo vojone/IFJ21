@@ -90,6 +90,16 @@ void param_app(string_t* dst, const char *src){
 }
 */
 
+void semantic_init(){
+    sym_data_t symtab_data;
+    init_data(&symtab_data);
+    string_t params;
+    str_init(&params);
+    app_char('%',&params);
+    symtab_data.params = params;
+    insert_sym(&symtab, "write", symtab_data);
+}
+
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
     parser->reached_EOF = false;
@@ -109,6 +119,9 @@ void parser_setup(parser_t *p, scanner_t *s) {
     symtab_t symbol_tab;
     init_tab(&symbol_tab);
     symtab = symbol_tab;
+
+    load_builtin_f(&symtab);
+    semantic_init();
 }
 
 
@@ -793,10 +806,14 @@ int func_def_params_prolog(token_t *param_id) {
 /**
  * @brief Parses parameters in function definition (and makes semantics checks)
  */ 
+//TODO stack for param name saving
 int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     size_t params_cnt = 0;
     //Check if there are parameters
     token_t t = lookahead(scanner);
+
+    tok_stack_t param_names;
+    tok_stack_init(&param_names);
 
     if(t.token_type == IDENTIFIER) {
         debug_print("parsing function parameters...\n");
@@ -809,6 +826,8 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
                 return prolog_ret;
             }
 
+            //push it to param_names for code generation
+            tok_push(&param_names,param_id);
 
             //Should be DATATYPE
             t = get_next_token(scanner);
@@ -864,6 +883,10 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
         error_semantic("Return values AMOUNT mismatch in definition of function \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
         return SEMANTIC_ERROR_OTHER;
     }
+
+    //generate code for parameters
+    generate_parameters(param_names, scanner);
+
 
     return PARSE_SUCCESS;
 }
@@ -1011,6 +1034,9 @@ int parse_function_def() {
 
     token_t id_fc = get_next_token(scanner);
     check_builtin(&id_fc);
+
+    //generate function start
+    generate_start_function(get_attr(&id_fc, scanner));
 
     parser->curr_func_id = &id_fc;
     parser->found_return = false;

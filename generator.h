@@ -24,6 +24,7 @@
 #include "dstring.h"
 #include <stdarg.h>
 #include "symtable.h"
+#include "dstack.h"
 
 typedef struct gen {
     void *declare_variable;
@@ -34,7 +35,7 @@ void generate_init();
 
 
 void generate_start_function(const char * name);
-void generate_parameters(string_t params, int param_count);
+void generate_parameters(tok_stack_t param_names, scanner_t * scanner);
 void generate_parameter(const char * name);
 void generate_end_function(const char * name);
 void generate_call_function(const char * name);
@@ -48,7 +49,14 @@ void generate_write_function();
 void generate_declare_variable(const char * name);
 void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name );
 void generate_assign_variable( const char *name );
-void generate_operation(grm_sym_type_t type);
+
+void generate_operation_add();
+void generate_operation_sub();
+void generate_operation_mul();
+void generate_operation_div();
+void generate_operation_idiv();
+
+// void generate_operation(grm_sym_type_t type);
 
 
 
