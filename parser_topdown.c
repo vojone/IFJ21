@@ -373,7 +373,6 @@ int local_var_assignment(token_t *current_token, sym_status_t *status) {
         sym_dtype_t ret_type;
         int return_val = parse_expression(scanner, &symtab, &ret_type);
         if(return_val != EXPRESSION_SUCCESS) {
-            error_unexpected_token("Valid expression", *current_token);
             return return_val;
         }
         else {
@@ -733,11 +732,11 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
                     dtype = char_to_dtype(params_s[params_cnt]);
 
                     if(params_s[params_cnt] == '\0') { //There is bigger amount of parameteres than should be
-                        error_semantic("Parameter AMOUNT mismatch in definition of \033[0;33m%s\033[0m (there are to many of them)!", get_attr(id_token, scanner));
+                        error_semantic("Parameter AMOUNT mismatch in definition of \033[1;33m%s\033[0m (there are to many of them)!", get_attr(id_token, scanner));
                         return SEMANTIC_ERROR_OTHER;
                     }
                     else if(dtype != keyword_to_dtype(&t, scanner)) {
-                        error_semantic("Parameter DATA TYPE mismatch in definition of \033[0;33m%s\033[0m!", get_attr(id_token, scanner));
+                        error_semantic("Parameter DATA TYPE mismatch in definition of \033[1;33m%s\033[0m!", get_attr(id_token, scanner));
                         return SEMANTIC_ERROR_OTHER;
                     }
                 }
@@ -757,7 +756,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             if(!comma) {
                 finished = true;
                 if(params_cnt != len(&f_data->params) - 1) {
-                    error_semantic("Parameter AMOUNT mismatch in definition of \033[0;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
+                    error_semantic("Parameter AMOUNT mismatch in definition of \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
                     return SEMANTIC_ERROR_OTHER;
                 }
 
@@ -771,7 +770,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
         }
     }
     else if(was_decl && len(&f_data->ret_types) > 0) {
-        error_semantic("Return values AMOUNT mismatch in definition of function \033[0;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
+        error_semantic("Return values AMOUNT mismatch in definition of function \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
         return SEMANTIC_ERROR_OTHER;
     }
 
@@ -900,7 +899,7 @@ int func_def_epilogue() {
 int check_return(token_t *id_fc) {
     tree_node_t *sym = search(&global, get_attr(id_fc, scanner));
     if(sym && len(&sym->data.ret_types) > 0 && !parser->found_return) {
-        error_semantic("Function %s can reach the end without return!", get_attr(id_fc, scanner));
+        error_semantic("Function \033[1;33m%s\033[0m can reach the end without return!", get_attr(id_fc, scanner));
         return SEMANTIC_ERROR_OTHER;
     }
 
@@ -1064,7 +1063,7 @@ int parse_if() {
     sym_dtype_t ret_type;
     int expr_retval = parse_expression(scanner, &symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
-        return SYNTAX_ERROR;
+        return expr_retval;
     }
 
     bool then = check_next_token_attr(KEYWORD, "then");
@@ -1151,7 +1150,7 @@ int parse_return() {
             finished = true;
 
             if(len(&sym->data.ret_types) > 0) {
-                error_semantic("Missing return values after return in function %s!", get_attr(id_fc, scanner));
+                error_semantic("Missing return values after return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
@@ -1164,7 +1163,7 @@ int parse_return() {
             else {
                 sym_dtype_t dec_type = char_to_dtype(returns_str[returns_cnt]);
                 if(!is_valid_assign(dec_type, ret_type)) {
-                    error_semantic("Bad data type of return in function %s!", get_attr(id_fc, scanner));
+                    error_semantic("Bad data type of return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
                     return SEMANTIC_ERROR_OTHER;
                 }
                 else {
@@ -1178,7 +1177,7 @@ int parse_return() {
         if(!comma) {
             finished = true;
             if(len(&sym->data.ret_types) - 1 > returns_cnt) {
-                error_semantic("Function %s returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&sym->data.ret_types), returns_cnt + 1);
+                error_semantic("Function \033[1;33m%s\033[0m returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&sym->data.ret_types), returns_cnt + 1);
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
@@ -1186,7 +1185,7 @@ int parse_return() {
             //we go one token forward
             get_next_token(scanner);
             if(len(&sym->data.ret_types) - 1 < returns_cnt + 1) {
-                error_semantic("Function %s returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&sym->data.ret_types));
+                error_semantic("Function \033[1;33m%s\033[0m returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&sym->data.ret_types));
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
@@ -1289,7 +1288,7 @@ int parse_global_identifier() {
     char *func = get_attr(&id_token, scanner);
     tree_node_t *func_valid = search(&global, func);
     if (func_valid == NULL) { // Function is not declared
-        error_semantic("Function name '%s' not defined!", func);
+        error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
     }
 
@@ -1315,7 +1314,7 @@ int parse_identifier() {
         char *func = get_attr(&id_token, scanner);
         tree_node_t *func_valid = search(&global, func);
         if (func_valid == NULL) { // Function is not declared
-            error_semantic("Function name '%s' not defined!", func);
+            error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
             return SEMANTIC_ERROR_DEFINITION;
         }
 

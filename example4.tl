@@ -1,7 +1,7 @@
 require ""
 global b : function(integer, string) : integer, integer, integer
 function a ()
-    local b : number =
+    local b : number = 8*"s"
     local a : integer
     a = 5
     b = 7
@@ -12,9 +12,9 @@ function b(a:integer, b:string) : integer, integer, integer
 
     if a == 7 then
         return 1+7, 7, 3
-    else
-        
     end
+
+    return 1+7, 7, 3
 end
 
 

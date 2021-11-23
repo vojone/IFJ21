@@ -588,8 +588,9 @@ void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
 
 /**
  * @brief Prints error message due to return value
+ * @note Also can corrects return code to expected value
  */ 
-void print_err_message(int return_value, 
+void print_err_message(int *return_value, 
                        tok_buffer_t *token_buffer, 
                        char **err_m) {
 
@@ -598,30 +599,37 @@ void print_err_message(int return_value,
     char * attr = get_attr(&(token_buffer->current), token_buffer->scanner);
     char * lattr = get_attr(&(token_buffer->last), token_buffer->scanner);
 
-    switch(return_value)
+    switch(*return_value)
     {
     case LEXICAL_ERROR:
         fprintf(stderr, "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m ", r, c);
-        fprintf(stderr, "Not recognized token! (\"%s\")\n", attr);
+        fprintf(stderr, "Not recognized token! (\"\033[1;33m%s\033[0m\")\n", attr);
         break;
 
     case SEM_ERROR_IN_EXPR:
         fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
         fprintf(stderr, "Bad data types in expression!\n");
         if(*err_m) {
-            fprintf(stderr, "\t| %s\n", *err_m);
+            fprintf(stderr, "\t| \033[0;33m%s\033[0m\n", *err_m);
         }
 
         break;
 
     case UNDECLARED_IDENTIFIER:
         fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
-        fprintf(stderr, "Undeclared identifier \"%s\"!\n", attr);
+        fprintf(stderr, "Undeclared identifier \"\033[1;33m%s\033[0m\"!\n", attr);
         break;
 
     case EXPRESSION_FAILURE:
         fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
-        fprintf(stderr, "Invalid combination of tokens in expression! (\"%s%s\")\n", attr, lattr);
+        fprintf(stderr, "Invalid combination of tokens in expression! (\"\033[1;33m%s%s\033[0m\")\n", attr, lattr);
+        *return_value = SYNTAX_ERROR_IN_EXPR;
+        break;
+
+    case MISSING_EXPRESSION:
+        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
+        fprintf(stderr, "Expected expression, but it was not found! (found \"\033[1;33m%s\033[0m\" instead)\n", attr);
+        *return_value = SYNTAX_ERROR_IN_EXPR;
         break;
 
     default:
@@ -668,7 +676,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         return retval;
     }
     
-    bool stop_flag = false;
+    bool stop_flag = false, empty_expr = true;
     while(retval == EXPRESSION_SUCCESS) {
         tok_buffer.current = lookahead(sc);
 
@@ -686,7 +694,7 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         get_top_symbol(&on_top, &stack);
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
-            retval = EXPRESSION_SUCCESS;
+            retval = empty_expr ? MISSING_EXPRESSION : EXPRESSION_SUCCESS;
             break;
         }
 
@@ -709,9 +717,11 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         else {
             stop_flag = true;
         }
+
+        empty_expr = false;
     }
 
-    print_err_message(retval, &tok_buffer, &failed_op_msg);
+    print_err_message(&retval, &tok_buffer, &failed_op_msg);
     free_everything(&stack, &garbage);
 
     //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
