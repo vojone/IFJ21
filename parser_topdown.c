@@ -73,6 +73,18 @@ void to_inner_ctx(parser_t *p) {
     symtab = new_ctx;
 }
 
+void str_app_str(string_t* dst, const char *src, size_t length){
+    for (size_t i = 0; i < length; i++)
+    {
+        app_char(src[i], dst);
+    }
+}
+
+void param_app(string_t* dst, const char *src){
+    str_app_str(dst, src, sizeof(src));
+    app_char('&',dst);
+}
+
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
     p->reached_EOF = false;
@@ -86,10 +98,22 @@ void parser_setup(parser_t *p, scanner_t *s) {
     symtab = global;
 }
 
+void semantic_init(){
+    char * builtin_functions[] = {"write"};
+    size_t n = 1;
+    for (size_t i = 0; i < n; i++)
+    {
+        sym_data_t symtab_data = {builtin_functions[i], FUNC};
+        insert_sym(&symtab, builtin_functions[i], symtab_data);
+    }
+}
+
 //<program>               -> <global-statement-list>
 int parse_program() {
     //scanner_init(scanner);    
-    
+    generate_init();
+    semantic_init();
+
     //run parsing
     int res = global_statement_list();
 
@@ -506,11 +530,18 @@ int parse_function_def() {
 
     token_t id_fc = get_next_token(scanner);
 
+    string_t params_array;
+    str_init(&params_array);
+
+
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
     bool left_bracket = check_next_token_attr(SEPARATOR, "(");
     int params = 0;
     int returns = 0;
+    
+    //generate code for start
+    generate_start_function(get_attr(&id_fc, scanner));
 
     // check if there are parameters
     token_t t = lookahead(scanner);
@@ -526,6 +557,8 @@ int parse_function_def() {
                 finished = true;
                 return SYNTAX_ERROR;
             }
+            //save param id for code generation 
+            param_app(&params_array,get_attr(&t,scanner));
             
             //should be COLON
             t = get_next_token(scanner);
@@ -563,6 +596,9 @@ int parse_function_def() {
         debug_print("ERROR INVALID FUNCTION SINATURE!\n");
         return SYNTAX_ERROR;
     }
+
+    //generate parameters
+    generate_parameters(params_array,params);
 
     //parsing types if there is colon
     if(lookahead_token_attr(SEPARATOR, ":")){
@@ -606,6 +642,9 @@ int parse_function_def() {
 
     to_outer_ctx(parser);
 
+    //generate function end
+    generate_end_function(get_attr(&id_fc, scanner));
+
     debug_print("parsing function finished! return code: %i, at: (%lu,%lu)\n", res, scanner->cursor_pos[0], scanner->cursor_pos[1]); 
 
     t = get_next_token(scanner);
@@ -634,9 +673,11 @@ int parse_function_def() {
 int parse_function_call() {
     debug_print("parsing function call...\n");
     bool opening_bracket = check_next_token_attr(SEPARATOR, "(");
-
+    
     if(opening_bracket) {
+        //here the arguments will be pushed to stack
         int args = parse_function_arguments();
+
         debug_print("function args success %i\n", (int)args);
         return args;
     }
@@ -644,23 +685,22 @@ int parse_function_call() {
         return SYNTAX_ERROR;
     }
 
+
     return PARSE_SUCCESS;
 }
 int parse_function_arguments() {
     bool closing_bracket = false;
     while(!closing_bracket){
+        sym_dtype_t ret;
+        if(lookahead_token_attr(SEPARATOR,")")){
+            //we are at the end of argument list
+        }else{
+            //parse argument
+            int res = parse_expression(scanner,&symtab,&ret);
+            if(res != PARSE_SUCCESS)
+                return res;
+        }
         token_t t = get_next_token(scanner);
-        if(is_expression(t)){
-            //ok
-        }
-        else if(compare_token_attr(t, SEPARATOR, ")")) {
-            closing_bracket = true;
-            continue;
-        }
-        else{
-            error_unexpected_token("EXPRESSION", t);
-        }
-        t = get_next_token(scanner);
         if(compare_token_attr(t, SEPARATOR, ",")) {
             //ok
         }
@@ -855,7 +895,11 @@ int parse_global_identifier(){
         error_semantic("Function name '%s' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
     }
-    return parse_function_call();
+    //this should leave the arguments at the top of the stack
+    int ret = parse_function_call();
+    //generate function call
+    generate_call_function(get_attr(&id_token, scanner));
+    return ret;
 }
 
 int parse_identifier(){
