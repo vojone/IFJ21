@@ -116,6 +116,14 @@ void parser_dtor() {
 }
 
 
+void check_builtin(token_t *id_token) {
+    sym_data_t *bfunc_data_ptr = search_builtin(get_attr(id_token, scanner));
+    if(bfunc_data_ptr) {
+        insert_sym(&global, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+    }
+}
+
+
 /**
  * @brief Checks if all declared functions were defined
  */ 
@@ -653,6 +661,8 @@ int parse_function_dec() {
 
     token_t id = get_next_token(scanner);
 
+    check_builtin(&id);
+
     tok_push(&parser->decl_func, id);
 
     if(!compare_token(id, IDENTIFIER)) {
@@ -967,6 +977,8 @@ int parse_function_def() {
     get_next_token(scanner);
 
     token_t id_fc = get_next_token(scanner);
+    check_builtin(&id_fc);
+
     parser->curr_func_id = &id_fc;
     parser->found_return = false;
 
@@ -1042,6 +1054,7 @@ int parse_function_arguments(token_t *id_func) {
     char * params_str = to_str(&sym->data.params);
 
     size_t argument_cnt = 0;
+    bool is_variadic = (params_str[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
         token_t t = lookahead(scanner);
         if(is_expression(t)) {
@@ -1050,14 +1063,16 @@ int parse_function_arguments(token_t *id_func) {
             if(expr_retval != EXPRESSION_SUCCESS) {
                 return expr_retval;
             }
-        
-            sym_dtype_t decl_type = char_to_dtype(params_str[argument_cnt]);
-            if(!is_valid_assign(decl_type, ret_type)) {
-                error_semantic("Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, scanner));
-                return SEMANTIC_ERROR_PARAMETERS;
-            }
-            else {
-                //Ok
+
+            if(!is_variadic) {
+                sym_dtype_t d_type = char_to_dtype(params_str[argument_cnt]);
+                if(!is_valid_assign(d_type, ret_type)) {
+                    error_semantic("Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, scanner));
+                    return SEMANTIC_ERROR_PARAMETERS;
+                }
+                else {
+                    //Ok
+                }
             }
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
@@ -1071,7 +1086,7 @@ int parse_function_arguments(token_t *id_func) {
         //Check if there will be next argument
         t = get_next_token(scanner);
         if(compare_token_attr(t, SEPARATOR, ",")) {
-            if(argument_cnt + 1 > strlen(params_str) - 1) { //Function needs less arguments
+            if(argument_cnt + 1 > strlen(params_str) - 1 && !is_variadic) { //Function needs less arguments
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Too many arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1081,7 +1096,7 @@ int parse_function_arguments(token_t *id_func) {
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
             closing_bracket = true;
-            if(argument_cnt != strlen(params_str) - 1) { //Function needs more arguments
+            if(argument_cnt != strlen(params_str) - 1 && !is_variadic) { //Function needs more arguments
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Missing arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1336,6 +1351,8 @@ rule_t determine_rule(token_t t, rule_t ruleset[]) {
 int parse_global_identifier() {
     token_t id_token = get_next_token(scanner);
     debug_print("got identifier\n");
+
+    check_builtin(&id_token);
 
     char *func = get_attr(&id_token, scanner);
     tree_node_t *func_valid = search(&global, func);

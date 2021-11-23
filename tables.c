@@ -65,20 +65,6 @@ char * get_separator(unsigned int index) {
     return separator_table[index];
 }
 
-/**
- * @brief Contains static array of supported builtin functions
- * @return Pointer to builtin function name 
- */ 
-char * get_builtin(unsigned int index) {
-    static char * builtin_table[BUILTIN_TABLE_SIZE] = 
-    {
-        "chr", "ord", "readi", "readn", 
-        "reads", "substr", "tointeger", "write" 
-    };
-                            
-    return builtin_table[index];
-}
-
 
 /**
  * @brief Tries to find string in table (Implemented as binary search)

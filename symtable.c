@@ -22,38 +22,6 @@ void init_tab(symtab_t *tab) {
 }
 
 /**
- * @brief Initializes strings data structure of symbol
- * @return If there were error during initialization returns EXIT_FAILURE, otherwise EXIT_SUCCESS
- */ 
-int init_data(sym_data_t *new_data) {
-    if(str_init(&new_data->name) != STR_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    if(str_init(&new_data->params) != STR_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    if(str_init(&new_data->ret_types) != STR_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    new_data->was_used = false;
-
-    return EXIT_SUCCESS;
-}
-
-
-/**
- * @brief Frees all resources that data holds and sets it to the state before initialization
- */ 
-void data_dtor(sym_data_t *data) {
-    str_dtor(&data->name);
-    str_dtor(&data->params);
-    str_dtor(&data->ret_types);
-}
-
-/**
  * @brief Searches for symbol table with specific key
  * @param tab symbol table in which should be searching executed
  * @param key key of element that should be found
@@ -275,5 +243,92 @@ char dtype_to_char(sym_dtype_t type) {
 
     return type_c;
 }
+
+
+/**
+ * @brief Initializes strings data structure of symbol
+ * @return If there were error during initialization returns EXIT_FAILURE, otherwise EXIT_SUCCESS
+ */ 
+int init_data(sym_data_t *new_data) {
+    if(str_init(&new_data->name) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->params) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->ret_types) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    new_data->was_used = false;
+
+    return EXIT_SUCCESS;
+}
+
+
+/**
+ * @brief Frees all resources that data holds and sets it to the state before initialization
+ */ 
+void data_dtor(sym_data_t *data) {
+    str_dtor(&data->name);
+    str_dtor(&data->params);
+    str_dtor(&data->ret_types);
+}
+
+
+/**
+ * @brief Contains static array with builtin functions and its attributes (parameter, return types)
+ */ 
+sym_data_t* builtin_functions(unsigned int index) {
+    if (index >= BUILTIN_TABLE_SIZE) {
+        return NULL;
+    }
+
+    static sym_data_t builtin_functions[BUILTIN_TABLE_SIZE] = {
+    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "i"}, UNSET, DECLARED, false},
+    {{0, 0, "ord"}, FUNC, {0, 0, "si"}, {0, 0, "i"}, UNSET, DECLARED, false},
+    {{0, 0, "readi"}, FUNC, {0, 0, "i"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "readn"}, FUNC, {0, 0, "n"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "reads"}, FUNC, {0, 0, "s"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "sin"}, UNSET, DECLARED, false},
+    {{0, 0, "tointeger"}, FUNC, {0, 0, "i"}, {0, 0, "n"}, UNSET, DECLARED, false},
+    {{0, 0, "write"}, FUNC, {0, 0, ""}, {0, 0, "%"}, UNSET, DECLARED, false}};
+
+    return &builtin_functions[index];
+}
+
+
+/**
+ * @brief inserts all builtin functions into given symbol table
+ * @note Inseted functions will have same name as key in symbol table
+ */ 
+void load_builtin_f(symtab_t *dst) {
+    for(int i = 0; builtin_functions(i); i++) {
+        char * f_name = to_str(&builtin_functions(i)->name);
+        insert_sym(dst, f_name, *builtin_functions(i));
+    }
+}
+
+
+/**
+ * @brief Tries to find function by name in table of builtin functions
+ * @return Pointer to function data in static table if function is found, other wise NULL
+ */ 
+sym_data_t* search_builtin(const char *f_name) {
+    //If function name start with 'z' (for example) -> search from the end 
+    int i = f_name[0] < 'z' - 'a' / 2 ? 0 : BUILTIN_TABLE_SIZE - 1;
+    int inc = f_name[0] < 'z' - 'a' / 2 ? 1 : -1;
+
+    for(; builtin_functions(i) != NULL; i += inc) {
+        if(str_cmp(to_str(&builtin_functions(i)->name), f_name) == 0) {
+            return builtin_functions(i);
+        }
+    }
+
+    return NULL;
+}
+
 
 /***                          End of symtable.c                            ***/

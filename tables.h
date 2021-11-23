@@ -28,7 +28,6 @@
 #define KEYWORD_TABLE_SIZE 15
 #define OPERATOR_TABLE_SIZE 14
 #define SEPARATOR_TABLE_SIZE 4
-#define BUILTIN_TABLE_SIZE 8
 
 /**
  * @brief Returns pointer to string in static array with keywords

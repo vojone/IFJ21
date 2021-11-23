@@ -19,6 +19,8 @@
 
 #define UNSET -1
 
+#define BUILTIN_TABLE_SIZE 8
+
 /**
  * @brief Specifies type of symbol
  */ 
@@ -69,7 +71,7 @@ typedef struct tree_node {
  */
 typedef struct symtab {
     tree_node_t * t;
-    int parent_ind;
+    int parent_ind; /**< Is used for switching contexts int parser */
 } symtab_t; 
 
 /**
@@ -133,6 +135,20 @@ sym_dtype_t char_to_dtype(char type_c);
  * @brief Converts enum type used in symtable to correspoding character symbol
  */ 
 char dtype_to_char(sym_dtype_t type);
+
+
+/**
+ * @brief inserts all builtin functions into given symbol table
+ * @note Inseted functions will have same name as key in symbol table
+ */ 
+void load_builtin_f(symtab_t *dst);
+
+
+/**
+ * @brief Tries to find function by name in table of builtin functions
+ * @return Pointer to function data in static table if function is found, other wise NULL
+ */ 
+sym_data_t* search_builtin(const char *f_name);
 
 #endif
 
