@@ -25,7 +25,7 @@
  * @brief Specifies type of symbol
  */ 
 typedef enum sym_type {
-    FUNC, VAR
+    FUNC, VAR, VAL
 } sym_type_t;
 
 /**

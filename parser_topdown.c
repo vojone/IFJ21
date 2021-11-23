@@ -76,6 +76,19 @@ void to_inner_ctx(parser_t *p) {
     symtab = new_ctx;
 }
 
+/**-----------------------------------------------------
+void str_app_str(string_t* dst, const char *src, size_t length){
+    for (size_t i = 0; i < length; i++)
+    {
+        app_char(src[i], dst);
+    }
+}
+
+void param_app(string_t* dst, const char *src){
+    str_app_str(dst, src, sizeof(src));
+    app_char('&',dst);
+}
+*/
 
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
@@ -146,7 +159,9 @@ int check_if_defined() {
 
 //<program>               -> <global-statement-list>
 int parse_program() {
-    //scanner_init(scanner);    
+    //scanner_init(scanner); 
+
+    generate_init();   
     
     //run parsing
     int res = global_statement_list();
@@ -659,19 +674,33 @@ int parse_function_dec() {
     //This token is just 'global' we skip it
     get_next_token(scanner);
 
-    token_t id = get_next_token(scanner);
+    token_t id_fc = get_next_token(scanner);
 
-    check_builtin(&id);
+    check_builtin(&id_fc);
+    string_t params_array;
+    str_init(&params_array);
+    str_dtor(&params_array);//TODO
 
-    tok_push(&parser->decl_func, id);
+    //parsing function definition signature
+    bool id = (id_fc.token_type == (IDENTIFIER));
+    bool left_bracket = check_next_token_attr(SEPARATOR, "(");
 
-    if(!compare_token(id, IDENTIFIER)) {
-        error_unexpected_token("IDENTIFIER", id);
+    if(!id || !left_bracket) {
+        return SYNTAX_ERROR;
+    }
+    
+    //generate code for start
+    generate_start_function(get_attr(&id_fc, scanner));
+    
+    tok_push(&parser->decl_func, id_fc); //For checking if function is defined
+
+    if(!compare_token(id_fc, IDENTIFIER)) {
+        error_unexpected_token("IDENTIFIER", id_fc);
         return SYNTAX_ERROR;
     }
 
-    if(search(&global, get_attr(&id, scanner))) { //Function is declared in current scope (global scope)
-        error_semantic("Redeclaration of function \033[1;33m%s\033[0m!", get_attr(&id, scanner));
+    if(search(&global, get_attr(&id_fc, scanner))) { //Function is declared in current scope (global scope)
+        error_semantic("Redeclaration of function \033[1;33m%s\033[0m!", get_attr(&id_fc, scanner));
         return SEMANTIC_ERROR_DEFINITION;
     }
     
@@ -694,7 +723,7 @@ int parse_function_dec() {
     retval = (retval == PARSE_SUCCESS) ? func_dec_returns(&f_data.ret_types) : retval;
 
     if(retval == PARSE_SUCCESS) {
-        ins_func(&id, &f_data);
+        ins_func(&id_fc, &f_data);
     }
     else {
         data_dtor(&f_data);
@@ -934,6 +963,10 @@ int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
  */ 
 int func_def_epilogue() {
     token_t t = get_next_token(scanner);
+    //generate function end
+    generate_end_function(get_attr(parser->curr_func_id, scanner));
+
+    debug_print("parsing function finished! at: (%lu,%lu)\n", scanner->cursor_pos[0], scanner->cursor_pos[1]); 
 
     if(t.token_type == KEYWORD) {
         if(compare_token_attr(t, KEYWORD, "end")) {
@@ -1030,7 +1063,7 @@ int parse_function_def() {
 int parse_function_call(token_t *id_func) {
     debug_print("parsing function call...\n");
     bool opening_bracket = check_next_token_attr(SEPARATOR, "(");
-
+    
     if(opening_bracket) {
         int retval = parse_function_arguments(id_func);
         debug_print("function args success %i\n", (int)retval);
@@ -1360,10 +1393,11 @@ int parse_global_identifier() {
         error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
     }
-
-    debug_print("Call function %s\n", func);
-
-    return parse_function_call(&id_token);
+    //this should leave the arguments at the top of the stack
+    int ret = parse_function_call(&id_token);
+    //generate function call
+    generate_call_function(get_attr(&id_token, scanner));
+    return ret;
 }
 
 

@@ -15,6 +15,7 @@
 #include <stdarg.h>
 #include "precedence_parser.h"
 #include "symtable.h"
+#include "generator.h"
 
 typedef struct result{
     bool success;

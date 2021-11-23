@@ -37,15 +37,18 @@ SCAN_TEST_BIN = $(SCAN_TEST_NAME)
 #------------------------------------------------------------------------------
 
 OBJS = $(PARSER).o $(PP_PARSER).o $(SCANNER).o $(SYMTAB).o \
-	   parser_wrapper.o dstring.o tables.o dstack.o
+	   parser_wrapper.o dstring.o tables.o dstack.o generator.o
 
 EXES = $(EXECUTABLE) $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 	   $(SYMTAB_TEST_BIN) $(PARSER_EXE)
 
 .PHONY: all clean unit_tests
 
-parser: $(OBJS) 
+parser: $(OBJS) generator.o 
 	$(CC) $(CFLAGS) -o $(PARSER_EXE) $^
+
+generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCANNER).o $(PP_PARSER).o tables.o
+	$(CC) $(CFLAGS) -o generator $^
 
 clean:
 	rm -f *.o $(EXES)
@@ -68,7 +71,7 @@ unit_tests:  $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 $(PARSER_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(PARSER_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
 $(PARSER_TEST_BIN) : $(PARSER).o $(PARSER_TEST_BIN).o $(SCANNER).o $(SYMTAB).o \
-					 $(PP_PARSER).o dstring.o tables.o dstack.o 
+					 $(PP_PARSER).o dstring.o tables.o dstack.o generator.o
 
 #compilation of obj file with test
 $(PARSER_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
