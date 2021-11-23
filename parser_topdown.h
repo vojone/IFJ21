@@ -42,6 +42,8 @@ typedef enum return_codes {
 
 typedef struct parser {
     symtabs_stack_t symtabs;
+    token_t * curr_func_id;
+    bool found_return;
     int return_code;
     bool reached_EOF;
 } parser_t;

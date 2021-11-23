@@ -79,8 +79,9 @@ void to_inner_ctx(parser_t *p) {
 
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
-    p->reached_EOF = false;
-    p->return_code = 0;
+    parser->reached_EOF = false;
+    parser->found_return = false;
+    parser->return_code = 0;
     scanner = s;
 
     symtabs_stack_init(&p->symtabs);
@@ -169,15 +170,15 @@ int global_statement() {
     token_t t = lookahead(scanner);
 
     //get the apropriate rule
-    rule_t rule_to_use = determine_rule(t,ruleset_global);
+    rule_t rule_to_use = determine_rule(t, ruleset_global);
     
     //call the right function
     int res = rule_to_use.rule_function();
 
     //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
     debug_print("global statement %s returned code %i\n", rule_to_use.rule_first.attr, res);
-    if(res == SYNTAX_ERROR)
-        error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
+    // if(res == SYNTAX_ERROR)
+    //     error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
     
     return res;
 }
@@ -755,7 +756,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             bool comma = lookahead_token_attr(SEPARATOR, ",");
             if(!comma) {
                 finished = true;
-                if(params_cnt != strlen(to_str(&f_data->params)) - 1) {
+                if(params_cnt != len(&f_data->params) - 1) {
                     error_semantic("Parameter AMOUNT mismatch in definition of \033[0;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
                     return SEMANTIC_ERROR_OTHER;
                 }
@@ -769,7 +770,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             params_cnt++;
         }
     }
-    else if(was_decl && strlen(to_str(&f_data->ret_types)) > 0) {
+    else if(was_decl && len(&f_data->ret_types) > 0) {
         error_semantic("Return values AMOUNT mismatch in definition of function \033[0;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
         return SEMANTIC_ERROR_OTHER;
     }
@@ -843,7 +844,7 @@ int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             bool comma = lookahead_token_attr(SEPARATOR, ",");
             if(!comma) {
                 finished = true;
-                if(ret_cnt != strlen(to_str(&f_data->ret_types)) - 1) {
+                if(ret_cnt != len(&f_data->ret_types) - 1) {
                     error_semantic("Return values amount mismatch in definition of \033[1;33m%s\033[0m (something is missing)!", get_attr(id_token, scanner));
                     return SEMANTIC_ERROR_OTHER;
                 }
@@ -857,7 +858,7 @@ int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
         }
     }
     else if(!lookahead_token_attr(SEPARATOR, ":") && was_decl) {
-        if(strlen(to_str(&f_data->ret_types)) > 0) {
+        if(len(&f_data->ret_types) > 0) {
             error_semantic("Return values AMOUNT mismatch in definition of function \033[1;33m%s\033[0m(something is missing)!", get_attr(id_token, scanner));
             return SEMANTIC_ERROR_OTHER;
         }
@@ -894,6 +895,20 @@ int func_def_epilogue() {
 
 
 /**
+ * @brief Checks if function has return statement inside (if function returns something)
+ */ 
+int check_return(token_t *id_fc) {
+    tree_node_t *sym = search(&global, get_attr(id_fc, scanner));
+    if(sym && len(&sym->data.ret_types) > 0 && !parser->found_return) {
+        error_semantic("Function %s can reach the end without return!", get_attr(id_fc, scanner));
+        return SEMANTIC_ERROR_OTHER;
+    }
+
+    return PARSE_SUCCESS;
+}
+
+
+/**
  * @brief Parses function definition 
  */ 
 int parse_function_def() {
@@ -901,6 +916,8 @@ int parse_function_def() {
     get_next_token(scanner);
 
     token_t id_fc = get_next_token(scanner);
+    parser->curr_func_id = &id_fc;
+    parser->found_return = false;
 
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
@@ -938,6 +955,10 @@ int parse_function_def() {
 
     retval = (retval == PARSE_SUCCESS) ? func_def_epilogue() : retval;
 
+    retval = (retval == PARSE_SUCCESS) ? check_return(&id_fc) : retval;
+
+    parser->curr_func_id = NULL;
+
     return retval;
 }
 
@@ -971,7 +992,7 @@ int parse_function_arguments(token_t *id_func) {
 
     size_t argument_cnt = 0;
     while(!closing_bracket) {
-        token_t t = get_next_token(scanner);
+        token_t t = lookahead(scanner);
         if(is_expression(t)) {
             sym_dtype_t ret_type;
             int expr_retval = parse_expression(scanner, &symtab, &ret_type);
@@ -979,7 +1000,8 @@ int parse_function_arguments(token_t *id_func) {
                 return expr_retval;
             }
 
-            if(dtype_to_char(ret_type) != ret_types_str[argument_cnt]) {
+            sym_dtype_t decl_type = char_to_dtype(ret_types_str[argument_cnt]);
+            if(!is_valid_assign(decl_type, ret_type)) {
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1046,8 +1068,9 @@ int parse_if() {
     }
 
     bool then = check_next_token_attr(KEYWORD, "then");
-    if(!then)
+    if(!then) {
         return SYNTAX_ERROR;
+    }
 
     to_inner_ctx(parser); //Switch the context
 
@@ -1055,6 +1078,9 @@ int parse_if() {
     if(retval != PARSE_SUCCESS) {
         return retval;
     }
+
+    bool ret_in_if_branch = parser->found_return;
+    parser->found_return = false;
     
     to_outer_ctx(parser); //Back to higher leve context
 
@@ -1071,10 +1097,14 @@ int parse_if() {
 
             //<else-branch>           -> else <statement-list>
             debug_print("parsing else branch...\n");
+
             retval = statement_list();
             if(retval != PARSE_SUCCESS) {
                 return retval;
             }
+
+            bool ret_in_else_branch = parser->found_return;
+            parser->found_return = ret_in_if_branch && ret_in_else_branch; //Function must ends in both branches
 
             to_outer_ctx(parser);
 
@@ -1105,32 +1135,66 @@ int parse_else() {
 int parse_return() {
     //go one token forward
     get_next_token(scanner);
-    
-    debug_print("Calling precedence parser...\n");
-    sym_dtype_t ret_type;
-    return parse_expression(scanner, &symtab, &ret_type);
+    token_t* id_fc = parser->curr_func_id;
 
-    //TODO CHECK THE SYMTABLE TO KNOW HOW MANY EXPRESSIONS SHOULD BE RETURNED
-    //! The ACTUAL return parsing is handled in statement() currently, it checks for exactly ONE expression
-    //* SOMETHING LIKE THIS WILL BE HERE LATER
-    // bool finished = false;
-    // while(/* check for symtable */finished){
-    //     //should be expression
-    //     token_t t = get_next_token(scanner);
-    //     if(!is_expression(t)){
-    //         error_unexpected_token("EXPRESSION",t);
-    //         finished = true;
-    //         return SEMANTIC_ERROR_ASSIGNMENT;
-    //     }
-    //     //if there is no comma we should be at the end of the list
-    //     bool comma = lookahead_token_attr(SEPARATOR,",");
-    //     if(!comma)
-    //         finished = true;
-    //     else{
-    //         //we go one token forward
-    //         get_next_token(scanner);
-    //     }
-    // }
+    debug_print("Calling precedence parser to parse return in %s...\n", get_attr(id_fc, scanner));
+
+    tree_node_t *sym = search(&global, get_attr(id_fc, scanner));
+    
+    size_t returns_cnt = 0;
+    bool finished = false;
+    char * returns_str = to_str(&sym->data.ret_types);
+    while(!finished) {
+        token_t t = lookahead(scanner);
+
+        if(!is_expression(t)) {
+            finished = true;
+
+            if(len(&sym->data.ret_types) > 0) {
+                error_semantic("Missing return values after return in function %s!", get_attr(id_fc, scanner));
+                return SEMANTIC_ERROR_ASSIGNMENT;
+            }
+        }
+        else {
+            sym_dtype_t ret_type;
+            int retval = parse_expression(scanner, &symtab, &ret_type);
+            if(retval != EXPRESSION_SUCCESS) {
+                return retval;
+            }
+            else {
+                sym_dtype_t dec_type = char_to_dtype(returns_str[returns_cnt]);
+                if(!is_valid_assign(dec_type, ret_type)) {
+                    error_semantic("Bad data type of return in function %s!", get_attr(id_fc, scanner));
+                    return SEMANTIC_ERROR_OTHER;
+                }
+                else {
+                    //Ok
+                }
+            }
+        }
+
+        //If there is no comma we should be at the end of the list
+        bool comma = lookahead_token_attr(SEPARATOR, ",");
+        if(!comma) {
+            finished = true;
+            if(len(&sym->data.ret_types) - 1 > returns_cnt) {
+                error_semantic("Function %s returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&sym->data.ret_types), returns_cnt + 1);
+                return SEMANTIC_ERROR_ASSIGNMENT;
+            }
+        }
+        else {
+            //we go one token forward
+            get_next_token(scanner);
+            if(len(&sym->data.ret_types) - 1 < returns_cnt + 1) {
+                error_semantic("Function %s returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&sym->data.ret_types));
+                return SEMANTIC_ERROR_ASSIGNMENT;
+            }
+        }
+
+        returns_cnt++;
+    }
+
+    parser->found_return = true;
     
     return PARSE_SUCCESS;
 }
@@ -1298,11 +1362,12 @@ int error_rule() {
  * //TODO
  * @brief Recognizes start of expression
  */
-bool is_expression(token_t t){
+bool is_expression(token_t t) {
     return (t.token_type == NUMBER || 
             t.token_type == INTEGER || 
             t.token_type == STRING || 
-            t.token_type == IDENTIFIER);
+            t.token_type == IDENTIFIER ||
+            (t.token_type == KEYWORD && str_cmp(get_attr(&t, scanner), "nil") == 0));
 }
 
 /**
