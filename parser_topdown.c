@@ -201,13 +201,35 @@ int statement() {
 }
 
 
+
+void int2num_conv() {
+
+}
+
+
+void num2int_conv() {
+    
+}
+
+
 /**
  * @brief Resolves compatibility of data types in assignment
  */ 
 bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type) {
-    return var_type == r_side_type || 
-           (var_type == NUM && r_side_type == INT) || 
-           r_side_type == NIL;
+    if(var_type == r_side_type || r_side_type == NIL) {
+        return true;
+    }
+    else if(var_type == NUM && r_side_type == INT) {
+        int2num_conv();
+        return true;
+    }
+    else if(var_type == INT && r_side_type == NUM) {
+        num2int_conv();
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 
