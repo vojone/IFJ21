@@ -5,7 +5,7 @@
  *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
  *        Purpose: Implementation of symbol table used in compiler
  * 
- *                  Last change:
+ *                          Last change: 21. 11 2021
  *****************************************************************************/
 
 #include "symtable.h"
@@ -19,6 +19,35 @@
 void init_tab(symtab_t *tab) {
 	tab->t = NULL;
     tab->parent_ind = UNSET;
+}
+
+/**
+ * @brief Initializes strings data structure of symbol
+ * @return If there were error during initialization returns EXIT_FAILURE, otherwise EXIT_SUCCESS
+ */ 
+int init_data(sym_data_t *new_data) {
+    if(str_init(&new_data->name) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->params) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->ret_types) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+/**
+ * @brief Frees all resources that data holds and sets it to the state before initialization
+ */ 
+void data_dtor(sym_data_t *new_data) {
+    str_dtor(&new_data->name);
+    str_dtor(&new_data->params);
+    str_dtor(&new_data->ret_types);
 }
 
 /**
@@ -57,6 +86,12 @@ void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
     while(*cur_node && !was_inserted) { //Find place for new node
         int comparison_result = str_cmp((*cur_node)->key, key);
         if(comparison_result == 0) {
+
+            //All resources holds by strings in node data structure must be freed before updating
+            // str_dtor(&(*cur_node)->data.name);
+            // str_dtor(&(*cur_node)->data.ret_types);
+            // str_dtor(&(*cur_node)->data.params);
+
             (*cur_node)->data = newdata;
             was_inserted = true;
         }
@@ -141,6 +176,9 @@ void delete_sym(symtab_t *tab, const char *key) {
                     *cur_node = NULL;
                 }
 
+                str_dtor(&to_be_deleted->data.name);
+                str_dtor(&to_be_deleted->data.ret_types);
+                str_dtor(&to_be_deleted->data.params);
                 free(to_be_deleted->key);
                 free(to_be_deleted);
             }
@@ -176,6 +214,9 @@ void destroy_tab(symtab_t *tab) {
             }
             curr_node = curr_node->l_ptr;
 
+            str_dtor(&tmp->data.name);
+            str_dtor(&tmp->data.ret_types);
+            str_dtor(&tmp->data.params);
             free(tmp->key);
             free(tmp);
         }
@@ -211,6 +252,33 @@ sym_dtype_t char_to_dtype(char type_c) {
     }
 
     return type;
+}
+
+
+/**
+ * @brief Converts enum type used in symtable to correspoding character symbol
+ */ 
+char dtype_to_char(sym_dtype_t type) {
+    char type_c;
+    switch (type)
+    {
+    case NUM:
+        type_c = 'n';
+        break;
+    case INT:
+        type_c = 'i';
+        break;
+    case STR:
+        type_c = 's';
+        break;
+    case NIL:
+        type_c = 'z';
+        break;
+    default:
+        type_c = ' ';
+    }
+
+    return type_c;
 }
 
 /***                          End of symtable.c                            ***/

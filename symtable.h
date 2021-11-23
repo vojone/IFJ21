@@ -38,16 +38,17 @@ typedef enum sym_dtype {
  * @brief Specifies status of symbol (whether it was used, declared, defined)
  */ 
 typedef enum sym_status {
-    DECLARED, DEFINED, USED
+    DECLARED, DEFINED
 } sym_status_t;
 
 /**
  * @brief Structure with all necessary data
  */ 
 typedef struct sym_data {
-    char * name;
+    string_t name;
     sym_type_t type;
     string_t ret_types;
+    string_t params;
     sym_dtype_t dtype;
     sym_status_t status;
 } sym_data_t;
@@ -75,6 +76,16 @@ typedef struct symtab {
  * @param symbol table to be initialized
  */ 
 void init_tab(symtab_t *tab);
+
+/**
+ * @brief Initializes data structure of symbol
+ */ 
+int init_data(sym_data_t *new_data);
+
+/**
+ * @brief Frees all resources that data holds and set it to the state before initialization
+ */ 
+void data_dtor(sym_data_t *new_data);
 
 /**
  * @brief Inserts a new element into existing symbol table or updates existing node
@@ -115,6 +126,12 @@ tree_node_t *search(symtab_t *tab, const char *key);
  * @brief Converts character to sym_dtype enum
  */
 sym_dtype_t char_to_dtype(char type_c);
+
+
+/**
+ * @brief Converts enum type used in symtable to correspoding character symbol
+ */ 
+char dtype_to_char(sym_dtype_t type);
 
 #endif
 

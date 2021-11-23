@@ -10,5 +10,9 @@ int main() {
     scanner_init(&scanner);
     parser_t parser;
     parser_setup(&parser, &scanner);
-    return parse_program();
+
+    int return_value = parse_program();
+
+    scanner_dtor(&scanner);
+    return return_value;
 }
