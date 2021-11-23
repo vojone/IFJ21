@@ -99,7 +99,16 @@ bool str_search(const char c, const char *str);
  */
 int str_cpy(char **dst, const char *src, size_t length);
 
+/**
+ * @brief Copies array of characters (cstr) to string structure
+ * @param length length of source cstr from start that will be copied to string
+ */
 int str_cpy_tostring(string_t* dst, const char *src, size_t length);
+
+/**
+ * @brief Makes hard copy of two strings
+ */ 
+int cpy_strings(string_t* dst, string_t *src);
 
 /**
  * @brief returns type of character

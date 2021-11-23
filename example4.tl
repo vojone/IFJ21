@@ -8,5 +8,6 @@ function a ()
 end
 
 function b(a:integer, b:string) : integer
+    local a : number
     a = 8
 end

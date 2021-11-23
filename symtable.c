@@ -41,13 +41,14 @@ int init_data(sym_data_t *new_data) {
     return EXIT_SUCCESS;
 }
 
+
 /**
  * @brief Frees all resources that data holds and sets it to the state before initialization
  */ 
-void data_dtor(sym_data_t *new_data) {
-    str_dtor(&new_data->name);
-    str_dtor(&new_data->params);
-    str_dtor(&new_data->ret_types);
+void data_dtor(sym_data_t *data) {
+    str_dtor(&data->name);
+    str_dtor(&data->params);
+    str_dtor(&data->ret_types);
 }
 
 /**
@@ -86,12 +87,8 @@ void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
     while(*cur_node && !was_inserted) { //Find place for new node
         int comparison_result = str_cmp((*cur_node)->key, key);
         if(comparison_result == 0) {
-
-            //All resources holds by strings in node data structure must be freed before updating
-            // str_dtor(&(*cur_node)->data.name);
-            // str_dtor(&(*cur_node)->data.ret_types);
-            // str_dtor(&(*cur_node)->data.params);
-
+            
+            data_dtor(&(*cur_node)->data);
             (*cur_node)->data = newdata;
             was_inserted = true;
         }
@@ -176,9 +173,7 @@ void delete_sym(symtab_t *tab, const char *key) {
                     *cur_node = NULL;
                 }
 
-                str_dtor(&to_be_deleted->data.name);
-                str_dtor(&to_be_deleted->data.ret_types);
-                str_dtor(&to_be_deleted->data.params);
+                data_dtor(&to_be_deleted->data);
                 free(to_be_deleted->key);
                 free(to_be_deleted);
             }
@@ -214,9 +209,7 @@ void destroy_tab(symtab_t *tab) {
             }
             curr_node = curr_node->l_ptr;
 
-            str_dtor(&tmp->data.name);
-            str_dtor(&tmp->data.ret_types);
-            str_dtor(&tmp->data.params);
+            data_dtor(&tmp->data);
             free(tmp->key);
             free(tmp);
         }

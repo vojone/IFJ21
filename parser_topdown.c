@@ -88,7 +88,10 @@ void parser_setup(parser_t *p, scanner_t *s) {
     symtab_t global_tab;
     init_tab(&global_tab);
     global = global_tab;
-    symtab = global;
+
+    symtab_t symbol_tab;
+    init_tab(&symbol_tab);
+    symtab = symbol_tab;
 }
 
 
@@ -231,7 +234,8 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number) {
             //Try to find identifier in symbol table (or in parent symbol table)
             char * id_str = get_attr(&t, scanner);
             tree_node_t * symbol = search_in_tables(&symtab, id_str);
-            if(!symbol) {
+    
+            if(!symbol || symbol->data.type != VAR) {
                 error_semantic("Undeclared variable \033[1;33m%s\033[0m!", id_str);
                 return SEMANTIC_ERROR_DEFINITION;
             }
@@ -496,7 +500,6 @@ int parse_require() {
 void ins_func(token_t *id_token, sym_data_t *data) {
 
     size_t id_len = strlen(get_attr(id_token, scanner));
-
     //There is no need to creation original name of function (it always must be original in whole program)
     str_cpy_tostring(&data->name, get_attr(id_token, scanner), id_len);
     debug_print("Putting %s into symbol table... its name is %s and (status: %d, ret_types: %s, params: %s)\n", get_attr(id_token, scanner), to_str(&data->name), data->status, to_str(&data->ret_types), to_str(&data->params));
@@ -604,7 +607,7 @@ int parse_function_dec() {
         return SYNTAX_ERROR;
     }
 
-    if(search(&symtab, get_attr(&id, scanner))) { //Function is declared in current scope (global scope)
+    if(search(&global, get_attr(&id, scanner))) { //Function is declared in current scope (global scope)
         error_semantic("Redeclaration of function \033[1;33m%s\033[0m!", get_attr(&id, scanner));
         return SEMANTIC_ERROR_DEFINITION;
     }
@@ -630,6 +633,8 @@ int parse_function_dec() {
 
     if(retval == PARSE_SUCCESS) {
         ins_func(&id, &f_data);
+    }
+    else {
         data_dtor(&f_data);
     }
 
@@ -645,7 +650,7 @@ int parse_function_dec() {
  */ 
 int check_if_declared(bool *was_decl, token_t *id_tok, sym_data_t *sym_data) {
     char *f_name = get_attr(id_tok, scanner);
-    tree_node_t * symbol = search(&symtab, f_name);
+    tree_node_t * symbol = search(&global, f_name);
     if(symbol) {
         *was_decl = true;
 
@@ -654,10 +659,10 @@ int check_if_declared(bool *was_decl, token_t *id_tok, sym_data_t *sym_data) {
             return SEMANTIC_ERROR_DEFINITION;
         }
         else { //Function was declared but not defined
-            sym_data->name = symbol->data.name;
-            sym_data->params = symbol->data.params;
-            sym_data->ret_types = symbol->data.ret_types;
-            sym_data->status = symbol->data.status;
+            init_data(sym_data);
+            cpy_strings(&sym_data->name, &symbol->data.name);
+            cpy_strings(&sym_data->params, &symbol->data.params);
+            cpy_strings(&sym_data->ret_types, &symbol->data.ret_types);
         }
     }
     else {
@@ -736,6 +741,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
                     }
                 }
                 else {
+                    dtype = keyword_to_dtype(&t, scanner);
                     char dtype_c = dtype_to_char(keyword_to_dtype(&t, scanner));
                     app_char(dtype_c, &f_data->params);
                 }
@@ -796,15 +802,15 @@ int check_function_signature(bool id, bool left_bracket) {
 int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     size_t ret_cnt = 0;
     //Parsing types if there is colon
+    
     if(lookahead_token_attr(SEPARATOR, ":")) {
-        //will just get the ':'
+        //Will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(scanner);
 
-        //app_char( písmeno, datatype);
         bool finished = false;
         while(!finished) {
-            //should be datatype
+            //Should be datatype
             t = get_next_token(scanner);
             if(!is_datatype(t)) {
                 error_unexpected_token("data type", t);
@@ -906,7 +912,7 @@ int parse_function_def() {
     func_d.status = DEFINED;
 
     to_inner_ctx(parser); //Switch context (params must be in this context)
-
+    
     retval = (retval == PARSE_SUCCESS) ? func_def_params(&id_fc, was_declared, &func_d) : retval;
 
     retval = (retval == PARSE_SUCCESS) ? check_function_signature(id, left_bracket) : retval;
@@ -920,7 +926,7 @@ int parse_function_def() {
 
         return retval;
     }
-
+    
     ins_func(&id_fc, &func_d);
 
     //Parsing inside function
@@ -960,7 +966,7 @@ int parse_function_call(token_t *id_func) {
 int parse_function_arguments(token_t *id_func) {
     bool closing_bracket = false;
 
-    tree_node_t *sym = search_in_tables(&symtab, get_attr(id_func, scanner));
+    tree_node_t *sym = search(&global, get_attr(id_func, scanner));
     char * ret_types_str = to_str(&sym->data.ret_types);
 
     size_t argument_cnt = 0;
@@ -1217,7 +1223,7 @@ int parse_global_identifier() {
     debug_print("got identifier\n");
 
     char *func = get_attr(&id_token, scanner);
-    tree_node_t *func_valid = search_in_tables(&symtab, func);
+    tree_node_t *func_valid = search(&global, func);
     if (func_valid == NULL) { // Function is not declared
         error_semantic("Function name '%s' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
@@ -1243,7 +1249,7 @@ int parse_identifier() {
     //Check if it is a function call
     if(compare_token_attr(t, SEPARATOR, "(")) {
         char *func = get_attr(&id_token, scanner);
-        tree_node_t *func_valid = search_in_tables(&symtab, func);
+        tree_node_t *func_valid = search(&global, func);
         if (func_valid == NULL) { // Function is not declared
             error_semantic("Function name '%s' not defined!", func);
             return SEMANTIC_ERROR_DEFINITION;

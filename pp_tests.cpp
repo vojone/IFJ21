@@ -329,8 +329,8 @@ class multiple_call2 : public test_fixture {
 };
 
 TEST_F(multiple_call2, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"b", VAR, {0, 0, NULL}, NUM, DECLARED});
-    insert_sym(&symtab, "b", {(char *)"b", VAR, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&symtab, "b", {{0, 0, (char *)"b"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
     ASSERT_EQ(ret_type, NUM);
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
@@ -441,7 +441,7 @@ class declared1 : public test_fixture {
 };
 
 TEST_F(declared1, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
 }
 
@@ -456,8 +456,8 @@ class declared2 : public test_fixture {
 };
 
 TEST_F(declared2, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
-    insert_sym(&symtab, "b", {(char *)"b", VAR, {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "b", {{0, 0, (char *)"b"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
     ASSERT_EQ(ret_type, NUM);
 }
@@ -473,8 +473,8 @@ class declared3_sem_err : public test_fixture {
 };
 
 TEST_F(declared3_sem_err, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
-    insert_sym(&symtab, "b", {(char *)"b", VAR, {0, 0, NULL}, STR, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "b", {{0, 0, (char *)"b"}, VAR, {0, 0, NULL}, {0, 0, NULL}, STR, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), SEM_ERROR_IN_EXPR);
 }
 
@@ -501,7 +501,7 @@ class nil2 : public test_fixture {
 };
 
 TEST_F(nil2, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), EXPRESSION_SUCCESS);
 }
 
@@ -516,7 +516,7 @@ class nil3 : public test_fixture {
 };
 
 TEST_F(nil3, only_parse) {
-    insert_sym(&symtab, "a", {(char *)"a", VAR, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
     ASSERT_EQ(parse_expression(&uut, &symtab, &ret_type), NIL_ERROR);
 }
 

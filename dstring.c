@@ -18,6 +18,7 @@
 #include "dstring.h"
 
 int str_init(string_t *string) {
+    string->str = NULL;
     string->str = (char *)malloc(sizeof(char)*STR_INIT_SPACE);
     if(!string->str) {
         fprintf(stderr, "dstring: str_init: Cannot allocate memory!");
@@ -41,6 +42,7 @@ int app_char(char c, string_t *string) {
             fprintf(stderr, "dstring: str_init: Cannot extend string!");
             return STR_FAILURE;
         } 
+
         string->alloc_size = new_size;
     }
 
@@ -100,7 +102,11 @@ void str_clear(string_t *string) {
 
 
 void str_dtor(string_t *string) {
-    free(string->str);
+    if(string->alloc_size > 0 && string->str != NULL) {
+        free(string->str);
+    }
+
+    string->str = NULL;
     string->length = 0;
     string->alloc_size = 0;
 }
@@ -140,6 +146,19 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
     str_clear(dst); //Length of source + \0
     for(size_t i = 0; i < length; i++) {
         if(app_char(src[i], dst) == STR_FAILURE) {
+            fprintf(stderr, "dstring: str_cpy: Cannot copy a string!");
+            return STR_FAILURE;
+        }
+    }
+    
+    return STR_SUCCESS;
+}
+
+
+int cpy_strings(string_t* dst, string_t *src) {
+    str_clear(dst); //Length of source + \0
+    for(size_t i = 0; i < src->length; i++) {
+        if(app_char(src->str[i], dst) == STR_FAILURE) {
             fprintf(stderr, "dstring: str_cpy: Cannot copy a string!");
             return STR_FAILURE;
         }

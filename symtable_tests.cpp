@@ -28,7 +28,7 @@ extern "C" {
 
 void print_node(tree_node_t *node) {
     fprintf(stderr, "Key: %s\n", node->key);
-    fprintf(stderr, "Data: %s",node->data.name);
+    fprintf(stderr, "Data: %s", to_str(&node->data.name));
     fprintf(stderr, " %d", node->data.dtype);
     fprintf(stderr, " %d", node->data.type);
     fprintf(stderr, " %d\n", node->data.status);
@@ -77,7 +77,7 @@ class empty_symtable : public ::testing::Test {
 
 TEST_F(empty_symtable, insert) {
     ASSERT_EQ(uut.t, (void *)NULL);
-    insert_sym(&uut, "new", {(char *)"new", VAR, {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&uut, "new", {{0, 0, (char *)"new"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
     ASSERT_EQ(uut.t->l_ptr, (void *)NULL);
     ASSERT_EQ(uut.t->r_ptr, (void *)NULL);
@@ -85,24 +85,24 @@ TEST_F(empty_symtable, insert) {
 
 TEST_F(empty_symtable, search) {
     ASSERT_EQ((void *)NULL, search(&uut, "inserted"));
-    insert_sym(&uut, "inserted", {(char *)"inserted", VAR,  {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&uut, "inserted", {{0, 0, (char *)"inserted"}, VAR,  {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(uut.t, search(&uut, "inserted"));
 
-    insert_sym(&uut, "a", {(char *)"a", VAR, NUM, DECLARED});
+    insert_sym(&uut, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_NE((void *)NULL, search(&uut, "a"));
 }
 
 TEST_F(empty_symtable, delete_s) {
     delete_sym(&uut, "nonexisting");
 
-    insert_sym(&uut, "inserted", {(char *)"inserted", VAR, {0, 0, NULL}, NUM, DECLARED});
+    insert_sym(&uut, "inserted", {{0, 0, (char *)"inserted"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED});
     ASSERT_EQ(strcmp(uut.t->key, "inserted"), 0);
     delete_sym(&uut, "inserted");
     ASSERT_EQ(uut.t, (void *)NULL);
 }
 
 TEST_F(empty_symtable, set) {
-    sym_data_t new_symbol_data = {(char *)"new", VAR, {0, 0, NULL}, NUM, DECLARED};
+    sym_data_t new_symbol_data = {{0, 0, (char *)"new"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED};
     insert_sym(&uut, "new", new_symbol_data);
     ASSERT_EQ(strcmp(uut.t->key, "new"), 0);
     ASSERT_EQ(uut.t->data.dtype, NUM);
@@ -115,17 +115,17 @@ class normal_tests1 : public ::testing::Test {
     protected:
         symtab_t uut;
         std::vector<sym_data_t> symbols = {
-            {(char *)"Car", FUNC, {0, 0, NULL}, INT, DECLARED},
-            {(char *)"Cat", VAR, {0, 0, NULL}, INT, DECLARED},
-            {(char *)"Can", VAR, {0, 0, NULL}, INT, DEFINED},
-            {(char *)"Dog", VAR, {0, 0, NULL}, NUM, DECLARED},
-            {(char *)"Fish", VAR, {0, 0, NULL}, STR, USED},
+            {{0, 0, (char *)"Car"}, FUNC, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED},
+            {{0, 0, (char *)"Cat"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED},
+            {{0, 0, (char *)"Can"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DEFINED},
+            {{0, 0, (char *)"Dog"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED},
+            {{0, 0, (char *)"Fish"}, VAR, {0, 0, NULL}, {0, 0, NULL}, STR, DECLARED},
         };
 
     virtual void SetUp() {
         init_tab(&uut);
         for(size_t i = 0; i < symbols.size(); i++) {
-            insert_sym(&uut, symbols[i].name, symbols[i]);
+            insert_sym(&uut, to_str(&(symbols[i].name)), symbols[i]);
         }
         
     }
@@ -144,19 +144,19 @@ class normal_tests1 : public ::testing::Test {
 
 TEST_F(normal_tests1, search) {
     for(size_t i = 0; i < symbols.size(); i++) {
-        tree_node_t* current = search(&uut, symbols[i].name);
-        ASSERT_EQ(strcmp(current->key, symbols[i].name), 0);
+        tree_node_t* current = search(&uut, to_str(&symbols[i].name));
+        ASSERT_EQ(str_cmp(current->key, to_str(&symbols[i].name)), 0);
     }
 }
 
 
 TEST_F(normal_tests1, delete_test) {
-    delete_sym(&uut, symbols[0].name);
-    ASSERT_EQ(search(&uut, symbols[0].name), (void *)NULL);
-    ASSERT_NE(search(&uut, symbols[1].name), (void *)NULL);
-    ASSERT_NE(search(&uut, symbols[symbols.size() - 1].name), (void *)NULL);
-    delete_sym(&uut, symbols[symbols.size() - 1].name);
-    ASSERT_EQ(search(&uut, symbols[symbols.size() - 1].name), (void *)NULL);
+    delete_sym(&uut, to_str(&symbols[0].name));
+    ASSERT_EQ(search(&uut, to_str(&symbols[0].name)), (void *)NULL);
+    ASSERT_NE(search(&uut, to_str(&symbols[1].name)), (void *)NULL);
+    ASSERT_NE(search(&uut, to_str(&symbols[symbols.size() - 1].name)), (void *)NULL);
+    delete_sym(&uut, to_str(&symbols[symbols.size() - 1].name));
+    ASSERT_EQ(search(&uut, to_str(&symbols[symbols.size() - 1].name)), (void *)NULL);
 }
 
 
@@ -170,18 +170,18 @@ class normal_tests2 : public ::testing::Test {
     protected:
         symtab_t uut;
         std::vector<sym_data_t> symbols = {
-            {(char *)"F", FUNC, {0, 0, NULL}, INT, DECLARED},
-            {(char *)"B", VAR, {0, 0, NULL}, INT, DECLARED},
-            {(char *)"C", VAR, {0, 0, NULL}, INT, DEFINED},
-            {(char *)"A", VAR, {0, 0, NULL}, NUM, DECLARED},
-            {(char *)"E", VAR, {0, 0, NULL}, STR, USED},
-            {(char *)"D", VAR, {0, 0, NULL}, STR, USED},
+            {{0, 0, (char *)"F"}, FUNC, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED},
+            {{0, 0, (char *)"B"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED},
+            {{0, 0, (char *)"C"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DEFINED},
+            {{0, 0, (char *)"A"}, VAR, {0, 0, NULL}, {0, 0, NULL}, NUM, DECLARED},
+            {{0, 0, (char *)"E"}, VAR, {0, 0, NULL}, {0, 0, NULL}, STR, DEFINED},
+            {{0, 0, (char *)"D"}, VAR, {0, 0, NULL}, {0, 0, NULL}, STR, DEFINED},
         };
 
     virtual void SetUp() {
         init_tab(&uut);
         for(size_t i = 0; i < symbols.size(); i++) {
-            insert_sym(&uut, symbols[i].name, symbols[i]);
+            insert_sym(&uut, to_str(&(symbols[i].name)), symbols[i]);
         }
         
     }
@@ -222,7 +222,7 @@ TEST_F(normal_tests2, delete_test) {
 }
 
 TEST_F(normal_tests2, insert_test) {
-    insert_sym(&uut, "Blue", {(char*)"Blue", VAR, {0, 0, NULL}, INT, DECLARED});
+    insert_sym(&uut, "Blue", {{0, 0, (char*)"Blue"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
     ASSERT_NE(search(&uut, "Blue"), (void *)NULL);
 }
 
