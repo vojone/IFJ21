@@ -17,7 +17,7 @@
 
 /**
  * @brief Generates stack as dynamic array of elements of TYPE 
- * @param FORMATSTR is not important only for printing stack content (use format symbol e.g. "%d" for integer stack)
+ * @param PRINT_CMD is not important only for printing stack content (use format symbol e.g. "%d" for integer stack)
  */ 
 
 #include "dstack.h"
@@ -109,6 +109,8 @@ DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
 DSTACK(tree_node_t*, ts,)
 
 DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key))
+
+DSTACK(token_t, tok, fprintf(stderr," %ld", s->data[i].first_ch_index))
 
 
 /***                        End of dstack.c                                ***/

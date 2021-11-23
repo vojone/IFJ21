@@ -51,6 +51,7 @@ typedef struct sym_data {
     string_t params;
     sym_dtype_t dtype;
     sym_status_t status;
+    bool was_used;
 } sym_data_t;
 
 /**

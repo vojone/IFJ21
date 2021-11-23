@@ -71,11 +71,13 @@ bool NAME##_push(NAME##_stack_t *s, TYPE newdata);          \
                                                             \
 /**                                                         \
  * @brief Pops element on top of the stack (and return it)  \
+ * @warning You should check if stack is not empty before call this function\
  */                                                         \
 TYPE NAME##_pop(NAME##_stack_t *s);                         \
                                                             \
 /**                                                         \
  * @brief Returns element of the top of the stack (and keeps it there)\
+ * @warning You should check if stack is not empty before call this function\
  */                                                         \
 TYPE NAME##_top(NAME##_stack_t *s);                         \
                                                             \
@@ -102,6 +104,8 @@ DSTACK_DECL(expr_el_t, pp)
 DSTACK_DECL(tree_node_t*, ts)
 
 DSTACK_DECL(symtab_t, symtabs)
+
+DSTACK_DECL(token_t, tok)
 
 #endif
 

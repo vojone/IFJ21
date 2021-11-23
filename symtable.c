@@ -38,6 +38,8 @@ int init_data(sym_data_t *new_data) {
         return EXIT_FAILURE;
     }
 
+    new_data->was_used = false;
+
     return EXIT_SUCCESS;
 }
 

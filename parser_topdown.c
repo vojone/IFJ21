@@ -84,12 +84,15 @@ void parser_setup(parser_t *p, scanner_t *s) {
     parser->return_code = 0;
     scanner = s;
 
-    symtabs_stack_init(&p->symtabs);
+    symtabs_stack_init(&parser->symtabs);
+    tok_stack_init(&parser->decl_func);
 
     symtab_t global_tab;
     init_tab(&global_tab);
     global = global_tab;
 
+    //This symtab will not be used (unless global variables are supported), 
+    //but it keeps switching context consistent for all cases
     symtab_t symbol_tab;
     init_tab(&symbol_tab);
     symtab = symbol_tab;
@@ -109,6 +112,27 @@ void parser_dtor() {
     }
 
     symtabs_stack_dtor(&(parser->symtabs));
+    tok_stack_dtor(&(parser->decl_func));
+}
+
+
+/**
+ * @brief Checks if all declared functions were defined
+ */ 
+int check_if_defined() {
+    while(!tok_is_empty(&parser->decl_func)) {
+        token_t func_id = tok_pop(&parser->decl_func);
+        tree_node_t * symbol = search(&global, get_attr(&func_id, scanner));
+
+        if(symbol) { //Just for safety
+            if(symbol->data.status == DECLARED) {
+                error_semantic("Function \033[1;33m%s\033[0m was declared but not defined!");
+                return SEMANTIC_ERROR_OTHER;
+            }
+        }
+    }
+
+    return PARSE_SUCCESS;
 }
 
 
@@ -119,7 +143,9 @@ int parse_program() {
     //run parsing
     int res = global_statement_list();
 
-    debug_print("Finished! return code: %i, at: (%lu,%lu)\n",res, scanner->cursor_pos[0], scanner->cursor_pos[1]);
+    debug_print("Finished! return code: %i, at: (%lu,%lu)\n", res, scanner->cursor_pos[0], scanner->cursor_pos[1]);
+
+    res = (res == PARSE_SUCCESS) ? check_if_defined() : res;
 
     parser_dtor();
     
@@ -129,7 +155,7 @@ int parse_program() {
 
 
 //<global-statement-list> -> <global-statement> <global-statement-list>
-int global_statement_list(){
+int global_statement_list() {
     int ret = global_statement();
     
     if(ret != PARSE_SUCCESS)
@@ -208,7 +234,7 @@ void int2num_conv() {
 
 
 void num2int_conv() {
-    
+
 }
 
 
@@ -627,6 +653,8 @@ int parse_function_dec() {
 
     token_t id = get_next_token(scanner);
 
+    tok_push(&parser->decl_func, id);
+
     if(!compare_token(id, IDENTIFIER)) {
         error_unexpected_token("IDENTIFIER", id);
         return SYNTAX_ERROR;
@@ -654,7 +682,6 @@ int parse_function_dec() {
     retval = func_dec_params(&f_data.params);
 
     retval = (retval == PARSE_SUCCESS) ? func_dec_returns(&f_data.ret_types) : retval;
-
 
     if(retval == PARSE_SUCCESS) {
         ins_func(&id, &f_data);
@@ -1012,7 +1039,7 @@ int parse_function_arguments(token_t *id_func) {
     bool closing_bracket = false;
 
     tree_node_t *sym = search(&global, get_attr(id_func, scanner));
-    char * ret_types_str = to_str(&sym->data.ret_types);
+    char * params_str = to_str(&sym->data.params);
 
     size_t argument_cnt = 0;
     while(!closing_bracket) {
@@ -1023,8 +1050,8 @@ int parse_function_arguments(token_t *id_func) {
             if(expr_retval != EXPRESSION_SUCCESS) {
                 return expr_retval;
             }
-
-            sym_dtype_t decl_type = char_to_dtype(ret_types_str[argument_cnt]);
+        
+            sym_dtype_t decl_type = char_to_dtype(params_str[argument_cnt]);
             if(!is_valid_assign(decl_type, ret_type)) {
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
@@ -1044,7 +1071,7 @@ int parse_function_arguments(token_t *id_func) {
         //Check if there will be next argument
         t = get_next_token(scanner);
         if(compare_token_attr(t, SEPARATOR, ",")) {
-            if(argument_cnt > strlen(ret_types_str) - 1) { //Function needs less arguments
+            if(argument_cnt + 1 > strlen(params_str) - 1) { //Function needs less arguments
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Too many arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1054,7 +1081,7 @@ int parse_function_arguments(token_t *id_func) {
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
             closing_bracket = true;
-            if(argument_cnt != strlen(ret_types_str) - 1) { //Function needs more arguments
+            if(argument_cnt != strlen(params_str) - 1) { //Function needs more arguments
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Missing arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1066,7 +1093,7 @@ int parse_function_arguments(token_t *id_func) {
 
         argument_cnt++;
     }
-    if(argument_cnt == 0 && strlen(ret_types_str) > 0) { //Function needs arguments but there aren't any
+    if(argument_cnt == 0 && strlen(params_str) > 0) { //Function needs arguments but there aren't any
         error_semantic("Bad function call of \033[1;33m%s\033[0m! Missing arguments!", get_attr(id_func, scanner));
         return SEMANTIC_ERROR_PARAMETERS;
     }
