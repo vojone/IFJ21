@@ -6,6 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak",
+  "license": "ISC",
+  "dependencies": {
+    "boxen": "4.0",
+    "chalk": "2.4",
+    "yargs": "13.2"
+  }
 }

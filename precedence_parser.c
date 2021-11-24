@@ -323,14 +323,14 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands",generate_operation_div},
         {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands",generate_operation_idiv},
         {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands",NULL},
-        {"#E", "s", INT, NONE, "Only string can be operand of \"#\"",NULL},
-        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"",NULL},
-        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"",NULL},
-        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"",NULL},
-        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"",NULL},
-        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"",NULL},
-        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"",NULL},
-        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands",NULL},
+        {"#E", "s", INT, NONE, "Only string can be operand of \"#\"",generate_operation_strlen},
+        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"",generate_operation_lt},
+        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"",generate_operation_gt},
+        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"",generate_operation_lte},
+        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"",generate_operation_gte},
+        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"",generate_operation_eq},
+        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"",generate_operation_eq},
+        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands",generate_operation_concat},
     };
 
     return &(rules[index]);

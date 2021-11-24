@@ -108,6 +108,15 @@ void generate_operation_mul();
 void generate_operation_div();
 void generate_operation_idiv();
 
+void generate_operation_eq();
+void generate_operation_gt();
+void generate_operation_lt();
+void generate_operation_gte();
+void generate_operation_lte();
+
+void generate_operation_concat();
+void generate_operation_strlen();
+
 
 /**
  * *---------BUILTIN---------

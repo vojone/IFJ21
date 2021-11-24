@@ -48,7 +48,7 @@ void generate_parameters( void *sym_stack,symtab_t *symtab , void *param_names, 
         //get it from the token name
         token_t name_token = tok_pop(params);
         string_t name_unique = get_unique_name(sym_stack, symtab,&name_token,scanner);
-        
+
         generate_parameter(name_unique.str);
 
     }
@@ -145,12 +145,126 @@ void generate_operation_idiv(){
     code_print("IDIV");
 }
 
+void generate_operation_eq(){
+    code_print("# start operator A==B");
+    code_print("EQS");
+    code_print("# end operator A==B");
+}
+
+void generate_operation_gt(){
+    code_print("# start operator A>B");
+    code_print("GTS");
+    code_print("# end operator A>B");
+}
+
+void generate_operation_lt(){
+    code_print("# start operator A<B");
+    code_print("GTS");
+    code_print("# end operator A<B");
+}
+
+void generate_operation_gte(){
+    code_print("# start operator A>=B");
+    code_print("PUSHFRAME");
+    code_print("CREATEFRAME");
+
+    //define temp operands A & B
+    code_print("DEFVAR TF@!TMP!A");
+    code_print("DEFVAR TF@!TMP!B");
+
+    code_print("POPS TF@!TMP!B");
+    code_print("POPS TF@!TMP!A");
+
+    //make the stack to this form ->[B,A,B,A]
+    code_print("PUSHS TF@!TMP!A");
+    code_print("PUSHS TF@!TMP!B");
+    code_print("PUSHS TF@!TMP!A");
+    code_print("PUSHS TF@!TMP!B");
+
+    //evaluate
+    code_print("DEFVAR TF@!TMP!LTRES");
+    code_print("GTS");
+    code_print("POPS TF@!TMP!LTRES");
+    code_print("EQS");
+    code_print("PUSHS TF@!TMP!LTRES");
+    code_print("ORS");
+
+    //the result will be on top of the stack
+
+    code_print("POPFRAME");
+    code_print("# end operator A>=B");
+}
+
 void generate_operation_lte(){
-    //stack: [a,b,..]
-    //temporary variables
-    //stack: [a,b] (LT) => bool
-    //stack: [a,b] (EQ) => bool
-    //RES?: LT OR EQ
+    code_print("# start operator A<=B");
+    code_print("PUSHFRAME");
+    code_print("CREATEFRAME");
+
+    //define temp operands A & B
+    code_print("DEFVAR TF@!TMP!A");
+    code_print("DEFVAR TF@!TMP!B");
+
+    code_print("POPS TF@!TMP!B");
+    code_print("POPS TF@!TMP!A");
+
+    //make the stack to this form ->[B,A,B,A]
+    code_print("PUSHS TF@!TMP!A");
+    code_print("PUSHS TF@!TMP!B");
+    code_print("PUSHS TF@!TMP!A");
+    code_print("PUSHS TF@!TMP!B");
+
+    //evaluate
+    code_print("DEFVAR TF@!TMP!LTRES");
+    code_print("LTS");
+    code_print("POPS TF@!TMP!LTRES");
+    code_print("EQS");
+    code_print("PUSHS TF@!TMP!LTRES");
+    code_print("ORS");
+
+    //the result will be on top of the stack
+
+    code_print("POPFRAME");
+    code_print("# end operator A<=B");
+}
+
+void generate_operation_strlen(){
+    code_print("# start operator #A");
+    code_print("PUSHFRAME");
+    code_print("CREATEFRAME");
+
+    //define temp operands A
+    code_print("DEFVAR TF@!TMP!A");
+    code_print("DEFVAR TF@!TMP!RESULT");
+
+    code_print("POPS TF@!TMP!A");
+
+    code_print("STRLEN TF@!TMP!RESULT TF@!TMP!A");
+
+    code_print("PUSHS TF@!TMP!RESULT");
+
+    code_print("POPFRAME");
+    code_print("# end operator #A");
+}
+
+void generate_operation_concat(){
+    code_print("# start operator A..B");
+    code_print("PUSHFRAME");
+    code_print("CREATEFRAME");
+
+    //define temp operands A & B
+    code_print("DEFVAR TF@!TMP!A");
+    code_print("DEFVAR TF@!TMP!B");
+    code_print("DEFVAR TF@!TMP!RESULT");
+
+    code_print("POPS TF@!TMP!B");
+    code_print("POPS TF@!TMP!A");
+
+    code_print("CONCAT TF@!TMP!RESULT TF@!TMP!A TF@!TMP!B");
+
+    code_print("PUSHS TF@!TMP!RESULT");
+
+    code_print("POPFRAME");
+    code_print("# end operator A..B");
 }
 
 /**

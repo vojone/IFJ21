@@ -27,29 +27,20 @@ POPS TF@&VAR&sum$b$1
 #define param sum$a$0
 DEFVAR TF@&VAR&sum$a$0
 POPS TF@&VAR&sum$a$0
-DEFVAR TF@&VAR&sum$var1$2
-DEFVAR TF@&VAR&sum$var2$3
 PUSHS TF@&VAR&sum$a$0
 PUSHS TF@&VAR&sum$b$1
-ADDS
-PUSHS TF@&VAR&sum$a$0
-PUSHS TF@&VAR&sum$b$1
-MULS
-#assign value to sum$var2$3
-POPS TF@&VAR&sum$var2$3
-#assign value to sum$var1$2
-POPS TF@&VAR&sum$var1$2
-PUSHS TF@&VAR&sum$var1$2
-# write()
+# start operator A..B
 PUSHFRAME
-CALL $FUN$write
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+DEFVAR TF@!TMP!RESULT
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+CONCAT TF@!TMP!RESULT TF@!TMP!A TF@!TMP!B
+PUSHS TF@!TMP!RESULT
 POPFRAME
-PUSHS string@","
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&sum$var2$3
+# end operator A..B
 # write()
 PUSHFRAME
 CALL $FUN$write
@@ -59,8 +50,7 @@ POPFRAME
 RETURN
 LABEL $END_FUN$sum
 
-PUSHS int@10
-PUSHS int@4
+PUSHS int@55
 # sum()
 PUSHFRAME
 CALL $FUN$sum
