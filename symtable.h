@@ -8,19 +8,19 @@
  *                  Last change:
  *****************************************************************************/
 
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "dstring.h"
 #include "dstack.h"
 
-#ifndef SYMTABLE_H
-#define SYMTABLE_H
-
-#define UNSET -1
-
 #define BUILTIN_TABLE_SIZE 8
 
+#define UNDEFINED -1
+#define UNSET -1
 
 
 /**
@@ -68,13 +68,28 @@ typedef struct tree_node {
     struct tree_node *r_ptr;
 } tree_node_t;
 
+
+DSTACK_DECL(tree_node_t*, ts)
+
+
 /**
- * @brief Symbol table data type
+ * @brief Symbol table data type for basic data storing
  */
 typedef struct symtab {
     tree_node_t * t;
     int parent_ind; /**< Is used for switching contexts int parser */
 } symtab_t; 
+
+DSTACK_DECL(symtab_t, symtabs)
+
+/**
+ * @brief Symbol table data type, that can support superimposing of symbols 
+ */ 
+typedef struct symbol_tables {
+    symtabs_stack_t symtab_st; /**< Stack for saving symbol tables */
+    symtab_t global; /**< Global symbol table for functions */
+    symtab_t symtab; /**< Current symbol table*/
+} symbol_tables_t;
 
 /**
  * @brief Initializes symbol table

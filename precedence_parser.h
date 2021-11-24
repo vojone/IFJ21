@@ -8,6 +8,9 @@
  *                    Last change:
  *****************************************************************************/ 
 
+#ifndef PRECEDENCE_PARSER_H
+#define PRECEDENCE_PARSER_H
+
 #include "scanner.h"
 #include "generator.h"
 #include <stdio.h>
@@ -15,9 +18,6 @@
 #include <stdbool.h>
 #include "dstack.h"
 #include "symtable.h"
-
-#ifndef PRECEDENCE_PARSER_H
-#define PRECEDENCE_PARSER_H
 
 /**
  * @brief Return codes
@@ -65,6 +65,10 @@ typedef struct expr_el {
     bool is_zero;
     void *value; /**< Value of element (or pointer to symbol table) */
 } expr_el_t;
+
+
+DSTACK_DECL(expr_el_t, pp) /**< Declares stack with expr_els and its operations */
+
 
 #define UNDEFINED -1
 #define ORIGIN -1 /**< Says that after reduction has nonterminal oriiginal data typ (e.g. ("abc") -> E.type = STR) */

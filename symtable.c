@@ -9,8 +9,11 @@
  *****************************************************************************/
 
 #include "symtable.h"
-#include <stdbool.h>
-#include <string.h>
+#include "dstack.h"
+
+DSTACK(tree_node_t*, ts,)
+
+DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key))
 
 /**
  * @brief Initializes symbol table

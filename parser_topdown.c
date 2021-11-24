@@ -6,23 +6,25 @@
  */
 
 #include "parser_topdown.h"
-
+#include "dstack.h"
 
 static scanner_t * scanner;
 static parser_t * parser;
-static symtab_t symtab; /**< Current symbol table */
-static symtab_t global; /**< Global smbol table with functions */
+static symbol_tables_t sym;
 
-static rule_t ruleset_global[] = {
+#define RULESET_GLOBAL_LENGTH 5
+
+static rule_t ruleset_global[RULESET_GLOBAL_LENGTH] = {
     {parse_require,             {KEYWORD, UNSET, "require"},  true },
     {parse_function_dec,        {KEYWORD, UNSET, "global"},   true },
     {parse_function_def,        {KEYWORD, UNSET, "function"}, true },
     {parse_global_identifier,   {IDENTIFIER, UNSET, NULL},    false},
     {EOF_global_rule,           {EOF_TYPE, UNSET, NULL},      false},
 };
-#define RULESET_GLOBAL_LENGTH 5
 
-static rule_t ruleset_inside[] = {
+#define RULESET_INSIDE_LENGTH 8
+
+static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
     {parse_if,          {KEYWORD, UNSET, "if"},     true  },
     {parse_else,        {KEYWORD, UNSET, "else"},   true  },
@@ -32,7 +34,6 @@ static rule_t ruleset_inside[] = {
     {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
-#define RULESET_INSIDE_LENGTH 8
 
 #define DEBUG true
 
@@ -41,9 +42,10 @@ static rule_t ruleset_inside[] = {
  * @brief Sets symtab to elder symbol table of old outer context 
  */ 
 void to_outer_ctx(parser_t *p) {
-    destroy_tab(&symtab);
-
-    symtab = symtabs_pop(&p->symtabs);
+    if(!symtabs_is_empty(&sym.symtab_st)) {
+        destroy_tab(&sym.symtab);
+        sym.symtab = symtabs_pop(&sym.symtab_st);
+    }
 }
 
 
@@ -51,13 +53,13 @@ void to_outer_ctx(parser_t *p) {
  * @brief Creates new symbol table (new context) and sets symtable to it
  */ 
 void to_inner_ctx(parser_t *p) {
-    symtabs_push(&p->symtabs, symtab); //Save copy of old symtab to the stack of symtabs
+    symtabs_push(&sym.symtab_st, sym.symtab); //Save copy of old symtab to the stack of symtabs
 
     symtab_t new_ctx; //Create and init new symtab
     init_tab(&new_ctx);
-    new_ctx.parent_ind = symtabs_get_top_ind(&p->symtabs); //Save reference to the parent symtab
+    new_ctx.parent_ind = symtabs_get_top_ind(&sym.symtab_st); //Save reference to the parent symtab
 
-    symtab = new_ctx;
+    sym.symtab = new_ctx;
 }
 
 /**-----------------------------------------------------
@@ -93,20 +95,20 @@ void parser_setup(parser_t *p, scanner_t *s) {
     parser->return_code = 0;
     scanner = s;
 
-    symtabs_stack_init(&parser->symtabs);
+    symtabs_stack_init(&sym.symtab_st);
     tok_stack_init(&parser->decl_func);
 
     symtab_t global_tab;
     init_tab(&global_tab);
-    global = global_tab;
+    sym.global = global_tab;
 
     //This symtab will not be used (unless global variables are supported), 
     //but it keeps switching context consistent for all cases
     symtab_t symbol_tab;
     init_tab(&symbol_tab);
-    symtab = symbol_tab;
+    sym.symtab = symbol_tab;
 
-    load_builtin_f(&symtab);
+    //load_builtin_f(&symtab);
     //semantic_init();
     parser->decl_cnt = 0;
 }
@@ -116,15 +118,15 @@ void parser_setup(parser_t *p, scanner_t *s) {
  * @brief Frees all resources hold by parser and its components
  */ 
 void parser_dtor() {
-    destroy_tab(&symtab);
-    destroy_tab(&global);
+    destroy_tab(&sym.symtab);
+    destroy_tab(&sym.global);
 
-    while(!symtabs_is_empty(&(parser->symtabs))) {
-        symtab_t current = symtabs_pop(&(parser->symtabs));
+    while(!symtabs_is_empty(&(sym.symtab_st))) {
+        symtab_t current = symtabs_pop(&(sym.symtab_st));
         destroy_tab(&current);
     }
 
-    symtabs_stack_dtor(&(parser->symtabs));
+    symtabs_stack_dtor(&(sym.symtab_st));
     tok_stack_dtor(&(parser->decl_func));
 }
 
@@ -132,7 +134,7 @@ void parser_dtor() {
 void check_builtin(token_t *id_token) {
     sym_data_t *bfunc_data_ptr = search_builtin(get_attr(id_token, scanner));
     if(bfunc_data_ptr) {
-        insert_sym(&global, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+        insert_sym(&sym.global, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
     }
 }
 
@@ -143,7 +145,7 @@ void check_builtin(token_t *id_token) {
 int check_if_defined() {
     while(!tok_is_empty(&parser->decl_func)) {
         token_t func_id = tok_pop(&parser->decl_func);
-        tree_node_t * symbol = search(&global, get_attr(&func_id, scanner));
+        tree_node_t * symbol = search(&sym.global, get_attr(&func_id, scanner));
 
         if(symbol) { //Just for safety
             if(symbol->data.status == DECLARED) {
@@ -305,7 +307,7 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, t
 
             //Try to find identifier in symbol table (or in parent symbol table)
             char * id_str = get_attr(&t, scanner);
-            tree_node_t * symbol = search_in_tables(&parser->symtabs, &symtab, id_str);
+            tree_node_t * symbol = search_in_tables(&sym.symtab_st, &sym.symtab, id_str);
     
             if(!symbol || symbol->data.type != VAR) {
                 error_semantic("Undeclared variable \033[1;33m%s\033[0m!", id_str);
@@ -352,7 +354,7 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
         debug_print("Calling precedence parser...\n");
 
         sym_dtype_t ret_type;
-        int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+        int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
         if(expr_retval == EXPRESSION_SUCCESS) {
             if(!is_valid_assign(char_to_dtype(id_types->str[i]), ret_type)) {
                 error_semantic("Type of variable is not compatible with rvalue in assignment!");
@@ -413,9 +415,11 @@ int assignment(token_t t) {
     retval = (retval == PARSE_SUCCESS) ? assignment_rside(&var_id, &id_types, &id_number) : retval;        
     
     //todo call generate_params
-    generate_multiple_assignment(&parser->symtabs,&symtab,&var_names,scanner);
+    generate_multiple_assignment(&sym.symtab_st, &sym.symtab, &var_names,scanner);
 
     str_dtor(&id_types);
+    tok_stack_dtor(&var_names);
+
     return retval;
 }
 
@@ -456,7 +460,7 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
 
 
         sym_dtype_t ret_type;
-        int return_val = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+        int return_val = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
         if(return_val != EXPRESSION_SUCCESS) {
             return return_val;
         }
@@ -464,7 +468,7 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
             *status = DEFINED; //Ok
         }
         //generate assigment code
-        char * unique_name = get_unique_name(&parser->symtabs,&symtab, var_id, scanner).str;
+        char * unique_name = get_unique_name(&sym.symtab_st, &sym.symtab, var_id, scanner).str;
         generate_assign_value(unique_name);
     }
 
@@ -525,7 +529,7 @@ void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
 
     debug_print("Putting %s into symbol table... its name is %s and status is %d\n", get_attr(id_token, scanner), to_str(&var_name), status);
 
-    insert_sym(&symtab, get_attr(id_token, scanner), symdata_var);
+    insert_sym(&sym.symtab, get_attr(id_token, scanner), symdata_var);
 }
 
 
@@ -550,8 +554,13 @@ int parse_local_var() {
         return t.token_type == EOF_TYPE ? LEXICAL_ERROR : SYNTAX_ERROR;
     }
 
-    if(search(&symtab, get_attr(&var_id, scanner))) { //Variable is declared in current scope
+    if(search(&sym.symtab, get_attr(&var_id, scanner))) { //Variable is declared in current scope
         error_semantic("Redeclaration of variable \033[1;33m%s\033[0m!", get_attr(&var_id, scanner));
+        return SEMANTIC_ERROR_DEFINITION;
+    }
+
+    if(search(&sym.global, get_attr(&var_id, scanner))) { //Variable is declared in current scope
+        error_semantic("Name of variable \033[1;33m%s\033[0m is colliding with function name!", get_attr(&var_id, scanner));
         return SEMANTIC_ERROR_DEFINITION;
     }
 
@@ -564,7 +573,7 @@ int parse_local_var() {
     //? we have to insert the function to symtable before calling local_var_assignment
     ins_var(&var_id, status, var_type);
     parser->decl_cnt++;
-    generate_declare_variable(&parser->symtabs,&symtab,&var_id,scanner);
+    generate_declare_variable(&sym.symtab_st, &sym.symtab, &var_id,scanner);
 
     //There can be a value assignment
     retval = (retval == PARSE_SUCCESS) ? local_var_assignment(&t, &status, &var_id) : retval;
@@ -608,7 +617,7 @@ void ins_func(token_t *id_token, sym_data_t *data) {
     //There is no need to creation original name of function (it always must be original in whole program)
     str_cpy_tostring(&data->name, get_attr(id_token, scanner), id_len);
     debug_print("Putting %s into symbol table... its name is %s and (status: %d, ret_types: %s, params: %s)\n", get_attr(id_token, scanner), to_str(&data->name), data->status, to_str(&data->ret_types), to_str(&data->params));
-    insert_sym(&global, get_attr(id_token, scanner), *data);
+    insert_sym(&sym.global, get_attr(id_token, scanner), *data);
 }
 
 
@@ -733,7 +742,7 @@ int parse_function_dec() {
         return SYNTAX_ERROR;
     }
 
-    if(search(&global, get_attr(&id_fc, scanner))) { //Function is declared in current scope (global scope)
+    if(search(&sym.global, get_attr(&id_fc, scanner))) { //Function is declared in current scope (global scope)
         error_semantic("Redeclaration of function \033[1;33m%s\033[0m!", get_attr(&id_fc, scanner));
         return SEMANTIC_ERROR_DEFINITION;
     }
@@ -775,7 +784,7 @@ int parse_function_dec() {
  */ 
 int check_if_declared(bool *was_decl, token_t *id_tok, sym_data_t *sym_data) {
     char *f_name = get_attr(id_tok, scanner);
-    tree_node_t * symbol = search(&global, f_name);
+    tree_node_t * symbol = search(&sym.global, f_name);
     if(symbol) {
         *was_decl = true;
 
@@ -855,6 +864,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             t = get_next_token(scanner);
             if(!is_datatype(t)) {
                 error_unexpected_token("DATA TYPE", t);
+                tok_stack_dtor(&param_names);
                 return SYNTAX_ERROR;
             }
             else {
@@ -913,7 +923,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     }
 
     //generate code for parameters
-    generate_parameters(&(parser->symtabs), &symtab, &param_names, scanner);
+    generate_parameters(&(sym.symtab_st), &sym.symtab, &param_names, scanner);
 
     tok_stack_dtor(&param_names);
     return PARSE_SUCCESS;
@@ -1043,8 +1053,8 @@ int func_def_epilogue() {
  * @brief Checks if function has return statement inside (if function returns something)
  */ 
 int check_return(token_t *id_fc) {
-    tree_node_t *sym = search(&global, get_attr(id_fc, scanner));
-    if(sym && len(&sym->data.ret_types) > 0 && !parser->found_return) {
+    tree_node_t *symbol = search(&sym.global, get_attr(id_fc, scanner));
+    if(symbol && len(&symbol->data.ret_types) > 0 && !parser->found_return) {
         error_semantic("Function \033[1;33m%s\033[0m can reach the end without return!", get_attr(id_fc, scanner));
         return SEMANTIC_ERROR_OTHER;
     }
@@ -1137,8 +1147,8 @@ int parse_function_call(token_t *id_func) {
 int parse_function_arguments(token_t *id_func) {
     bool closing_bracket = false;
 
-    tree_node_t *sym = search(&global, get_attr(id_func, scanner));
-    char * params_str = to_str(&sym->data.params);
+    tree_node_t *symbol = search(&sym.global, get_attr(id_func, scanner));
+    char * params_str = to_str(&symbol->data.params);
 
     size_t argument_cnt = 0;
     bool is_variadic = (params_str[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
@@ -1146,7 +1156,7 @@ int parse_function_arguments(token_t *id_func) {
         token_t t = lookahead(scanner);
         if(is_expression(t)) {
             sym_dtype_t ret_type;
-            int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+            int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 return expr_retval;
             }
@@ -1215,7 +1225,7 @@ int parse_if() {
     debug_print("Calling precedence parser...\n");
 
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1292,25 +1302,25 @@ int parse_return() {
 
     debug_print("Calling precedence parser to parse return in %s...\n", get_attr(id_fc, scanner));
 
-    tree_node_t *sym = search(&global, get_attr(id_fc, scanner));
+    tree_node_t *symbol = search(&sym.global, get_attr(id_fc, scanner));
     
     size_t returns_cnt = 0;
     bool finished = false;
-    char * returns_str = to_str(&sym->data.ret_types);
+    char * returns_str = to_str(&symbol->data.ret_types);
     while(!finished) {
         token_t t = lookahead(scanner);
 
         if(!is_expression(t)) {
             finished = true;
 
-            if(len(&sym->data.ret_types) > 0) {
+            if(len(&symbol->data.ret_types) > 0) {
                 error_semantic("Missing return values after return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
         else {
             sym_dtype_t ret_type;
-            int retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+            int retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
@@ -1330,16 +1340,16 @@ int parse_return() {
         bool comma = lookahead_token_attr(SEPARATOR, ",");
         if(!comma) {
             finished = true;
-            if(len(&sym->data.ret_types) - 1 > returns_cnt) {
-                error_semantic("Function \033[1;33m%s\033[0m returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&sym->data.ret_types), returns_cnt + 1);
+            if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
+                error_semantic("Function \033[1;33m%s\033[0m returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&symbol->data.ret_types), returns_cnt + 1);
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
         else {
             //we go one token forward
             get_next_token(scanner);
-            if(len(&sym->data.ret_types) - 1 < returns_cnt + 1) {
-                error_semantic("Function \033[1;33m%s\033[0m returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&sym->data.ret_types));
+            if(len(&symbol->data.ret_types) - 1 < returns_cnt + 1) {
+                error_semantic("Function \033[1;33m%s\033[0m returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&symbol->data.ret_types));
                 return SEMANTIC_ERROR_ASSIGNMENT;
             }
         }
@@ -1367,7 +1377,7 @@ int parse_while() {
     
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
+    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1442,7 +1452,7 @@ int parse_global_identifier() {
     check_builtin(&id_token); //Puts builtin fction into symtable if (identifier is symtable)
 
     char *func = get_attr(&id_token, scanner);
-    tree_node_t *func_valid = search(&global, func);
+    tree_node_t *func_valid = search(&sym.global, func);
     if (func_valid == NULL) { // Function is not declared
         error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
@@ -1472,7 +1482,7 @@ int parse_identifier() {
         check_builtin(&id_token); //Adds builtin functions into symtable
 
         char *func = get_attr(&id_token, scanner);
-        tree_node_t *func_valid = search(&global, func);
+        tree_node_t *func_valid = search(&sym.global, func);
         if (func_valid == NULL) { // Function is not declared
             error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
             return SEMANTIC_ERROR_DEFINITION;

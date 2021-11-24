@@ -24,6 +24,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include "symtable.h"
+#include "scanner.h"
+#include "precedence_parser.h"
 
 typedef struct gen {
     void *declare_variable;

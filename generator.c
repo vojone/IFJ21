@@ -22,6 +22,8 @@
 
 #include "generator.h"
 
+
+
 void generate_init(){
     code_print(".IFJcode21");
     code_print("CREATEFRAME");

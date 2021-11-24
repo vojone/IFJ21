@@ -9,6 +9,9 @@
  *****************************************************************************/
 
 #include "precedence_parser.h"
+#include "dstack.h"
+
+DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
 
 /**
  * @brief Determines if is token separator, that can be used in expressions

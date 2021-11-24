@@ -5,6 +5,9 @@
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
  */ 
 
+#ifndef TOPDOWN_H
+#define TOPDOWN_H
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,9 +22,6 @@
 #include "generator.h"
 #include "dstack.h"
 
-
-#ifndef TOPDOWN_H
-#define TOPDOWN_H
 
 typedef struct result{
     bool success;
@@ -47,14 +47,19 @@ typedef enum return_codes {
 } return_codes_t;
 
 
+// typedef struct symbol_tables {
+//     symtabs_stack_t symtab_st; /**< Stack for saving symbol tables */
+//     symtab_t global; /**< Global symbol table for functions */
+//     symtab_t symtab; /**< Current symbol table*/
+// } symbol_tables_t;
+
+
 typedef struct parser {
-    symtabs_stack_t symtabs;
+    token_t * curr_func_id; /**< Pointer to token with identifier of function, that is currently parsed */
+    size_t decl_cnt; /**< Declaration counter for making unique identifiers in target code */
+    bool found_return; /**< Flag for propagation info about found returns */
 
-    token_t * curr_func_id;
-    size_t decl_cnt;
-    bool found_return;
-
-    tok_stack_t decl_func;
+    tok_stack_t decl_func; /**< Stack with declared functions (to check if they were defined)*/
 
     int return_code;
     bool reached_EOF;
