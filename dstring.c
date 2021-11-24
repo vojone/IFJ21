@@ -52,6 +52,19 @@ int app_char(char c, string_t *string) {
     return STR_SUCCESS;
 }
 
+
+int app_str(string_t *dst, char *src) {
+    for(int i = 0; i < strlen(src); i++) {
+        int ret = app_char(src[i], dst);
+        if(ret == STR_FAILURE) {
+            return STR_FAILURE;
+        }
+    }
+
+    return STR_SUCCESS;
+}
+
+
 void cut_string(string_t *string, size_t new_length) {
     if(new_length >= string->length) {
         return;

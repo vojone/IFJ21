@@ -21,6 +21,8 @@
 
 #define BUILTIN_TABLE_SIZE 8
 
+
+
 /**
  * @brief Specifies type of symbol
  */ 
@@ -149,6 +151,16 @@ void load_builtin_f(symtab_t *dst);
  * @return Pointer to function data in static table if function is found, other wise NULL
  */ 
 sym_data_t* search_builtin(const char *f_name);
+
+
+/**
+ * @brief Performs searching in stack of symtabs
+ * @return If nothing is found returns NULL otherwise returns pointer to first occurence
+ */
+tree_node_t * search_in_tables(void *sym_stack, 
+                               symtab_t *start_symtab, 
+                               char *key);
+
 
 #endif
 

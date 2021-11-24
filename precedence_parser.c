@@ -39,6 +39,13 @@ bool is_zero(scanner_t *sc, token_t *token) {
             }
         }
     }
+    else if(token->token_type == STRING) {
+        for(int i = 0; i < strlen(value); i++) {
+            if(value[i] != '"') {
+                return false;
+            }
+        }
+    }
     else {
         return false;
     }
@@ -150,7 +157,8 @@ int tok_to_type(tok_buffer_t *tok_b) {
  * @brief Creates expression element from current and last token
  */ 
 int from_input_token(expr_el_t *result, 
-                     tok_buffer_t *tok_b, 
+                     tok_buffer_t *tok_b,
+                     symtabs_stack_t *symstack,
                      symtab_t *symtab) {
 
     result->type = tok_to_type(tok_b);
@@ -169,7 +177,10 @@ int from_input_token(expr_el_t *result,
         result->dtype = STR;
         break;
     case IDENTIFIER:
-        symbol = search(symtab, get_attr(&(tok_b->current), tok_b->scanner));
+        symbol = search_in_tables(symstack, symtab, 
+                                  get_attr(&(tok_b->current), 
+                                  tok_b->scanner));
+
         if(symbol == NULL) {
             return UNDECLARED_IDENTIFIER;
         }
@@ -312,14 +323,14 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands"},
         {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands"},
         {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands"},
-        {"#E", "s", INT, NONE, "Only string can be operand of \"#\""},
+        {"#E", "s", INT, FIRST, "Only string can be operand of \"#\""},
         {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\""},
         {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\""},
         {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\""},
         {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\""},
         {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\""},
         {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\""},
-        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands"},
+        {"E..E", "s|s", STR, ALL, "Operation \"..\" needs strings as operands"},
     };
 
     return &(rules[index]);
@@ -467,10 +478,17 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
 }
 
 
-void print_operands(pp_stack_t *ops) {
+void print_operands(pp_stack_t *ops, symtabs_stack_t *sym_stack, 
+                    symtab_t *symtab) {
+
     while(!pp_is_empty(ops)) {
         expr_el_t cur = pp_pop(ops);
         fprintf(stderr, "Operand: %s (%d)\n", (char *)cur.value, cur.is_zero);
+
+        tree_node_t *symbol = search_in_tables(sym_stack, symtab, (char *)cur.value);
+        if(symbol) {
+            fprintf(stderr, "Operand name: %s\n", to_str(&symbol->data.name));
+        }
     }
 }
 
@@ -539,12 +557,13 @@ expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
  */ 
-int reduce(pp_stack_t *st, pp_stack_t *ops, 
+int reduce(pp_stack_t *st, pp_stack_t *ops, symtabs_stack_t *sym_stack, 
+           symtab_t *symtab,
            expr_rule_t *rule,
            sym_dtype_t *result_type,
            bool will_be_zero) {
 
-    print_operands(ops); /**< It will be probably substituted for code generating */
+    print_operands(ops, sym_stack, symtab); /**< It will be probably substituted for code generating */
 
     if(!pp_push(st, non_term(*result_type, will_be_zero))) {
         return INTERNAL_ERROR;
@@ -556,7 +575,9 @@ int reduce(pp_stack_t *st, pp_stack_t *ops,
 /**
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
-int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
+int reduce_top(pp_stack_t *s, symtabs_stack_t *sym_stack, symtab_t *symtab,
+               char ** failed_op_msg, sym_dtype_t *ret_type) {
+
     string_t to_be_reduced;
     str_init(&to_be_reduced);
 
@@ -577,7 +598,8 @@ int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
             }
             else {
                 bool will_be_zero = resolve_res_zero(operands, rule);
-                retval = reduce(s, &operands, rule, ret_type, will_be_zero);
+                retval = reduce(s, &operands, sym_stack,
+                                symtab, rule, ret_type, will_be_zero);
             }
 
         }
@@ -596,6 +618,7 @@ int reduce_top(pp_stack_t *s, char ** failed_op_msg, sym_dtype_t *ret_type) {
 int get_input_symbol(bool stop_flag,
                      expr_el_t *on_input, 
                      tok_buffer_t *t_buff, 
+                     symtabs_stack_t *symstack,
                      symtab_t *symtab,
                      pp_stack_t *garbage_stack) {
 
@@ -604,7 +627,7 @@ int get_input_symbol(bool stop_flag,
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, t_buff, symtab);
+        retval = from_input_token(on_input, t_buff, symstack, symtab);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -753,7 +776,9 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
+int parse_expression(scanner_t *sc, void *symstack, 
+                     symtab_t *symtab, sym_dtype_t *ret_type) {
+
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
 
@@ -777,7 +802,9 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(stop_flag, &on_input, &tok_buffer, symtab, &garbage);
+        retval = get_input_symbol(stop_flag, &on_input, &tok_buffer, 
+                                  (symtabs_stack_t *)symstack, symtab, &garbage);
+
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
@@ -803,7 +830,8 @@ int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type) {
             token_aging(&tok_buffer);
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, &failed_op_msg, ret_type);
+            retval = reduce_top(&stack, (symtabs_stack_t *)symstack, symtab, 
+                                &failed_op_msg, ret_type);
         }
         else {
             stop_flag = true;
