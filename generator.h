@@ -29,42 +29,118 @@ typedef struct gen {
     void *declare_variable;
 } gen_t;
 
+/**
+ * @brief inicializes the code
+ */ 
 void generate_init();
-// void generate_main();
 
+/**
+ * *---------FUNCTIONS---------
+ */ 
 
+/**
+ * @brief generates the start of function definition
+ * @name function name
+ */ 
 void generate_start_function(const char * name);
+
+/**
+ * @brief generates parameters of a function
+ * @note they are declared reversely because they're popped from stack
+ * @param param_names TYPE: tok_stack_t - the stack of tokens with parameter names
+ */ 
 void generate_parameters( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
+
+/**
+ * @brief generates one parameter
+ * @param name of the parameter
+ */ 
 void generate_parameter(const char * name);
-void generate_multiple_assignment( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
-void generate_assign_value(const char * name);
+
+/**
+ * @brief generates the code needed to end a function definition
+ */ 
 void generate_end_function(const char * name);
+
+/**
+ * 
+ */ 
 void generate_call_function(const char * name);
 
 /**
- * Prebuild functions
+ * *---------VARIABLES---------
+ */
+
+/**
+ * @brief declares a variable
+ * @param var_id identifier of the variable
+ * @note we will search the actual unique identifier in the symtab
  */ 
-void generate_write_function();
-
-
 void generate_declare_variable( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner);
-void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name );
-void generate_assign_variable( const char *name );
 
+/**
+ * @brief assigns variables from stack to variables
+ * @param param_names TYPE: tok_stack_t - the stack of tokens with variable names
+ */ 
+void generate_multiple_assignment( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
+
+/**
+ * @brief pops the value from top of stack into variable
+ * @param name name of the variable
+ */ 
+void generate_assign_value(const char * name); 
+
+
+/**
+ * @brief pushes a value (variable or static) to the stack
+ * @param name identifier or the actual value to push
+ * @note used in expression parsing
+ */ 
+void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name );
+
+
+/**
+ * *---------OPERATIONS---------
+ */ 
 void generate_operation_add();
 void generate_operation_sub();
 void generate_operation_mul();
 void generate_operation_div();
 void generate_operation_idiv();
 
-// void generate_operation(grm_sym_type_t type);
+
+/**
+ * *---------BUILTIN---------
+ */ 
+/**
+ * @brief generates prebuilt write function
+ * @note supports exactly one argument
+ */ 
+void generate_write_function();
 
 
+/**
+ * *---------UTILITY---------
+ */ 
+
+/**
+ * @brief gets the unique identifier from symtable
+ * @param var_id the token which we're going to search
+ */ 
 string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner );
 
-
-const char *convert_type(sym_dtype_t dtype);
+/**
+ * @brief printf the code
+ * @note ends each call witn \n
+ */ 
 void code_print(const char *const _Format, ...);
+
+/**
+ * @brief converts dtype into format used in ifjcode21
+ * @param dtype input data type used in symtable
+ * @return string with type for code generation
+ */ 
+const char *convert_type(sym_dtype_t dtype);
 
 
 

@@ -1,22 +1,11 @@
---jump %%ENDmain
---label %%FUNmain
-global foo : function(integer)
+function sum (a:integer,b:integer) --jump
+    local var1 : integer
+    local var2 : integer
 
-function main (a:integer,b:integer) --jump
-    write(a)
-    foo(a+b)
-    write(b)
-end
+    var1,var2 = a+b,a*b
 
-function heh(c: integer)
-    write(c*4)
+    write(var1)
+    write(",")
+    write(var2)
 end
-
-function foo (a:integer) --jump
-    write(a)
-    write(a)
-    heh(a)
-end
---label %%ENDmain
-foo(3)
-main(10,4)
+sum(10,4)
