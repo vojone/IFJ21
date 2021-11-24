@@ -57,6 +57,8 @@ int str_init(string_t *string);
  */
 int app_char(char c, string_t *string);
 
+int app_str(string_t *dst, char *src);
+
 int prep_char(char c, string_t *string);
 
 int prep_str(string_t *dst, char *src);

@@ -1,50 +1,107 @@
 .IFJcode21
+CREATEFRAME
 
 
 JUMP $END_FUN$write
 #function write ()
-label $FUN$write
+LABEL $FUN$write
 CREATEFRAME
 #define param str
-
-
 DEFVAR TF@&VAR&str
 POPS TF@&VAR&str
 WRITE TF@&VAR&str
 
+
 RETURN
-label $END_FUN$write
+LABEL $END_FUN$write
 
 
 
 JUMP $END_FUN$main
 #function main ()
-label $FUN$main
+LABEL $FUN$main
 CREATEFRAME
-#define param b
-DEFVAR TF@&VAR&b
-POPS TF@&VAR&b
-#define param a
-DEFVAR TF@&VAR&a
-POPS TF@&VAR&a
-
-PUSHS TF@&VAR&a
+#define param main$b$1
+DEFVAR TF@&VAR&main$b$1
+POPS TF@&VAR&main$b$1
+#define param main$a$0
+DEFVAR TF@&VAR&main$a$0
+POPS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$a$0
+# write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
-
-PUSHS TF@&VAR&b
+PUSHS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$b$1
+ADDS
+# foo()
+PUSHFRAME
+CALL $FUN$foo
+POPFRAME
+PUSHS TF@&VAR&main$b$1
+# write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
 
 
 RETURN
-label $END_FUN$main
+LABEL $END_FUN$main
 
+
+
+JUMP $END_FUN$heh
+#function heh ()
+LABEL $FUN$heh
+CREATEFRAME
+#define param heh$c$2
+DEFVAR TF@&VAR&heh$c$2
+POPS TF@&VAR&heh$c$2
+PUSHS TF@&VAR&heh$c$2
+PUSHS int@4
+MULS
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+
+
+RETURN
+LABEL $END_FUN$heh
+
+
+
+JUMP $END_FUN$foo
+#function foo ()
+LABEL $FUN$foo
+CREATEFRAME
+#define param foo$a$3
+DEFVAR TF@&VAR&foo$a$3
+POPS TF@&VAR&foo$a$3
+PUSHS TF@&VAR&foo$a$3
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&foo$a$3
+# heh()
+PUSHFRAME
+CALL $FUN$heh
+POPFRAME
+
+
+RETURN
+LABEL $END_FUN$foo
+
+PUSHS int@3
+# foo()
+PUSHFRAME
+CALL $FUN$foo
+POPFRAME
 PUSHS int@10
-PUSHS int@2
-ADDS
 PUSHS int@4
 # main()
+PUSHFRAME
 CALL $FUN$main
+POPFRAME

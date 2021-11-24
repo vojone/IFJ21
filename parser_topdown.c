@@ -36,22 +36,6 @@ static rule_t ruleset_inside[] = {
 
 #define DEBUG true
 
-tree_node_t * search_in_tables(symtab_t *symbol_table, char *key) {
-    symtab_t *curr_tab = symbol_table;
-    
-    while(curr_tab != NULL) {
-        tree_node_t * result_of_searching = search(curr_tab, key);
-        if(result_of_searching) {
-            return result_of_searching;
-        }
-        else {
-            curr_tab = symtabs_get_ptr(&parser->symtabs, curr_tab->parent_ind);
-        }
-    }
-
-    return NULL;
-}
-
 
 /**
  * @brief Sets symtab to elder symbol table of old outer context 
@@ -122,6 +106,7 @@ void parser_setup(parser_t *p, scanner_t *s) {
 
     load_builtin_f(&symtab);
     semantic_init();
+    parser->decl_cnt = 0;
 }
 
 
@@ -301,7 +286,7 @@ bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type) {
  * @param id_types Pointer to initalized string where will be written data types of all identifiers
  * @param id_number Pointer to integer where will be written amount of identifiers on left side of assignment
  */ 
-int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number) {
+int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, tok_stack_t *var_names) {
     *id_number = 0;
     token_t t = *start_id;
     bool foundAssignmentOp = false;
@@ -318,13 +303,16 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number) {
 
             //Try to find identifier in symbol table (or in parent symbol table)
             char * id_str = get_attr(&t, scanner);
-            tree_node_t * symbol = search_in_tables(&symtab, id_str);
+            tree_node_t * symbol = search_in_tables(&parser->symtabs, &symtab, id_str);
     
             if(!symbol || symbol->data.type != VAR) {
                 error_semantic("Undeclared variable \033[1;33m%s\033[0m!", id_str);
                 return SEMANTIC_ERROR_DEFINITION;
             }
             else {
+                //push it to the var name stack for code generation
+                tok_push(var_names,t);
+
                 app_char(dtype_to_char(symbol->data.dtype), id_types);
             }
 
@@ -362,7 +350,7 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
         debug_print("Calling precedence parser...\n");
 
         sym_dtype_t ret_type;
-        int expr_retval = parse_expression(scanner, &symtab, &ret_type);
+        int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
         if(expr_retval == EXPRESSION_SUCCESS) {
             if(!is_valid_assign(char_to_dtype(id_types->str[i]), ret_type)) {
                 error_semantic("Type of variable is not compatible with rvalue in assignment!");
@@ -413,10 +401,17 @@ int assignment(token_t t) {
     string_t id_types;
     str_init(&id_types);
 
-    int retval = assignment_lside(&var_id, &id_types, &id_number);
+    //todo push names to the stack in lside
+    tok_stack_t var_names;
+    tok_stack_init(&var_names);
+
+    int retval = assignment_lside(&var_id, &id_types, &id_number, &var_names);
     debug_print("found %i assignment with types %s ...\n", id_number, to_str(&id_types));
     
     retval = (retval == PARSE_SUCCESS) ? assignment_rside(&var_id, &id_types, &id_number) : retval;        
+    
+    //todo call generate_params
+    generate_multiple_assignment(&parser->symtabs,&symtab,&var_names,scanner);
 
     str_dtor(&id_types);
     return retval;
@@ -457,8 +452,9 @@ int local_var_assignment(token_t *current_token, sym_status_t *status) {
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
 
+
         sym_dtype_t ret_type;
-        int return_val = parse_expression(scanner, &symtab, &ret_type);
+        int return_val = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
         if(return_val != EXPRESSION_SUCCESS) {
             return return_val;
         }
@@ -504,12 +500,20 @@ int local_var_datatype(token_t *current_token, sym_dtype_t *var_type) {
  */ 
 void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
 
-    size_t id_len = strlen(get_attr(id_token, scanner));
+    //size_t id_len = strlen(get_attr(id_token, scanner));
+    size_t cur_f_len = strlen(get_attr(parser->curr_func_id, scanner));
     string_t var_name;
     str_init(&var_name);
 
-    str_cpy_tostring(&var_name, get_attr(id_token, scanner), id_len);
-    app_char('$', &var_name); //TODO - creation of original name for generating
+    str_cpy_tostring(&var_name, get_attr(parser->curr_func_id, scanner), cur_f_len); //'name_of_current_function'
+    app_char('$', &var_name); //'name_of_current_function'$
+    app_str(&var_name, get_attr(id_token, scanner)); //'name_of_current_function'$'name_of_variable_in_ifj21'
+    app_char('$', &var_name); //'name_of_current_function'$'name_of_variable_in_ifj21'$
+
+    char conv_buffer[100];
+    snprintf(conv_buffer, 100, "%ld", parser->decl_cnt);
+
+    app_str(&var_name, conv_buffer);
     
     sym_data_t symdata_var = {.name = var_name, .type = VAR, 
                               .dtype = dtype, .status = status};
@@ -533,7 +537,8 @@ int parse_local_var() {
     token_t var_id = t;
     sym_dtype_t var_type;
     sym_status_t status = DECLARED;
-
+    
+    generate_declare_variable(&parser->symtabs,&symtab,&var_id,scanner);
     //debug_print("Var_ID is: %s <---------------\n\n", var_id);
     if(!compare_token(t, IDENTIFIER)) {
         error_unexpected_token("identifier", t);
@@ -555,6 +560,7 @@ int parse_local_var() {
     // Adding variable and its datatype into symtable
     if(retval == PARSE_SUCCESS) {
         ins_var(&var_id, status, var_type);
+        parser->decl_cnt++;
     }
     
     return retval;
@@ -687,23 +693,26 @@ int parse_function_dec() {
     //This token is just 'global' we skip it
     get_next_token(scanner);
 
+    //this is function ID
     token_t id_fc = get_next_token(scanner);
-
-    check_builtin(&id_fc);
-    string_t params_array;
-    str_init(&params_array);
-    str_dtor(&params_array);//TODO
+    debug_print("SHOULD BE ID_FC: %s\n\n\n",get_attr(&id_fc,scanner));
 
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
-    bool left_bracket = check_next_token_attr(SEPARATOR, "(");
-
-    if(!id || !left_bracket) {
+    if(!id){
+        error_unexpected_token("FUNCTION IDENTIFIER",id_fc);
+    }
+    //should be ':'
+    bool colon = check_next_token_attr(SEPARATOR, ":");
+    //shound be 'function'
+    bool function_keyword = check_next_token_attr(KEYWORD,"function");
+    if(!id || !colon || !function_keyword) {
         return SYNTAX_ERROR;
     }
     
-    //generate code for start
-    generate_start_function(get_attr(&id_fc, scanner));
+    //!probably not because we ignore declarations
+    //generate code for start,
+    // generate_start_function(get_attr(&id_fc, scanner));
     
     tok_push(&parser->decl_func, id_fc); //For checking if function is defined
 
@@ -717,11 +726,11 @@ int parse_function_dec() {
         return SEMANTIC_ERROR_DEFINITION;
     }
     
-    if(!check_next_token_attr(SEPARATOR, ":"))
-        return SYNTAX_ERROR;
+    // if(!check_next_token_attr(SEPARATOR, ":"))
+    //     return SYNTAX_ERROR;
     
-    if(!check_next_token_attr(KEYWORD, "function"))
-        return SYNTAX_ERROR;
+    // if(!check_next_token_attr(KEYWORD, "function"))
+    //     return SYNTAX_ERROR;
 
     
     sym_data_t f_data; //Preparation for saving param types and return types into strings
@@ -858,6 +867,8 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
 
 
                 ins_var(&param_id, DECLARED, dtype);
+                parser->decl_cnt++;
+                
                 //OK
             }
 
@@ -885,7 +896,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     }
 
     //generate code for parameters
-    generate_parameters(param_names, scanner);
+    generate_parameters(&(parser->symtabs),&symtab,&param_names, scanner);
 
 
     return PARSE_SUCCESS;
@@ -1118,7 +1129,7 @@ int parse_function_arguments(token_t *id_func) {
         token_t t = lookahead(scanner);
         if(is_expression(t)) {
             sym_dtype_t ret_type;
-            int expr_retval = parse_expression(scanner, &symtab, &ret_type);
+            int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 return expr_retval;
             }
@@ -1187,7 +1198,7 @@ int parse_if() {
     debug_print("Calling precedence parser...\n");
 
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &symtab, &ret_type);
+    int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1282,7 +1293,7 @@ int parse_return() {
         }
         else {
             sym_dtype_t ret_type;
-            int retval = parse_expression(scanner, &symtab, &ret_type);
+            int retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
@@ -1339,7 +1350,7 @@ int parse_while() {
     
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &symtab, &ret_type);
+    int expr_retval = parse_expression(scanner, &parser->symtabs, &symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1440,6 +1451,9 @@ int parse_identifier() {
 
     //Check if it is a function call
     if(compare_token_attr(t, SEPARATOR, "(")) {
+
+        check_builtin(&id_token); //Adds builtin functions into symtable
+
         char *func = get_attr(&id_token, scanner);
         tree_node_t *func_valid = search(&global, func);
         if (func_valid == NULL) { // Function is not declared
@@ -1448,8 +1462,9 @@ int parse_identifier() {
         }
 
         debug_print("Call function %s\n", func);
-
-        return parse_function_call(&id_token);
+        int res = parse_function_call(&id_token);
+        generate_call_function(get_attr(&id_token,scanner));
+        return res;
     }
     else if(is_multiple_assignment || is_single_assignment) {
         debug_print("parsing assignment...\n");

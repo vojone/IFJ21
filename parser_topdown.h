@@ -12,11 +12,16 @@
 #include <string.h>
 #include "dstring.h"
 #include "scanner.h"
-#include <stdarg.h>
+#include "dstack.h"
 #include "precedence_parser.h"
+#include <stdarg.h>
 #include "symtable.h"
 #include "generator.h"
 #include "dstack.h"
+
+
+#ifndef TOPDOWN_H
+#define TOPDOWN_H
 
 typedef struct result{
     bool success;
@@ -46,6 +51,7 @@ typedef struct parser {
     symtabs_stack_t symtabs;
 
     token_t * curr_func_id;
+    size_t decl_cnt;
     bool found_return;
 
     tok_stack_t decl_func;
@@ -310,3 +316,8 @@ bool is_expression(token_t t);
  * @note to disable the "Got token at:" and "^ Lookahead ^", delete it in the scanner.c file. My apologies for the inconvenience
  */
 void debug_print(const char *const _Format, ...);
+
+
+#endif
+
+/***                        End of parser_topdown.h                        ***/

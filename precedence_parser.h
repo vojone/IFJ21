@@ -83,7 +83,8 @@ typedef struct expr_rule {
     void (*generator_function)();
 } expr_rule_t;
 
-int parse_expression(scanner_t *sc, symtab_t *symtab, sym_dtype_t *ret_type);
+int parse_expression(scanner_t *sc, void *sym_stack,
+                     symtab_t *symtab, sym_dtype_t *ret_type);
 
 #endif
 

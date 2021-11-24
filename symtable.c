@@ -301,7 +301,7 @@ sym_data_t* builtin_functions(unsigned int index) {
 
 
 /**
- * @brief inserts all builtin functions into given symbol table
+ * @brief Inserts all builtin functions into given symbol table
  * @note Inseted functions will have same name as key in symbol table
  */ 
 void load_builtin_f(symtab_t *dst) {
@@ -324,6 +324,31 @@ sym_data_t* search_builtin(const char *f_name) {
     for(; builtin_functions(i) != NULL; i += inc) {
         if(str_cmp(to_str(&builtin_functions(i)->name), f_name) == 0) {
             return builtin_functions(i);
+        }
+    }
+
+    return NULL;
+}
+
+
+/**
+ * @brief Performs searching in stack of symtabs
+ * @return If nothing is found returns NULL otherwise returns pointer to first occurence
+ */
+tree_node_t * search_in_tables(void *sym_stack, 
+                               symtab_t *start_symtab, 
+                               char *key) {
+
+    symtabs_stack_t *sym_stack_ptr = (symtabs_stack_t *)sym_stack;
+    symtab_t *curr_tab = start_symtab;
+    
+    while(curr_tab != NULL) {
+        tree_node_t * result_of_searching = search(curr_tab, key);
+        if(result_of_searching) { //If something is found return pointer
+            return result_of_searching;
+        }
+        else { //If not, try to search it in 'parent' symbol table
+            curr_tab = symtabs_get_ptr(sym_stack_ptr, curr_tab->parent_ind);
         }
     }
 

@@ -24,7 +24,7 @@
 
 void generate_init(){
     code_print(".IFJcode21");
-
+    code_print("CREATEFRAME");
     generate_write_function();
 }
 
@@ -37,21 +37,28 @@ void generate_start_function(const char * name){
     code_print("\n");
     code_print("JUMP $END_FUN$%s",name);
     code_print("#function %s ()",name);
-    code_print("label $FUN$%s", name);
+    code_print("LABEL $FUN$%s", name);
     code_print("CREATEFRAME");
 }
 
 
-void generate_parameters(tok_stack_t param_names, scanner_t * scanner){
-    
-    while (!tok_is_empty(&param_names))
+void generate_parameters( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner){
+    tok_stack_t *params = param_names;
+    while (!tok_is_empty(params))
     {
-        token_t name_token = tok_pop(&param_names);
-        generate_parameter(get_attr(&name_token,scanner));
-    }
-    
-}
+        //get it from the token name
+        token_t name_token = tok_pop(params);
+        char *name = get_attr(&name_token,scanner);
 
+        //search it in the table
+        tree_node_t *name_element = search_in_tables(sym_stack,symtab,name);
+        if(name_element == NULL)
+            fprintf(stderr,"!CODE GENERATION ERROR! in generate_parameters\n");
+        const char *name_unique = name_element->data.name.str;
+        generate_parameter(name_unique);
+
+    }
+}
 
 void generate_parameter(const char * name){
     code_print("#define param %s",name);
@@ -59,33 +66,40 @@ void generate_parameter(const char * name){
     code_print("POPS TF@&VAR&%s",name);   //assigns one argument from stack to temporary variable
 }
 
-void generate_end_function(const char * name){
-    code_print("\n");
-    code_print("CREATEFRAME");  
-    code_print("RETURN");
-    code_print("label $END_FUN$%s",name);
-    code_print("");
+
+void generate_multiple_assignment( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner){
+    tok_stack_t *params = param_names;
+    while (!tok_is_empty(params))
+    {
+        //get it from the token name
+        token_t name_token = tok_pop(params);
+        char *name = get_attr(&name_token,scanner);
+
+        //search it in the table
+        tree_node_t *name_element = search_in_tables(sym_stack,symtab,name);
+        if(name_element == NULL)
+            fprintf(stderr,"!CODE GENERATION ERROR! in generate_parameters\n");
+        const char *name_unique = name_element->data.name.str;
+        generate_assign_value(name_unique);
+
+    }
+}
+void generate_assign_value(const char * name){
+    code_print("#assign value to %s",name);
+    code_print("POPS TF@&VAR&%s",name);   //assigns one argument from stack to temporary variable
 }
 
-void generate_write_function(){
-    generate_start_function("write");   //function write()
-    // code_print("DEFVAR TF@!WRITE_VAR"); //creates temporary variable
-    // code_print("POPS TF@!WRITE_VAR");   //assigns one argument from stack to temporary variable
-    generate_parameter("str");
-    code_print("WRITE TF@&VAR&%s","str");  //writes it
-    generate_end_function("write");         //end
-}
-
-void generate_declare_variable(const char * name){
-    code_print("DEFVAR TF@&VAR&%s",name );
+void generate_declare_variable( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner){
+    string_t name = get_unique_name(sym_stack,symtab,var_id,scanner);
+    code_print("DEFVAR TF@&VAR&%s",name.str);
 }
 
 //a = 1+2+3
-void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name ){
+void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token ){
     if(type == VAR){
-        code_print("PUSHS TF@&VAR&%s",name);
+        code_print("PUSHS TF@&VAR&%s",token);
     }else if(type == VAL){
-        code_print("PUSHS %s@%s",convert_type(dtype), name);
+        code_print("PUSHS %s@%s",convert_type(dtype), token);
     }else{
         fprintf(stderr,"Code generation: Error not supported yet\n");
     }
@@ -140,13 +154,29 @@ void generate_operation(grm_sym_type_t type){
     }
 }
 
-//assumes that the result of the expression is at the top of the stack
-void generate_assign_variable( const char *name ){
-    //get the type from symtab
-    code_print("#%s = <top of the stack>",name);
-    code_print("POPS TF@&VAR&%s",name);
-    code_print("CLEARS");
+
+void generate_end_function(const char * name){
+    code_print("\n");
+    code_print("RETURN");
+    code_print("LABEL $END_FUN$%s",name);
+    code_print("");
 }
+
+void generate_write_function(){
+    generate_start_function("write");   //function write()
+    // code_print("DEFVAR TF@!WRITE_VAR"); //creates temporary variable
+    // code_print("POPS TF@!WRITE_VAR");   //assigns one argument from stack to temporary variable
+    generate_parameter("str");
+    code_print("WRITE TF@&VAR&%s","str");  //writes it
+    generate_end_function("write");         //end
+}
+//assumes that the result of the expression is at the top of the stack
+// void generate_assign_variable( const char *name ){
+//     //get the type from symtab
+//     code_print("#%s = <top of the stack>",name);
+//     code_print("POPS TF@&VAR&%s",name);
+//     code_print("CLEARS");
+// }
 
 
 // void generate_main(){
@@ -157,7 +187,9 @@ void generate_assign_variable( const char *name ){
 
 void generate_call_function(const char *name){
     code_print("# %s()",name);
+    code_print("PUSHFRAME");
     code_print("CALL $FUN$%s",name);
+    code_print("POPFRAME");
 }
 
 const char *convert_type(sym_dtype_t dtype){
@@ -198,6 +230,20 @@ void to_ascii(const char * str, string_t * out){
         i++;
         c = str[i];
     }
+}
+
+string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner ){
+    
+    //get it from the token name;
+    char *name = get_attr(var_id,scanner);
+
+    //search it in the table
+    tree_node_t *name_element = search_in_tables(sym_stack,symtab,name);
+    if(name_element == NULL)
+        fprintf(stderr,"!CODE GENERATION ERROR! ID %s not in SYMTAB!\n",name);
+    string_t name_unique = name_element->data.name;
+    return name_unique;
+
 }
 
 
