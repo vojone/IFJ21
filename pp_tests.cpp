@@ -661,6 +661,48 @@ TEST_F(missing_par3, only_parse) {
 }
 
 
+class missing_par4 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(((48+(8))))
+            )";
+        }
+};
+
+TEST_F(missing_par4, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
+class minuses : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(-(-(-(-(-8))))
+            )";
+        }
+};
+
+TEST_F(minuses, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
+class minuses2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(8 + - - - - - - 7
+            )";
+        }
+};
+
+TEST_F(minuses2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
