@@ -74,15 +74,17 @@ void param_app(string_t* dst, const char *src){
 }
 */
 
-void semantic_init(){
-    sym_data_t symtab_data;
-    init_data(&symtab_data);
-    string_t params;
-    str_init(&params);
-    app_char('%',&params);
-    symtab_data.params = params;
-    insert_sym(&symtab, "write", symtab_data);
-}
+// void semantic_init() {
+//     sym_data_t symtab_data;
+//     init_data(&symtab_data);
+
+//     string_t params;
+//     str_init(&params);
+
+//     app_char('%', &params);
+//     symtab_data.params = params;
+//     insert_sym(&symtab, "write", symtab_data);
+// }
 
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
@@ -105,7 +107,7 @@ void parser_setup(parser_t *p, scanner_t *s) {
     symtab = symbol_tab;
 
     load_builtin_f(&symtab);
-    semantic_init();
+    //semantic_init();
     parser->decl_cnt = 0;
 }
 
@@ -705,24 +707,24 @@ int parse_function_dec() {
 
     //this is function ID
     token_t id_fc = get_next_token(scanner);
-    debug_print("SHOULD BE ID_FC: %s\n\n\n",get_attr(&id_fc,scanner));
+    debug_print("SHOULD BE ID_FC: %s\n\n\n", get_attr(&id_fc, scanner));
 
     //parsing function definition signature
     bool id = (id_fc.token_type == (IDENTIFIER));
     if(!id){
-        error_unexpected_token("FUNCTION IDENTIFIER",id_fc);
+        error_unexpected_token("FUNCTION IDENTIFIER", id_fc);
     }
     //should be ':'
     bool colon = check_next_token_attr(SEPARATOR, ":");
     //shound be 'function'
-    bool function_keyword = check_next_token_attr(KEYWORD,"function");
+    bool function_keyword = check_next_token_attr(KEYWORD, "function");
     if(!id || !colon || !function_keyword) {
         return SYNTAX_ERROR;
     }
     
     //!probably not because we ignore declarations
     //generate code for start,
-    // generate_start_function(get_attr(&id_fc, scanner));
+    //generate_start_function(get_attr(&id_fc, scanner));
     
     tok_push(&parser->decl_func, id_fc); //For checking if function is defined
 
@@ -842,6 +844,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             token_t param_id;
             int prolog_ret = func_def_params_prolog(&param_id);
             if(prolog_ret != PARSE_SUCCESS) {
+                tok_stack_dtor(&param_names);
                 return prolog_ret;
             }
 
@@ -862,10 +865,12 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
 
                     if(params_s[params_cnt] == '\0') { //There is bigger amount of parameteres than should be
                         error_semantic("Parameter AMOUNT mismatch in definition of \033[1;33m%s\033[0m (there are to many of them)!", get_attr(id_token, scanner));
+                        tok_stack_dtor(&param_names);
                         return SEMANTIC_ERROR_OTHER;
                     }
                     else if(dtype != keyword_to_dtype(&t, scanner)) {
                         error_semantic("Parameter DATA TYPE mismatch in definition of \033[1;33m%s\033[0m!", get_attr(id_token, scanner));
+                        tok_stack_dtor(&param_names);
                         return SEMANTIC_ERROR_OTHER;
                     }
                 }
@@ -888,6 +893,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
                 finished = true;
                 if(params_cnt != len(&f_data->params) - 1) {
                     error_semantic("Parameter AMOUNT mismatch in definition of \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
+                    tok_stack_dtor(&param_names);
                     return SEMANTIC_ERROR_OTHER;
                 }
 
@@ -902,13 +908,14 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     }
     else if(was_decl && len(&f_data->ret_types) > 0) {
         error_semantic("Return values AMOUNT mismatch in definition of function \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
+        tok_stack_dtor(&param_names);
         return SEMANTIC_ERROR_OTHER;
     }
 
     //generate code for parameters
-    generate_parameters(&(parser->symtabs),&symtab,&param_names, scanner);
+    generate_parameters(&(parser->symtabs), &symtab, &param_names, scanner);
 
-
+    tok_stack_dtor(&param_names);
     return PARSE_SUCCESS;
 }
 
@@ -1054,7 +1061,7 @@ int parse_function_def() {
     get_next_token(scanner);
 
     token_t id_fc = get_next_token(scanner);
-    check_builtin(&id_fc);
+    check_builtin(&id_fc); //Adds builtin function into symtable so semantic checks can detects its redefinition
 
     //generate function start
     generate_start_function(get_attr(&id_fc, scanner));
@@ -1432,7 +1439,7 @@ int parse_global_identifier() {
     token_t id_token = get_next_token(scanner);
     debug_print("got identifier\n");
 
-    check_builtin(&id_token);
+    check_builtin(&id_token); //Puts builtin fction into symtable if (identifier is symtable)
 
     char *func = get_attr(&id_token, scanner);
     tree_node_t *func_valid = search(&global, func);

@@ -111,7 +111,7 @@ $(SYMTAB_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 $(PP_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
 $(PP_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
 $(PP_TEST_BIN) : $(SYMTAB).o $(PP_PARSER).o $(PP_TEST_BIN).o $(SCANNER).o \
-				 dstring.o tables.o dstack.o
+				 dstring.o tables.o dstack.o generator.o
 
 #compilation of obj file with test
 $(PP_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
