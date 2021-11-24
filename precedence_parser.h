@@ -53,6 +53,7 @@ typedef enum grm_sym_type {
     STOP_SYM, TERM_NUM
 } grm_sym_type_t;
 
+
 #define NON_TERM TERM_NUM /**< Nonterminal symbol */
 
 /**

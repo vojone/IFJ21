@@ -485,26 +485,29 @@ class nil1 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"("abc" == nil)
-            )";
-        }
-};
-
-TEST_F(nil1, only_parse) {
-    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
-}
-
-class nil2 : public test_fixture {
-    protected:
-        void setData() override {
-            scanner_input = 
             R"(a ~= nil
             )";
         }
 };
 
-TEST_F(nil2, only_parse) {
+TEST_F(nil1, only_parse) {
     insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
+/*****************************************************************************/
+
+class nil2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"("abc" == nil)
+            )";
+        }
+};
+
+TEST_F(nil2, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
 }
 
@@ -523,7 +526,139 @@ TEST_F(nil3, only_parse) {
     ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), NIL_ERROR);
 }
 
-/*****************************************************************************/
+
+class zero1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"((0//5)/1
+            )";
+        }
+};
+
+TEST_F(zero1, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_SUCCESS);
+}
+
+
+class zero2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4/0
+            )";
+        }
+};
+
+TEST_F(zero2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), DIV_BY_ZERO);
+}
+
+
+class zero3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a//0
+            )";
+        }
+};
+
+TEST_F(zero3, only_parse) {
+    insert_sym(&symtab, "a", {{0, 0, (char *)"a"}, VAR, {0, 0, NULL}, {0, 0, NULL}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), DIV_BY_ZERO);
+}
+
+
+class zero4 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4/((0+7)*0)
+            )";
+        }
+};
+
+TEST_F(zero4, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), DIV_BY_ZERO);
+}
+
+
+class zero5 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4/(0+(-0))
+            )";
+        }
+};
+
+TEST_F(zero5, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), DIV_BY_ZERO);
+}
+
+
+
+class missing_par : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(4/((0+(-0))
+            )";
+        }
+};
+
+TEST_F(missing_par, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_FAILURE);
+}
+
+
+
+
+class missing_par1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"((()
+            )";
+        }
+};
+
+TEST_F(missing_par1, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_FAILURE);
+}
+
+
+
+
+class missing_par2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"((4+(8)
+            )";
+        }
+};
+
+TEST_F(missing_par2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_FAILURE);
+}
+
+
+
+
+class missing_par3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"((((((((((((((((((((((((((((((4/())))))))))))))))))))))))))))))
+            )";
+        }
+};
+
+TEST_F(missing_par3, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &symstack, &symtab, &ret_type), EXPRESSION_FAILURE);
+}
 
 
 int main(int argc, char **argv) {

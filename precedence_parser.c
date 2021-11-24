@@ -317,20 +317,20 @@ expr_rule_t *get_rule(unsigned int index) {
     static expr_rule_t rules[REDUCTION_RULES_NUM] = {
         {"(E)", "*", ORIGIN, FIRST ,NULL,NULL},
         {"i", "*", ORIGIN, FIRST, NULL,NULL},
-        {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands",generate_operation_add},
-        {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands",generate_operation_sub},
-        {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands",generate_operation_mul},
-        {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands",generate_operation_div},
-        {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands",generate_operation_idiv},
-        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands",NULL},
-        {"#E", "s", INT, NONE, "Only string can be operand of \"#\"",NULL},
-        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"",NULL},
-        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"",NULL},
-        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"",NULL},
-        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"",NULL},
-        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"",NULL},
-        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"",NULL},
-        {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands",NULL},
+        {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands", generate_operation_add},
+        {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands", generate_operation_sub},
+        {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands", generate_operation_mul},
+        {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands", generate_operation_div},
+        {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands", generate_operation_idiv},
+        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands", NULL},
+        {"#E", "s", INT, FIRST, "Only string can be operand of \"#\"", NULL},
+        {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"", NULL},
+        {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"", NULL},
+        {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"", NULL},
+        {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"", NULL},
+        {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"", NULL},
+        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"", NULL},
+        {"E..E", "s|s", STR, ALL, "Operation \"..\" needs strings as operands", NULL},
     };
 
     return &(rules[index]);
@@ -657,10 +657,10 @@ int get_input_symbol(bool stop_flag,
 void get_top_symbol(expr_el_t *on_top, pp_stack_t *stack) {
     expr_el_t on_top_tmp = pp_top(stack);
     expr_el_t tmp;
+
     if(on_top_tmp.type == NON_TERM) { //Ignore nonterminal if there is 
         tmp = pp_pop(stack);
-        on_top_tmp = pp_pop(stack);
-        pp_push(stack, on_top_tmp);
+        on_top_tmp = pp_top(stack);
         pp_push(stack, tmp);
     }
 
@@ -798,7 +798,7 @@ int parse_expression(scanner_t *sc, void *symstack,
 
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
-
+    
     tok_buffer_t tok_buffer;
     pp_stack_t stack;
     pp_stack_t garbage;
@@ -809,8 +809,8 @@ int parse_expression(scanner_t *sc, void *symstack,
         return retval;
     }
     
-    bool stop_flag = false, empty_expr = true;
-    while(retval == EXPRESSION_SUCCESS) {
+    bool stop_flag = false, empty_expr = true, empty_cycle = false;
+    while(retval == EXPRESSION_SUCCESS) { //Main cycle
         tok_buffer.current = lookahead(sc);
 
         if(tok_buffer.current.token_type == ERROR_TYPE) {
@@ -820,13 +820,15 @@ int parse_expression(scanner_t *sc, void *symstack,
 
         expr_el_t on_input, on_top;
         retval = get_input_symbol(stop_flag, &on_input, &tok_buffer, 
-                                  (symtabs_stack_t *)symstack, symtab, &garbage);
+                                  (symtabs_stack_t *)symstack, 
+                                  symtab, &garbage);
 
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
 
         get_top_symbol(&on_top, &stack);
+
         /*There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
             retval = empty_expr ? MISSING_EXPRESSION : EXPRESSION_SUCCESS;
@@ -834,24 +836,34 @@ int parse_expression(scanner_t *sc, void *symstack,
         }
 
         char precedence = get_precedence(on_top, on_input);
-        //fprintf(stderr, "%s: %c %d(%d) %d(%d)\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero);
+        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, stop_flag);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;
             }
 
             token_aging(&tok_buffer); /**< Make last token from current token */
+            empty_cycle = false;
         }
         else if(precedence == '<') {  /**< Put input symbol to the top of the stack*/
             has_lower_prec(&stack, on_input);
             token_aging(&tok_buffer);
+            empty_cycle = false;
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, (symtabs_stack_t *)symstack, symtab, 
-                                &failed_op_msg, ret_type);
+            retval = reduce_top(&stack, (symtabs_stack_t *)symstack, 
+                                symtab, &failed_op_msg, ret_type);
+            empty_cycle = false;
         }
         else {
             stop_flag = true;
+
+            if(stop_flag && empty_cycle) {
+                retval = EXPRESSION_FAILURE;
+                break;
+            }
+
+            empty_cycle = true;
         }
 
         empty_expr = false;
