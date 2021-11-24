@@ -1,8 +1,8 @@
 --jump %%ENDmain
 --label %%FUNmain
 function main (a:integer,b:integer) --jump
-    
-    main(a+b,b)
+    write(a)
+    write(b)
 end
 --label %%ENDmain
 

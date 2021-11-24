@@ -20,11 +20,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "dstack.h"
 #include <stdbool.h>
-#include "dstring.h"
 #include <stdarg.h>
 #include "symtable.h"
-#include "dstack.h"
 
 typedef struct gen {
     void *declare_variable;
