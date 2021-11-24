@@ -14,6 +14,7 @@ end
 
 function foo (a:integer) --jump
     write(a)
+    write(a)
     heh(a)
 end
 --label %%ENDmain

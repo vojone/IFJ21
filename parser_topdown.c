@@ -446,7 +446,7 @@ sym_dtype_t keyword_to_dtype(token_t * t, scanner_t *sc) {
  * @warning This function expects that the current token was get by lookahead
  * @note If everything went well, changes variable status to defined
  */ 
-int local_var_assignment(token_t *current_token, sym_status_t *status) {
+int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *var_id) {
     if(lookahead_token_attr(OPERATOR, "=")) { 
         get_next_token(scanner);
         //if there is = we check the value assignment
@@ -461,6 +461,9 @@ int local_var_assignment(token_t *current_token, sym_status_t *status) {
         else {
             *status = DEFINED; //Ok
         }
+        //generate assigment code
+        char * unique_name = get_unique_name(&parser->symtabs,&symtab, var_id, scanner).str;
+        generate_assign_value(unique_name);
     }
 
     return PARSE_SUCCESS;
@@ -537,8 +540,8 @@ int parse_local_var() {
     token_t var_id = t;
     sym_dtype_t var_type;
     sym_status_t status = DECLARED;
-    
-    generate_declare_variable(&parser->symtabs,&symtab,&var_id,scanner);
+
+
     //debug_print("Var_ID is: %s <---------------\n\n", var_id);
     if(!compare_token(t, IDENTIFIER)) {
         error_unexpected_token("identifier", t);
@@ -550,18 +553,25 @@ int parse_local_var() {
         return SEMANTIC_ERROR_DEFINITION;
     }
 
+
     //There must be data type
     int retval;
     retval = local_var_datatype(&t, &var_type);
 
+    //insert to symtab and generate code
+    //? we have to insert the function to symtable before calling local_var_assignment
+    ins_var(&var_id, status, var_type);
+    parser->decl_cnt++;
+    generate_declare_variable(&parser->symtabs,&symtab,&var_id,scanner);
+
     //There can be a value assignment
-    retval = (retval == PARSE_SUCCESS) ? local_var_assignment(&t, &status) : retval;
+    retval = (retval == PARSE_SUCCESS) ? local_var_assignment(&t, &status, &var_id) : retval;
+    
     
     // Adding variable and its datatype into symtable
-    if(retval == PARSE_SUCCESS) {
-        ins_var(&var_id, status, var_type);
-        parser->decl_cnt++;
-    }
+    // if(retval == PARSE_SUCCESS) {
+        
+    // }
     
     return retval;
 }

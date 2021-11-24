@@ -85,6 +85,11 @@ PUSHFRAME
 CALL $FUN$write
 POPFRAME
 PUSHS TF@&VAR&foo$a$3
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&foo$a$3
 # heh()
 PUSHFRAME
 CALL $FUN$heh
