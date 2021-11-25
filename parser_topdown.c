@@ -929,6 +929,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
 
                 ins_var(&param_id, DECLARED, dtype);
                 parser->decl_cnt++;
+                params_cnt++;
                 
                 //OK
             }
@@ -937,7 +938,7 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
             bool comma = lookahead_token_attr(SEPARATOR, ",");
             if(!comma) {
                 finished = true;
-                if(params_cnt != len(&f_data->params) - 1) {
+                if(params_cnt < len(&f_data->params)) {
                     error_semantic("Parameter AMOUNT mismatch in definition of \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
                     tok_stack_dtor(&param_names);
                     return SEMANTIC_ERROR_OTHER;
@@ -948,11 +949,9 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
                 //we go one token forward
                 get_next_token(scanner);
             }
-
-            params_cnt++;
         }
     }
-    else if(was_decl && len(&f_data->ret_types) > 0) {
+    else if(was_decl && len(&f_data->params) > 0) {
         error_semantic("Return values AMOUNT mismatch in definition of function \033[1;33m%s\033[0m (missing parameters)!", get_attr(id_token, scanner));
         tok_stack_dtor(&param_names);
         return SEMANTIC_ERROR_OTHER;

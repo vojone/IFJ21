@@ -291,7 +291,7 @@ int argument_parser(token_t *func_id, char *params_s,
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
             closing_bracket = true;
-            if((argument_cnt < strlen(params_s) ) && !is_variadic) { //Function needs more arguments
+            if((argument_cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
                 fcall_sem_error(tok_b, func_id, "Missing arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
@@ -394,36 +394,35 @@ int process_identifier(expr_el_t *result,
 int from_input_token(expr_el_t *result, 
                      tok_buffer_t *tok_b,
                      symbol_tables_t *syms,
-                     bool *was_id) {
+                     bool *was_operand) {
 
     result->type = tok_to_type(tok_b);
     result->value = NULL;
     result->is_zero = false;
     str_init(&result->dtype);
-
     int retval = EXPRESSION_SUCCESS;
     switch (tok_b->current.token_type)
     {
     case INTEGER:
         make_type_str(&result->dtype, 'i');
-        *was_id = false;
+        *was_operand = true;
         break;
     case NUMBER:
         make_type_str(&result->dtype, 'n');
-        *was_id = false;
+        *was_operand = true;
         break;
     case STRING:
         make_type_str(&result->dtype, 's');
-        *was_id = false;
+        *was_operand = true;
         break;
     case IDENTIFIER:
-        if(!*was_id) {
+        if(!*was_operand) {
             retval = process_identifier(result, tok_b, syms);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
             else {
-                *was_id = true;
+                *was_operand = true;
             }
         }
 
@@ -436,7 +435,7 @@ int from_input_token(expr_el_t *result,
              make_type_str(&result->dtype, ' ');
         }
 
-        *was_id = false;
+        *was_operand = false;
 
         break;
     }
@@ -924,14 +923,14 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
  */ 
 int get_input_symbol(bool stop_flag, expr_el_t *on_input, 
                      tok_buffer_t *t_buff, symbol_tables_t *symtabs,
-                     pp_stack_t *garbage_stack, bool *was_func) {
+                     pp_stack_t *garbage_stack, bool *was_operand) {
 
     int retval = EXPRESSION_SUCCESS;
     if(stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, t_buff, symtabs, was_func);
+        retval = from_input_token(on_input, t_buff, symtabs, was_operand);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -1099,7 +1098,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     }
     
     bool stop_flag = false, empty_expr = true, 
-         empty_cycle = false, was_func = false;
+         empty_cycle = false, was_operand = false;
     while(retval == EXPRESSION_SUCCESS) { //Main cycle
         tok_buff.current = lookahead(sc);
 
@@ -1109,7 +1108,8 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(stop_flag, &on_input, &tok_buff, s, &garbage, &was_func);
+        retval = get_input_symbol(stop_flag, &on_input, &tok_buff, 
+                                  s, &garbage, &was_operand);
 
         if(retval != EXPRESSION_SUCCESS) {
             break;
