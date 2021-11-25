@@ -116,7 +116,7 @@ class an_error : public test_fixture {
 };
 
 TEST_F(an_error, only_parse) {
-    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
 }
 
 class basic : public test_fixture {
@@ -139,7 +139,7 @@ class if_parse : public test_fixture {
             R"(require "help.tl" 
             function main() 
                 local s1 : integer 
-                if true then 
+                if s1 == 0 then 
                     local s2 : string = ", ktery jeste trochu obohatime" 
                 else
                     s1 = 0

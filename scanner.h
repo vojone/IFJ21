@@ -39,7 +39,8 @@ typedef enum token_type {
     OPERATOR,
     SEPARATOR,
     EOF_TYPE,
-    ERROR_TYPE
+    ERROR_TYPE,
+    TOK_TYPE_NUM
 } token_type_t;
 
 /**
@@ -129,6 +130,14 @@ token_t get_next_token(scanner_t *scanner);
  * @note If type of returned token is ERROR_TYPE, that means a lexical error occurence
  */
 token_t lookahead(scanner_t *scanner);
+
+/**
+ * @brief Converts enumeration type to cstring, where is described meaning of token type
+ * @note Can be used e.g. in suggestions and in error messages
+ * @param tok_type type that should be translated to a normal language
+ * @return pointer to string (static alocated -> DONT FREE IT), or null if tok_type is not valid 
+ */ 
+char *tok_type_to_str(token_type_t tok_type);
 
 /**
  * @brief Inits scanner structure

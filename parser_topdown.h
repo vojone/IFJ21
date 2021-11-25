@@ -53,6 +53,7 @@ typedef enum return_codes {
 //     symtab_t symtab; /**< Current symbol table*/
 // } symbol_tables_t;
 
+#define DECLARATION_COUNTER_MAX_LEN 32
 
 typedef struct parser {
     token_t * curr_func_id; /**< Pointer to token with identifier of function, that is currently parsed */

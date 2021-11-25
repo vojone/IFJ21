@@ -574,6 +574,21 @@ trans_func_t get_trans(fsm_state_t state) {
 }
 
 
+char *tok_type_to_str(token_type_t tok_type) {
+    if(tok_type >= TOK_TYPE_NUM || tok_type < 0) {
+        return NULL;
+    }
+
+    static char* tok_type_meanings[TOK_TYPE_NUM] = {
+        "unknown", "identifier", "keyword", "integer", 
+        "number", "string", "operator", "separator",
+        "end of file", "invalid token"
+    };
+
+    return tok_type_meanings[tok_type];
+}
+
+
 token_t get_next_token(scanner_t *sc) {
     token_t result;
     token_init(&result);

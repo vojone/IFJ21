@@ -162,7 +162,6 @@ int check_if_defined() {
 //<program>               -> <global-statement-list>
 int parse_program() {
     //scanner_init(scanner); 
-
     generate_init();   
     
     //run parsing
@@ -173,6 +172,10 @@ int parse_program() {
     res = (res == PARSE_SUCCESS) ? check_if_defined() : res;
 
     parser_dtor();
+
+    if(parser->return_code != 0) {
+        res = parser->return_code;
+    }
     
     return res;
 
@@ -197,16 +200,20 @@ int global_statement_list() {
 int statement_list() {
     int ret = statement();
 
-    if(ret != PARSE_SUCCESS)
+    if(ret != PARSE_SUCCESS) {
         return ret;
+    }
 
     token_t t = lookahead(scanner);
-    if(t.token_type == KEYWORD) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "end")) {
             debug_print("got end\n");
             return PARSE_SUCCESS;
         }
-        if(compare_token_attr(t, KEYWORD, "else")) {
+        else if(compare_token_attr(t, KEYWORD, "else")) {
             debug_print("got else\n");
             return PARSE_SUCCESS;
         }
@@ -219,6 +226,9 @@ int statement_list() {
 int global_statement() {
     debug_print("parsing next global statement...\n");
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
 
     //get the apropriate rule
     rule_t rule_to_use = determine_rule(t, ruleset_global);
@@ -238,6 +248,9 @@ int global_statement() {
 int statement() {
     debug_print("parsing next statement...\n");
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
 
     //get the apropriate rule
     rule_t rule_to_use = determine_rule(t, ruleset_inside);
@@ -299,6 +312,9 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, t
         //First token is already read at the beginning, so we check wheter we are at the beginning
         if(*id_number != 0) {
             t = get_next_token(scanner);
+            if(compare_token(t, ERROR_TYPE)) {
+                return LEXICAL_ERROR;
+            }
         }
 
         //The next token should be identifier
@@ -328,7 +344,10 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, t
 
         //Comma should follow, or assignment operator
         t = get_next_token(scanner);
-        if(compare_token_attr(t, SEPARATOR, ",")) {
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
+        else if(compare_token_attr(t, SEPARATOR, ",")) {
             //Ok, next token should be mext identifier
         }
         else if(compare_token_attr(t, OPERATOR, "=")) {
@@ -372,6 +391,9 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
         //If we are not at the end check for comma
         if(i + 1 != *id_number) {
             token_t t = get_next_token(scanner);
+            if(compare_token(t, ERROR_TYPE)) {
+                return LEXICAL_ERROR;
+            }
             if(compare_token_attr(t, SEPARATOR, ",")) {
                 //Ok
             }
@@ -492,7 +514,10 @@ int local_var_datatype(token_t *current_token, sym_dtype_t *var_type) {
     *current_token = get_next_token(scanner);
 
     //Determining data type of declared variable
-    if(!is_datatype(*current_token)) {
+    if(compare_token(*current_token, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(!is_datatype(*current_token)) {
         error_unexpected_token("datatype", *current_token);
         return SYNTAX_ERROR;
     }
@@ -519,10 +544,10 @@ void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
     app_str(&var_name, get_attr(id_token, scanner)); //'name_of_current_function'$'name_of_variable_in_ifj21'
     app_char('$', &var_name); //'name_of_current_function'$'name_of_variable_in_ifj21'$
 
-    char conv_buffer[100];
-    snprintf(conv_buffer, 100, "%ld", parser->decl_cnt);
+    char conv_buff[DECLARATION_COUNTER_MAX_LEN];
+    snprintf(conv_buff, DECLARATION_COUNTER_MAX_LEN, "%ld", parser->decl_cnt);
 
-    app_str(&var_name, conv_buffer);
+    app_str(&var_name, conv_buff);
     
     sym_data_t symdata_var = {.name = var_name, .type = VAR, 
                               .dtype = dtype, .status = status};
@@ -543,6 +568,10 @@ int parse_local_var() {
 
     //should be identifier
     token_t t = get_next_token(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    
     token_t var_id = t;
     sym_dtype_t var_type;
     sym_status_t status = DECLARED;
@@ -597,7 +626,10 @@ int parse_require() {
     get_next_token(scanner);
 
     token_t t = get_next_token(scanner);
-    if(t.token_type == STRING) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(compare_token(t, STRING)) {
         return PARSE_SUCCESS;
     }
     else {
@@ -630,12 +662,18 @@ int func_dec_returns(string_t *returns) {
         //Will just get the ':'
         debug_print("parsing function return types...\n");
         token_t t = get_next_token(scanner);
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
 
         bool finished = false;
         while(!finished) {
             //should be datatype
             t = get_next_token(scanner);
-            if(!is_datatype(t)) {
+            if(compare_token(t, ERROR_TYPE)) {
+                return LEXICAL_ERROR;
+            }
+            else if(!is_datatype(t)) {
                 error_unexpected_token("data type", t);
                 finished = true;
                 return SYNTAX_ERROR;
@@ -676,7 +714,10 @@ int func_dec_params(string_t *params) {
         while(!finished) {
             //should be datatype
             token_t t = get_next_token(scanner);
-            if(!is_datatype(t)) {
+            if(compare_token(t, ERROR_TYPE)) {
+                return LEXICAL_ERROR;
+            }
+            else if(!is_datatype(t)) {
                 error_unexpected_token("data type", t);
                 finished = true;
                 return SYNTAX_ERROR;
@@ -716,6 +757,10 @@ int parse_function_dec() {
 
     //this is function ID
     token_t id_fc = get_next_token(scanner);
+    if(compare_token(id_fc, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     debug_print("SHOULD BE ID_FC: %s\n\n\n", get_attr(&id_fc, scanner));
 
     //parsing function definition signature
@@ -816,14 +861,20 @@ int check_if_declared(bool *was_decl, token_t *id_tok, sym_data_t *sym_data) {
 int func_def_params_prolog(token_t *param_id) {
     //Should be IDENTIFIER
     *param_id = get_next_token(scanner);
-    if(param_id->token_type != IDENTIFIER) {
+    if(compare_token(*param_id, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(param_id->token_type != IDENTIFIER) {
         error_unexpected_token("IDENTIFIER", *param_id);
         return SYNTAX_ERROR;
     }
     
     //Should be COLON
     token_t t = get_next_token(scanner);
-    if(!compare_token_attr(t, SEPARATOR, ":")) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(!compare_token_attr(t, SEPARATOR, ":")) {
         error_unexpected_token("':'", t);
         return SYNTAX_ERROR;
     }
@@ -841,6 +892,9 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     size_t params_cnt = 0;
     //Check if there are parameters
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
 
     tok_stack_t param_names;
     tok_stack_init(&param_names);
@@ -862,7 +916,11 @@ int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
 
             //Should be DATATYPE
             t = get_next_token(scanner);
-            if(!is_datatype(t)) {
+            if(compare_token(t, ERROR_TYPE)) {
+                tok_stack_dtor(&param_names);
+                return LEXICAL_ERROR;
+            }
+            else if(!is_datatype(t)) {
                 error_unexpected_token("DATA TYPE", t);
                 tok_stack_dtor(&param_names);
                 return SYNTAX_ERROR;
@@ -959,12 +1017,18 @@ int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
         //Will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(scanner);
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
 
         bool finished = false;
         while(!finished) {
             //Should be datatype
             t = get_next_token(scanner);
-            if(!is_datatype(t)) {
+            if(compare_token(t, ERROR_TYPE)) {
+                return LEXICAL_ERROR;
+            }
+            else if(!is_datatype(t)) {
                 error_unexpected_token("data type", t);
                 finished = true;
 
@@ -1024,6 +1088,10 @@ int func_def_returns(token_t *id_token, bool was_decl, sym_data_t *f_data) {
  */ 
 int func_def_epilogue() {
     token_t t = get_next_token(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     //generate function end
     generate_end_function(get_attr(parser->curr_func_id, scanner));
 
@@ -1071,6 +1139,10 @@ int parse_function_def() {
     get_next_token(scanner);
 
     token_t id_fc = get_next_token(scanner);
+    if(compare_token(id_fc, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     check_builtin(&id_fc); //Adds builtin function into symtable so semantic checks can detects its redefinition
 
     //generate function start
@@ -1154,7 +1226,10 @@ int parse_function_arguments(token_t *id_func) {
     bool is_variadic = (params_str[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
         token_t t = lookahead(scanner);
-        if(is_expression(t)) {
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
+        else if(is_expression(t)) {
             sym_dtype_t ret_type;
             int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
             if(expr_retval != EXPRESSION_SUCCESS) {
@@ -1182,7 +1257,10 @@ int parse_function_arguments(token_t *id_func) {
 
         //Check if there will be next argument
         t = get_next_token(scanner);
-        if(compare_token_attr(t, SEPARATOR, ",")) {
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
+        else if(compare_token_attr(t, SEPARATOR, ",")) {
             if(argument_cnt + 1 > strlen(params_str) - 1 && !is_variadic) { //Function needs less arguments
                 error_semantic("Bad function call of \033[1;33m%s\033[0m! Too many arguments!", get_attr(id_func, scanner));
                 return SEMANTIC_ERROR_PARAMETERS;
@@ -1248,7 +1326,10 @@ int parse_if() {
     to_outer_ctx(parser); //Back to higher leve context
 
     token_t t = get_next_token(scanner);
-    if(t.token_type == KEYWORD) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "end")) {
             debug_print("Ended if\n");
 
@@ -1309,8 +1390,10 @@ int parse_return() {
     char * returns_str = to_str(&symbol->data.ret_types);
     while(!finished) {
         token_t t = lookahead(scanner);
-
-        if(!is_expression(t)) {
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
+        else if(!is_expression(t)) {
             finished = true;
 
             if(len(&symbol->data.ret_types) > 0) {
@@ -1397,7 +1480,10 @@ int parse_while() {
     to_outer_ctx(parser); //Switch context to higher level
 
     token_t t = get_next_token(scanner);
-    if(t.token_type == KEYWORD) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "end")) {
 
             debug_print("Ended while\n");
@@ -1447,6 +1533,10 @@ rule_t determine_rule(token_t t, rule_t ruleset[]) {
 
 int parse_global_identifier() {
     token_t id_token = get_next_token(scanner);
+    if(compare_token(id_token, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     debug_print("got identifier\n");
 
     check_builtin(&id_token); //Puts builtin fction into symtable if (identifier is symtable)
@@ -1468,11 +1558,19 @@ int parse_global_identifier() {
 int parse_identifier() {
     //Should be identifier
     token_t id_token = get_next_token(scanner);
+    if(compare_token(id_token, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     debug_print("got identifier\n");
     
     // It is neccessary to look at the next lexeme also
     // token_t id_token = get_next_token(scanner);
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
     bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
 
@@ -1510,6 +1608,10 @@ int EOF_fun_rule() {
     //but will get the next token
     //otherwise i would have to use params for each one of these rule functions
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+
     error_unexpected_token("Reached EOF inside a function. Did you forget 'end'? END",t);
     parser->reached_EOF = true;
     return SYNTAX_ERROR;
@@ -1553,7 +1655,10 @@ bool is_datatype(token_t t) {
 
 int parse_datatype(){ 
     token_t t = get_next_token(scanner);
-    if( is_datatype(t)) {
+    if(compare_token(t, ERROR_TYPE)) {
+        return LEXICAL_ERROR;
+    }
+    else if( is_datatype(t)) {
         return PARSE_SUCCESS;
     }
 
@@ -1578,12 +1683,22 @@ void error_semantic(const char * _Format, ...) {
 
 bool lookahead_token(token_type_t expecting) {
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        parser->return_code = LEXICAL_ERROR;
+        return false;
+    }
+
     return compare_token(t, expecting);
 }
 
 
 bool lookahead_token_attr(token_type_t expecting_type, char * expecting_attr) {
     token_t t = lookahead(scanner);
+    if(compare_token(t, ERROR_TYPE)) {
+        parser->return_code = LEXICAL_ERROR;
+        return false;
+    }
+
     return compare_token_attr(t, expecting_type, expecting_attr);
 }
 
@@ -1591,13 +1706,12 @@ bool lookahead_token_attr(token_type_t expecting_type, char * expecting_attr) {
 bool check_next_token(token_type_t expecting) {
     token_t t = get_next_token(scanner);
     
-    if(compare_token(t, expecting))
+    if(compare_token(t, expecting)) {
         return true;
+    }
 
     parser->return_code = (t.token_type == ERROR_TYPE) ? LEXICAL_ERROR : SYNTAX_ERROR;
-    char exp_str[3];
-    sprintf(exp_str, "%d", expecting);
-    error_unexpected_token(exp_str, t);
+    error_unexpected_token(tok_type_to_str(t.token_type), t);
     return false;
 }
 
