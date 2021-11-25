@@ -588,6 +588,12 @@ char *tok_type_to_str(token_type_t tok_type) {
     return tok_type_meanings[tok_type];
 }
 
+void lex_err(scanner_t *sc, token_t *bad_token) {
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| ", (sc->cursor_pos[ROW]), (sc->cursor_pos[COL]));
+    fprintf(stderr, "\033[0;31mLexical error:\033[0m ");
+    fprintf(stderr, "Unrecognized token '\033[1;33m%s\033[0m'!\n", get_attr(bad_token, sc));
+
+}
 
 token_t get_next_token(scanner_t *sc) {
     token_t result;
@@ -614,8 +620,12 @@ token_t get_next_token(scanner_t *sc) {
         }
 
     } //while(result.token_type == UNKNOWN)
+
+    if(result.token_type == ERROR_TYPE) {
+        lex_err(sc, &result);
+    }
     
-    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[0], sc->cursor_pos[1], result.token_type, get_attr(&result, sc));
+    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 

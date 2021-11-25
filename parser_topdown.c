@@ -166,7 +166,7 @@ int parse_program() {
     //run parsing
     int res = global_statement_list();
 
-    debug_print("Finished! return code: %i, at: (%lu,%lu)\n", res, scanner->cursor_pos[0], scanner->cursor_pos[1]);
+    debug_print("Finished! return code: %i, at: (%lu,%lu)\n", res, scanner->cursor_pos[ROW], scanner->cursor_pos[COL]);
 
     res = (res == PARSE_SUCCESS) ? check_if_defined() : res;
 
@@ -763,15 +763,20 @@ int parse_function_dec() {
     debug_print("SHOULD BE ID_FC: %s\n\n\n", get_attr(&id_fc, scanner));
 
     //parsing function definition signature
-    bool id = (id_fc.token_type == (IDENTIFIER));
+    bool id = compare_token(id_fc, IDENTIFIER);
     if(!id){
         error_unexpected_token("FUNCTION IDENTIFIER", id_fc);
+        return SYNTAX_ERROR;
     }
     //should be ':'
     bool colon = check_next_token_attr(SEPARATOR, ":");
+    if(!colon) {
+        return SYNTAX_ERROR;
+    }
+
     //shound be 'function'
     bool function_keyword = check_next_token_attr(KEYWORD, "function");
-    if(!id || !colon || !function_keyword) {
+    if(!function_keyword) {
         return SYNTAX_ERROR;
     }
     
@@ -1094,7 +1099,7 @@ int func_def_epilogue() {
     //generate function end
     generate_end_function(get_attr(parser->curr_func_id, scanner));
 
-    debug_print("parsing function finished! at: (%lu,%lu)\n", scanner->cursor_pos[0], scanner->cursor_pos[1]); 
+    debug_print("parsing function finished! at: (%lu,%lu)\n", scanner->cursor_pos[ROW], scanner->cursor_pos[COL]); 
 
     if(t.token_type == KEYWORD) {
         if(compare_token_attr(t, KEYWORD, "end")) {
@@ -1180,7 +1185,7 @@ int parse_function_def() {
     //Parsing inside function
     debug_print("parsing inside function...\n");
     retval = statement_list();
-    debug_print("parsing function finished! return code: %i, at: (%lu,%lu)\n", retval, scanner->cursor_pos[0], scanner->cursor_pos[1]);
+    debug_print("parsing function finished! return code: %i, at: (%lu,%lu)\n", retval, scanner->cursor_pos[ROW], scanner->cursor_pos[COL]);
 
     to_outer_ctx(parser); //Go back to higher context level
 
@@ -1668,14 +1673,15 @@ int parse_datatype(){
 
 
 void error_unexpected_token(char * expected, token_t t) {
-    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Syntax error:\033[0m Wrong token! %s expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]),expected, get_attr(&t, scanner), t.token_type);
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Syntax error:\033[0m ", (scanner->cursor_pos[ROW]), (scanner->cursor_pos[COL]));
+    fprintf(stderr, "Wrong token! '%s' expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n", expected, get_attr(&t, scanner), t.token_type);
 }
 
 
 void error_semantic(const char * _Format, ...) {
     va_list args;
     va_start(args,_Format);
-    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Semantic error: \033[0m",(scanner->cursor_pos[0]), (scanner->cursor_pos[1]));
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Semantic error: \033[0m", (scanner->cursor_pos[ROW]), (scanner->cursor_pos[COL]));
     vfprintf(stderr, _Format, args);
     fprintf(stderr,"\n");
 }
