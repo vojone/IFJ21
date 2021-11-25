@@ -452,17 +452,29 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
 
-
-        string_t ret_types; //TODO
+        char *id_char = get_attr(var_id, scanner);
+        tree_node_t *symbol = search_in_tables(&(sym.symtab_st), &(sym.symtab), id_char);
+        
+        string_t ret_types;
         str_init(&ret_types);
         int return_val = parse_expression(scanner, &sym, &ret_types);
-        str_dtor(&ret_types);
+    
         if(return_val != EXPRESSION_SUCCESS) {
+            str_dtor(&ret_types);
             return return_val;
         }
         else {
             *status = DEFINED; //Ok
         }
+
+        if(!is_valid_assign(symbol->data.dtype, char_to_dtype(to_str(&ret_types)[0]))) {
+            error_semantic("Incomatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
+            str_dtor(&ret_types);
+            return SEMANTIC_ERROR_ASSIGNMENT;
+        }
+
+        str_dtor(&ret_types);
+
         //generate assigment code
         char * unique_name = get_unique_name(&sym.symtab_st, &sym.symtab, var_id, scanner).str;
         generate_assign_value(unique_name);
@@ -1659,16 +1671,18 @@ int error_rule() {
 }
 
 /**
- * //TODO
  * @brief Recognizes start of expression
  */
 bool is_expression(token_t t) {
-    return (t.token_type == NUMBER || 
-            t.token_type == INTEGER || 
-            t.token_type == STRING || 
-            t.token_type == IDENTIFIER ||
-            (t.token_type == KEYWORD && str_cmp(get_attr(&t, scanner), "nil") == 0));
+    return (compare_token(t , NUMBER) ||
+            compare_token(t , INTEGER) ||
+            compare_token(t , STRING) ||
+            compare_token(t , IDENTIFIER) ||
+            compare_token(t , OPERATOR) ||
+            compare_token_attr(t, KEYWORD, "nil") ||
+            compare_token_attr(t, SEPARATOR, "("));
 }
+
 
 /**
  * @brief Recognizes data type tokens
