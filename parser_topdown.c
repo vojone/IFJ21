@@ -481,7 +481,7 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
 
 
         sym_dtype_t ret_type;
-        int return_val = parse_expression(scanner, &sym, &ret_type);
+        int return_val = parse_expression(, &sym, &ret_type)
         if(return_val != EXPRESSION_SUCCESS) {
             return return_val;
         }
@@ -1236,7 +1236,7 @@ int parse_function_arguments(token_t *id_func) {
         }
         else if(is_expression(t)) {
             sym_dtype_t ret_type;
-            int expr_retval = parse_expression(scanner, &sym, &ret_type);
+            int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 return expr_retval;
             }
@@ -1308,7 +1308,7 @@ int parse_if() {
     debug_print("Calling precedence parser...\n");
 
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &sym, &ret_type);
+    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1408,7 +1408,7 @@ int parse_return() {
         }
         else {
             sym_dtype_t ret_type;
-            int retval = parse_expression(scanner, &sym, &ret_type);
+            int retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
@@ -1465,7 +1465,7 @@ int parse_while() {
     
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &sym, &ret_type);
+    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }

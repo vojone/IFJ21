@@ -212,6 +212,9 @@ sym_dtype_t char_to_dtype(char type_c) {
     case 'z':
         type = NIL;
         break;
+    case 'b':
+        type = BOOL;
+        break;
     default:
         type = UNDEFINED;
     }
@@ -238,6 +241,9 @@ char dtype_to_char(sym_dtype_t type) {
         break;
     case NIL:
         type_c = 'z';
+        break;
+    case BOOL:
+        type_c = 'b';
         break;
     default:
         type_c = ' ';

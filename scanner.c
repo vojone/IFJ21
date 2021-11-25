@@ -141,7 +141,7 @@ void got_token(token_type_t type, char c, token_t *token, scanner_t *sc) {
         cut_string(&sc->str_buffer, sc->first_ch_index);
         sc->first_ch_index = UNSET;
 
-        token->attr = "\255";
+        token->attr = "EOF";
     }
     else if(sc->first_ch_index != UNSET) {
         token->first_ch_index = sc->first_ch_index;

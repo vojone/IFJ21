@@ -155,6 +155,27 @@ int tok_to_type(tok_buffer_t *tok_b) {
     return UNDEFINED;
 }
 
+void make_type_str(string_t *dst, char type_c) {
+    str_clear(dst);
+    app_char(type_c, dst);
+}
+
+
+sym_dtype_t prim_type(string_t *type_string) {
+    return char_to_dtype(to_str(type_string)[0]);
+}
+
+
+/**
+ * @brief Returns true if two types are compatible
+ */ 
+bool is_compatible_type_c(string_t *dtypes, char type_char) {
+    return (prim_type(dtypes) == char_to_dtype(type_char) ||
+            (prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) ||
+            (char_to_dtype(type_char) == INT && prim_type(dtypes) == NUM));
+}
+
+
 /**
  * @brief Creates expression element from current and last token
  */ 
@@ -165,34 +186,147 @@ int from_input_token(expr_el_t *result,
     result->type = tok_to_type(tok_b);
     result->value = NULL;
     result->is_zero = false;
+    str_init(&result->dtype);
+
     tree_node_t * symbol;
     switch (tok_b->current.token_type)
     {
     case INTEGER:
-        result->dtype = INT;
+        make_type_str(&result->dtype, 'i');
         break;
     case NUMBER:
-        result->dtype = NUM;
+        make_type_str(&result->dtype, 'n');
         break;
     case STRING:
-        result->dtype = STR;
+        make_type_str(&result->dtype, 's');
         break;
     case IDENTIFIER:
-        symbol = search_in_tables(&syms->symtab_st, &syms->symtab, 
-                                  get_attr(&(tok_b->current), tok_b->scanner));
+        symbol = search_in_tables(&syms->symtab_st, &syms->symtab, get_attr(&(tok_b->current), tok_b->scanner));
 
         if(symbol == NULL) {
-            return UNDECLARED_IDENTIFIER;
-        }
+            symbol = search(&syms->global, get_attr(&(tok_b->current), tok_b->scanner));
+            
+            if(symbol == NULL) {
+                return UNDECLARED_IDENTIFIER;
+            }
+            else {
+                token_t func_id = tok_b->current;
+                char *params_s = to_str(&symbol->data.params);
 
-        result->dtype = symbol->data.dtype;
+                token_aging(tok_b);
+
+                token_t t = lookahead(tok_b->scanner);
+                size_t argument_cnt = 0;
+               
+                if(t.token_type == ERROR_TYPE) {
+                    return LEXICAL_ERROR;
+                }
+                else if(t.token_type != SEPARATOR || str_cmp(get_attr(&t, tok_b->scanner), "(") != 0) {
+                    tok_b->current = t;
+                    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                    fprintf(stderr, "Missing '(' after function identifier (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
+                    return SYNTAX_ERROR_IN_EXPR;
+                }
+                else {                  
+                    bool closing_bracket = false;
+                    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
+                    while(!closing_bracket) {
+                        token_aging(tok_b);
+                        t = lookahead(tok_b->scanner);
+                        if(t.token_type == ERROR_TYPE) {
+                            return LEXICAL_ERROR;
+                        }
+                        else if(!is_EOE(tok_b->scanner, &t) && str_cmp(get_attr(&t, tok_b->scanner), ")") != 0) {
+                            
+                            string_t ret_type;
+                            str_init(&ret_type);
+                        
+                            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type);
+                            if(expr_retval != EXPRESSION_SUCCESS) {
+                                str_dtor(&ret_type);
+                                return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
+                            }
+
+                            if(!is_variadic) {
+                                if(!is_compatible_type_c(&ret_type, params_s[argument_cnt])) {
+                                    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                                    fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!\n", get_attr(&func_id, tok_b->scanner));
+                                    str_dtor(&ret_type);
+                                    return SEMANTIC_ERROR_PARAMETERS_EXPR;
+                                }
+                                else {
+                                    //Ok
+                                }
+                            }
+
+                            str_dtor(&ret_type);
+
+                            argument_cnt++;
+                        }
+                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ")") == 0) {
+                            token_aging(tok_b);
+                            closing_bracket = true;
+                            continue;
+                        }
+                        else {
+                            fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                            fprintf(stderr, "Missing ')' after function arguments (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
+                            return SYNTAX_ERROR_IN_EXPR;
+                        }
+
+                        //Check if there will be next argument
+                        t = lookahead(tok_b->scanner);
+                        if(t.token_type == ERROR_TYPE) {
+                            return LEXICAL_ERROR;
+                        }
+                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ",") == 0) {
+                            if(argument_cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
+                                fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                                fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!\n", get_attr(&func_id, tok_b->scanner));
+                                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+                            }
+                            else {
+                                //Ok
+                            }
+                        }
+                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ")") == 0) {
+                            closing_bracket = true;
+                            if((argument_cnt < strlen(params_s) ) && !is_variadic) { //Function needs more arguments
+                                fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                                fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!\n", get_attr(&func_id, tok_b->scanner));
+                                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+                            }
+                        }
+                        else {
+                            fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                            fprintf(stderr, "Missing ',' or ')' between arguments (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
+                            return SYNTAX_ERROR_IN_EXPR;
+                        }
+                    }
+                    if(argument_cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
+                        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+                        fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!\n", get_attr(&func_id, tok_b->scanner));
+                        return SEMANTIC_ERROR_PARAMETERS_EXPR;
+                    }
+                }
+            }
+
+            //Function was succesfully called
+
+            cpy_strings(&result->dtype, &(symbol->data.ret_types));
+        }
+        else {
+            char type_c = dtype_to_char(symbol->data.dtype);
+            make_type_str(&result->dtype, type_c);
+        }
+    
         break;
     default:
         if(is_nil(tok_b->scanner, &tok_b->current)) {
-            result->dtype = NIL;
+            make_type_str(&result->dtype, 'z');
         }
         else {
-            result->dtype = UNDEFINED;
+             make_type_str(&result->dtype, ' ');
         }
 
         break;
@@ -212,12 +346,16 @@ int from_input_token(expr_el_t *result,
  * @brief Creates stop symbol and initializes it
  */ 
 expr_el_t stop_symbol() {
-    expr_el_t stop_symbol;
-
-    stop_symbol.type = STOP_SYM;
-    stop_symbol.dtype = UNDEFINED;
-    stop_symbol.value = NULL;
-    stop_symbol.is_zero = false;
+    expr_el_t stop_symbol = {
+        .type = STOP_SYM, 
+        .dtype = {
+            .alloc_size = 0, 
+            .length = 0, 
+            .str = NULL
+        }, 
+        .value = NULL, 
+        .is_zero = false
+    };
 
     return stop_symbol;
 }
@@ -226,7 +364,14 @@ expr_el_t stop_symbol() {
  * @brief Creates precedence sign due to given parameter and initializes it
  */ 
 expr_el_t prec_sign(char sign) {
-    expr_el_t precedence_sign;
+    expr_el_t precedence_sign = {
+        .dtype = {
+            .alloc_size = 0, 
+            .length = 0, 
+            .str = NULL
+        }
+    };
+
     switch(sign) {
         case '<':
             precedence_sign.type = '<';
@@ -243,7 +388,6 @@ expr_el_t prec_sign(char sign) {
     }
 
     precedence_sign.value = NULL;
-    precedence_sign.dtype = UNDEFINED;
     precedence_sign.is_zero = false;
 
     return precedence_sign;
@@ -354,35 +498,37 @@ expr_el_t safe_op_pop(bool *cur_ok, int *check_result, pp_stack_t *op_stack) {
 /**
  * @brief Returns true if two types are compatible
  */ 
-bool is_compatible(sym_dtype_t dtype1, sym_dtype_t dtype2) {
-    return (dtype1 == dtype2) ||
-           (dtype1 == NUM && dtype2 == INT) || 
-           (dtype2 == NUM && dtype1 == INT);
+bool is_compatible(string_t *dtypes1, string_t *dtypes2) {
+    return ((dstring_cmp(dtypes1, dtypes2) == 0) ||
+            (prim_type(dtypes1) == INT && prim_type(dtypes2) == NUM) ||
+            (prim_type(dtypes2) == INT && prim_type(dtypes1) == NUM));
 }
 
 /**
  * @brief Resolves which data type attribut should have newly created nonterminal on stack
  */ 
-void resolve_res_type(sym_dtype_t *res, expr_rule_t *rule, 
+void resolve_res_type(string_t *res, expr_rule_t *rule, 
                       expr_el_t cur_op, bool cur_ok) {
 
-    if(*res == UNDEFINED) {
+    if(prim_type(res) == UNDEFINED) {
         if(cur_ok) {
-            *res = cur_op.dtype;
+            cpy_strings(res, &cur_op.dtype);
         }
     }
     
-    if(rule->return_type != UNDEFINED) {
-        *res = rule->return_type;
+    if(rule->return_type != ORIGIN) {
+        str_clear(res);
+        app_char(dtype_to_char(rule->return_type), res);
     }
-    else if(cur_op.dtype == NUM && *res == INT) {
-        *res = NUM;
+    else if(prim_type(&(cur_op.dtype)) == NUM && prim_type(res) == INT) {
+        str_clear(res);
+        app_char(dtype_to_char(NUM), res);
     }
 }
 
 int get_tcheck_ret(expr_el_t *current_operand) {
     int result;
-    if(current_operand->dtype == NIL) {
+    if(prim_type(&current_operand->dtype) == NIL) {
         result = NIL_ERROR;
     }
     else {
@@ -396,12 +542,19 @@ int get_tcheck_ret(expr_el_t *current_operand) {
  * @brief Performs type checking when precedence parser reducing the top of the stack
  * @note Type check is based on rules writen in get_rule() ( @see get_rule())
  */ 
-int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
+int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
 
     expr_el_t current = pp_pop(&op_stack);
     bool is_curr_ok = false, must_be_flag = false;
     int result = EXPRESSION_SUCCESS;
-    sym_dtype_t tmp_res_type = rule->return_type, must_be = UNDEFINED;
+
+    string_t tmp_res_type;
+    str_init(&tmp_res_type);
+    app_char(dtype_to_char(rule->return_type), &tmp_res_type);
+
+    string_t must_be;
+    str_init(&must_be);
+    app_char(' ', &must_be);
 
     char c;
     for(int i = 0; (c = rule->operator_types[i]) != '\0' && !result; i++) {
@@ -430,16 +583,18 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
         }
         else { /**< Current char is type specifier */
             if(must_be_flag) { /**< Must_be mode is set */
-                if(must_be == UNDEFINED && current.dtype == char_to_dtype(c)) {
-                    must_be = current.dtype;
+                if(prim_type(&must_be) == UNDEFINED && 
+                   prim_type(&(current.dtype)) == char_to_dtype(c)) {
+
+                    cpy_strings(&must_be, &(current.dtype));
                 }
 
-                if(is_compatible(current.dtype, must_be)) { /**< Type of current operator is compatible with type of earlier operator */
+                if(is_compatible(&(current.dtype), &must_be)) { /**< Type of current operator is compatible with type of earlier operator */
                     is_curr_ok = true;
                 }
             }
             else { /**< Normal mode */
-                if(c == '*' || current.dtype == char_to_dtype(c)) {
+                if(c == '*' || prim_type(&(current.dtype)) == char_to_dtype(c)) {
                     is_curr_ok = true; //Operand type corresponds with operator specifier
                 }
             }
@@ -450,7 +605,11 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, sym_dtype_t* res_t) {
 
     // Specifier string ended -> if specifier for last operator was not found -> error
     result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
-    *res_t = tmp_res_type;
+
+    str_dtor(&must_be);
+    cpy_strings(res_type, &tmp_res_type);
+    str_dtor(&tmp_res_type);
+
     return result;
 }
 
@@ -483,7 +642,7 @@ void print_operands(pp_stack_t *ops, symtabs_stack_t *sym_stack,
 
     while(!pp_is_empty(ops)) {
         expr_el_t cur = pp_pop(ops);
-        fprintf(stderr, "Operand: %s (%d)\n", (char *)cur.value, cur.is_zero);
+        fprintf(stderr, "Operand: %s (is zero: %d, data_type: %s)\n", (char *)cur.value, cur.is_zero, to_str(&cur.dtype));
 
         tree_node_t *symbol = search_in_tables(sym_stack, symtab, (char *)cur.value);
         if(symbol) {
@@ -540,10 +699,13 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
 /**
  * @brief Creates non-terminal (E) expression symbol (there is only one non-terminal in rules)
  */ 
-expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
+expr_el_t non_term(string_t *data_type, bool is_zero) {
     expr_el_t non_terminal;
     non_terminal.type = NON_TERM;
-    non_terminal.dtype = data_type;
+
+    str_init(&(non_terminal.dtype));
+    cpy_strings(&(non_terminal.dtype), data_type);
+
     non_terminal.value = "NONTERM";
     non_terminal.is_zero = is_zero;
 
@@ -559,32 +721,38 @@ expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
  */ 
 //TODO pushing i only works for static values
 //TODO we need to know wheter it is static value or a variable 
-int reduce(pp_stack_t *st, pp_stack_t *ops, 
+int reduce(pp_stack_t *st, pp_stack_t ops, 
            symbol_tables_t *syms,
            expr_rule_t *rule,
-           sym_dtype_t *result_type,
-           bool will_be_zero) {
+           string_t *result_type,
+           bool will_be_zero,
+           pp_stack_t *garbage) {
     
     if(strcmp(rule->right_side, "i") == 0) {
-        expr_el_t element_terminal = pp_top(ops);
+        expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
         if(res == NULL) {
-            //we are pushing a static value
-            generate_value_push(VAL, element_terminal.dtype, element_terminal.value);
+            sym_dtype_t dtype = char_to_dtype(to_str(&element_terminal.dtype)[0]);
+            //We are pushing a static value
+            generate_value_push(VAL, dtype, element_terminal.value);
         }
         else{
-            //we are pushing variable
-            fprintf(stderr,"Pushing variable %s to stack\n",res->data.name.str);
+            //We are pushing variable
+            fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
             generate_value_push(VAR, res->data.dtype , res->data.name.str);
         }
     }
 
-    //generate operation code
+    //Generate operation code
     if(rule->generator_function != NULL)
         rule->generator_function();
-    print_operands(ops, &syms->symtab_st, &syms->symtab); /**< It will be probably substituted for code generating */
 
-    if(!pp_push(st, non_term(*result_type, will_be_zero))) {
+    print_operands(&ops, &syms->symtab_st, &syms->symtab); /**< It will be probably substituted for code generating */
+
+    if(!pp_push(st, non_term(result_type, will_be_zero))) { /**< Make non terminal at the top of main stack */
+        return INTERNAL_ERROR;
+    }
+    if(!pp_push(garbage, pp_top(st))) { /**< Add nonterminal to garbage collector stack */
         return INTERNAL_ERROR;
     }
 
@@ -595,7 +763,8 @@ int reduce(pp_stack_t *st, pp_stack_t *ops,
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
 int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
-               char ** failed_op_msg, sym_dtype_t *ret_type) {
+               char ** failed_op_msg, string_t *ret_types, 
+               pp_stack_t *garbage) {
 
     string_t to_be_reduced;
     str_init(&to_be_reduced);
@@ -611,15 +780,19 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     for(int i = 0; (rule = get_rule(i)); i++) {
         if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
-            int t_check_res = type_check(operands, rule, ret_type);
+            int t_check_res = type_check(operands, rule, ret_types);
+
+            fprintf(stderr, "Ret. types: %s Retval:%d\n", to_str(ret_types), t_check_res);
+
             if(t_check_res != EXPRESSION_SUCCESS) { /**< Type check was not succesfull */
                 *failed_op_msg = rule->error_message;
                 retval = t_check_res;
             }
             else {
                 bool will_be_zero = resolve_res_zero(operands, rule);
-                retval = reduce(s, &operands, symtabs, 
-                                rule, ret_type, will_be_zero);
+                retval = reduce(s, operands, symtabs, 
+                                rule, ret_types, will_be_zero,
+                                garbage);
             }
 
         }
@@ -627,6 +800,7 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
 
     pp_stack_dtor(&operands);
     str_dtor(&to_be_reduced);
+
     return retval;
 }
 
@@ -674,16 +848,18 @@ void free_everything(pp_stack_t *stack, pp_stack_t *garbage) {
     while(!pp_is_empty(garbage))
     {
         expr_el_t current_el = pp_pop(garbage);
-        free(current_el.value);
+        str_dtor(&(current_el.dtype));
+
+        if(current_el.type != NON_TERM) {
+            free(current_el.value);
+        }
     }
     
     pp_stack_dtor(garbage);
     pp_stack_dtor(stack);
 }
 
-/**
- * @brief Makes last token from current token and destructs old token
- */ 
+
 void token_aging(tok_buffer_t *token_buffer) {
     token_buffer->last = token_buffer->current;
     token_buffer->current = get_next_token(token_buffer->scanner);
@@ -723,12 +899,10 @@ void print_err_message(int *return_value,
     switch(*return_value)
     {
     case LEXICAL_ERROR:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mLexical error:\033[0m ", r, c);
-        fprintf(stderr, "Not recognized token! (\"\033[1;33m%s\033[0m\")\n", attr);
         break;
 
     case SEM_ERROR_IN_EXPR:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", r, c);
         fprintf(stderr, "Bad data types in expression!\n");
         if(*err_m) {
             fprintf(stderr, "\t| \033[0;33m%s\033[0m\n", *err_m);
@@ -737,33 +911,36 @@ void print_err_message(int *return_value,
         break;
 
     case UNDECLARED_IDENTIFIER:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic error:\033[0m ", r, c);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", r, c);
         fprintf(stderr, "Undeclared identifier \"\033[1;33m%s\033[0m\"!\n", attr);
         break;
 
     case NIL_ERROR:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSemantic (nil) error:\033[0m ", r, c);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic (nil) error:\033[0m ", r, c);
         fprintf(stderr, "Cannot use nil in expression like this!\n");
         break;
     
     case DIV_BY_ZERO:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mDivision by zero:\033[0m ", r, c);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mDivision by zero:\033[0m ", r, c);
         fprintf(stderr, "Cannot divide by zero!\n");
         break;
 
     case EXPRESSION_FAILURE:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
-        fprintf(stderr, "Invalid combination of tokens in expression! (\"\033[1;33m%s%s\033[0m\")\n", attr, lattr);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", r, c);
+        fprintf(stderr, "Invalid combination of tokens in expression! (\"\033[1;33m%s%s\033[0m\")\n", lattr, attr);
         *return_value = SYNTAX_ERROR_IN_EXPR;
         break;
 
     case MISSING_EXPRESSION:
-        fprintf(stderr, "(%ld:%ld)\t| \033[0;31mSyntax error:\033[0m ", r, c);
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", r, c);
         fprintf(stderr, "Expected expression, but it was not found! (found \"\033[1;33m%s\033[0m\" instead)\n", attr);
         *return_value = SYNTAX_ERROR_IN_EXPR;
         break;
 
     default:
+        if(*return_value < 0) { //Indicates that only return code should be propagated without any msg
+            *return_value = -(*return_value);
+        }
         break;
     }
 }
@@ -793,7 +970,7 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, symbol_tables_t *s, sym_dtype_t *dtype) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
 
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
@@ -833,7 +1010,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, sym_dtype_t *dtype) {
         }
 
         char precedence = get_precedence(on_top, on_input);
-        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buffer.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, stop_flag);
+        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, stop_flag);
         if(precedence == '=') {
             if(!pp_push(&stack, on_input)) {
                 retval = INTERNAL_ERROR;
@@ -848,7 +1025,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, sym_dtype_t *dtype) {
             empty_cycle = false;
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, s, &failed_op_msg, dtype);
+            retval = reduce_top(&stack, s, &failed_op_msg, dtypes, &garbage);
             empty_cycle = false;
         }
         else {
