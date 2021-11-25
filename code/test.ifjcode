@@ -17,41 +17,86 @@ LABEL $END_FUN$write
 
 
 
-JUMP $END_FUN$sum
-#function sum ()
-LABEL $FUN$sum
+JUMP $END_FUN$a
+#function a ()
+LABEL $FUN$a
 CREATEFRAME
-#define param sum$b$1
-DEFVAR TF@&VAR&sum$b$1
-POPS TF@&VAR&sum$b$1
-#define param sum$a$0
-DEFVAR TF@&VAR&sum$a$0
-POPS TF@&VAR&sum$a$0
-PUSHS TF@&VAR&sum$a$0
-PUSHS TF@&VAR&sum$b$1
-# start operator A..B
+#define param a$c$1
+DEFVAR TF@&VAR&a$c$1
+POPS TF@&VAR&a$c$1
+#define param a$b$0
+DEFVAR TF@&VAR&a$b$0
+POPS TF@&VAR&a$b$0
+PUSHS TF@&VAR&a$b$0
+PUSHS TF@&VAR&a$c$1
+# start operator A>=B
 PUSHFRAME
 CREATEFRAME
 DEFVAR TF@!TMP!A
 DEFVAR TF@!TMP!B
-DEFVAR TF@!TMP!RESULT
 POPS TF@!TMP!B
 POPS TF@!TMP!A
-CONCAT TF@!TMP!RESULT TF@!TMP!A TF@!TMP!B
-PUSHS TF@!TMP!RESULT
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+GTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
 POPFRAME
-# end operator A..B
+# end operator A>=B
+#if 0
+PUSHS bool@true
+JUMPIFNEQS $ELSE$START$0
+PUSHS string@"b>=c"
 # write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
+PUSHS TF@&VAR&a$b$0
+PUSHS TF@&VAR&a$c$1
+# start operator A==B
+EQS
+# end operator A==B
+#if 1
+PUSHS bool@true
+JUMPIFNEQS $ELSE$START$1
+PUSHS string@"b==c"
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#end of if 1
+JUMP $ELSE$END$1
+LABEL $ELSE$START$1
+PUSHS string@"b!=c"
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#end of else and the whole if 1 statement
+LABEL $ELSE$END$1
+#end of if 0
+JUMP $ELSE$END$0
+LABEL $ELSE$START$0
+PUSHS string@"b<c"
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#end of else and the whole if 0 statement
+LABEL $ELSE$END$0
 
 
 RETURN
-LABEL $END_FUN$sum
+LABEL $END_FUN$a
 
-PUSHS int@55
-# sum()
+PUSHS int@4
+PUSHS int@10
+# a()
 PUSHFRAME
-CALL $FUN$sum
+CALL $FUN$a
 POPFRAME

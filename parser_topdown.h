@@ -58,6 +58,7 @@ typedef enum return_codes {
 typedef struct parser {
     token_t * curr_func_id; /**< Pointer to token with identifier of function, that is currently parsed */
     size_t decl_cnt; /**< Declaration counter for making unique identifiers in target code */
+    size_t cond_cnt; /**< Condition counter for making unique labels for conditions in target code */
     bool found_return; /**< Flag for propagation info about found returns */
 
     tok_stack_t decl_func; /**< Stack with declared functions (to check if they were defined)*/

@@ -1,4 +1,13 @@
-function sum (a:string,b:string) --jump
-    write(a..b)
+function a(b:integer,c:integer)
+    if b>=c then
+        write("b>=c")
+        if b==c then
+            write("b==c")
+        else
+            write("b!=c")
+        end
+    else
+        write("b<c")
+    end
 end
-sum(55,550)
+a(4,10)

@@ -110,6 +110,7 @@ void parser_setup(parser_t *p, scanner_t *s) {
     //load_builtin_f(&symtab);
     //semantic_init();
     parser->decl_cnt = 0;
+    parser->cond_cnt = 0;
 }
 
 
@@ -426,7 +427,7 @@ int assignment(token_t t) {
     string_t id_types;
     str_init(&id_types);
 
-    //todo push names to the stack in lside
+    // push names to the stack in lside
     tok_stack_t var_names;
     tok_stack_init(&var_names);
 
@@ -435,7 +436,7 @@ int assignment(token_t t) {
     
     retval = (retval == PARSE_SUCCESS) ? assignment_rside(&var_id, &id_types, &id_number) : retval;        
     
-    //todo call generate_params
+    //generate assignment of the values on stack
     generate_multiple_assignment(&sym.symtab_st, &sym.symtab, &var_names,scanner);
 
     str_dtor(&id_types);
@@ -886,7 +887,6 @@ int func_def_params_prolog(token_t *param_id) {
 /**
  * @brief Parses parameters in function definition (and makes semantics checks)
  */ 
-//TODO stack for param name saving
 int func_def_params(token_t *id_token, bool was_decl, sym_data_t *f_data) {
     size_t params_cnt = 0;
     //Check if there are parameters
@@ -1200,8 +1200,19 @@ int parse_function_call(token_t *id_func) {
     bool opening_bracket = check_next_token_attr(SEPARATOR, "(");
     
     if(opening_bracket) {
+
+        //parsing arguments should leave the arguments at the top of the stack 
         int retval = parse_function_arguments(id_func);
         debug_print("function args success %i\n", (int)retval);
+
+        tree_node_t *symbol = search(&sym.global, get_attr(id_func, scanner));
+        char * params_str = to_str(&symbol->data.params);
+        bool is_variadic = (params_str[0] == '%') ? true : false;
+        //generate function call unless variadic
+        if(!is_variadic){
+            debug_print("function %s is not variadic",id_func);
+            generate_call_function(get_attr(id_func, scanner));
+        }
 
         return retval;
     }
@@ -1245,6 +1256,9 @@ int parse_function_arguments(token_t *id_func) {
                 else {
                     //Ok
                 }
+            }else{
+                //if variadic call for each argument
+                generate_call_function(get_attr(id_func,scanner));
             }
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
@@ -1297,6 +1311,9 @@ int parse_function_arguments(token_t *id_func) {
  * @brief Parses if statement
  */ 
 int parse_if() {
+    //we must copy the value, because there can be nested ifs
+    size_t current_cond_cnt = parser->cond_cnt;
+    parser->cond_cnt++;
     //Go one token forward
     get_next_token(scanner);
 
@@ -1312,6 +1329,8 @@ int parse_if() {
     if(!then) {
         return SYNTAX_ERROR;
     }
+    //generate conditions and jumps 
+    generate_if_condition(current_cond_cnt);
 
     to_inner_ctx(parser); //Switch the context
 
@@ -1330,9 +1349,12 @@ int parse_if() {
         return LEXICAL_ERROR;
     }
     else if(compare_token(t, KEYWORD)) {
+        //generates end of if part statement
+        generate_if_end(current_cond_cnt);
         if(compare_token_attr(t, KEYWORD, "end")) {
             debug_print("Ended if\n");
-
+            // generate end of the whole if - (else) statement
+            generate_else_end(current_cond_cnt);
             return PARSE_SUCCESS;
         }
         else if(compare_token_attr(t, KEYWORD, "else")) {
@@ -1353,7 +1375,8 @@ int parse_if() {
             to_outer_ctx(parser);
 
             t = get_next_token(scanner);
-    
+            //generate end of the whole if - (else) statement
+            generate_else_end(current_cond_cnt);
             return PARSE_SUCCESS; //Back to higher level context
         }
 
@@ -1547,11 +1570,8 @@ int parse_global_identifier() {
         error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);
         return SEMANTIC_ERROR_DEFINITION;
     }
-    //this should leave the arguments at the top of the stack
-    int ret = parse_function_call(&id_token);
-    //generate function call
-    generate_call_function(get_attr(&id_token, scanner));
-    return ret;
+
+    return parse_function_call(&id_token);
 }
 
 
@@ -1587,9 +1607,7 @@ int parse_identifier() {
         }
 
         debug_print("Call function %s\n", func);
-        int res = parse_function_call(&id_token);
-        generate_call_function(get_attr(&id_token,scanner));
-        return res;
+        return parse_function_call(&id_token);
     }
     else if(is_multiple_assignment || is_single_assignment) {
         debug_print("parsing assignment...\n");

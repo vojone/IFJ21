@@ -102,6 +102,16 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name 
 
 
 /**
+ * *--------CONDIONS--------
+ */ 
+void generate_if_condition(size_t n);
+
+void generate_if_end(size_t n);
+
+void generate_else_end(size_t n);
+
+
+/**
  * *---------OPERATIONS---------
  */ 
 void generate_operation_add();

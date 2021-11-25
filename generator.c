@@ -122,11 +122,30 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token
 
 }
 
+/**
+ * *--------CONDIONS--------
+ */ 
+void generate_if_condition(size_t n){
+    code_print("#if %i",n);
+    code_print("PUSHS bool@true");
+    code_print("JUMPIFNEQS $ELSE$START$%i",n);
+}
+
+void generate_if_end(size_t n){
+    code_print("#end of if %i",n);
+    code_print("JUMP $ELSE$END$%i",n);
+    code_print("LABEL $ELSE$START$%i",n);
+}
+
+void generate_else_end(size_t n){
+    code_print("#end of else and the whole if %i statement",n);
+    code_print("LABEL $ELSE$END$%i",n);
+}
+
 
 /**
  * *---------OPERATIONS---------
  */ 
-
 void generate_operation_add(){
     code_print("ADDS");
 }
@@ -140,11 +159,11 @@ void generate_operation_mul(){
 }
 
 void generate_operation_div(){
-    code_print("DIV");
+    code_print("DIVS");
 }
 
 void generate_operation_idiv(){
-    code_print("IDIV");
+    code_print("IDIVS");
 }
 
 void generate_operation_eq(){
