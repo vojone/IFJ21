@@ -160,8 +160,7 @@ int tok_to_type(tok_buffer_t *tok_b) {
  */ 
 int from_input_token(expr_el_t *result, 
                      tok_buffer_t *tok_b,
-                     symtabs_stack_t *symstack,
-                     symtab_t *symtab) {
+                     symbol_tables_t *syms) {
 
     result->type = tok_to_type(tok_b);
     result->value = NULL;
@@ -179,9 +178,8 @@ int from_input_token(expr_el_t *result,
         result->dtype = STR;
         break;
     case IDENTIFIER:
-        symbol = search_in_tables(symstack, symtab, 
-                                  get_attr(&(tok_b->current), 
-                                  tok_b->scanner));
+        symbol = search_in_tables(&syms->symtab_st, &syms->symtab, 
+                                  get_attr(&(tok_b->current), tok_b->scanner));
 
         if(symbol == NULL) {
             return UNDECLARED_IDENTIFIER;
@@ -561,28 +559,30 @@ expr_el_t non_term(sym_dtype_t data_type, bool is_zero) {
  */ 
 //TODO pushing i only works for static values
 //TODO we need to know wheter it is static value or a variable 
-int reduce(pp_stack_t *st, pp_stack_t *ops, symtabs_stack_t *sym_stack,
-           symtab_t *symtab,
+int reduce(pp_stack_t *st, pp_stack_t *ops, 
+           symbol_tables_t *syms,
            expr_rule_t *rule,
            sym_dtype_t *result_type,
            bool will_be_zero) {
     
-    if(strcmp(rule->right_side, "i") == 0){
+    if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(ops);
-        tree_node_t *res = search_in_tables(sym_stack, symtab, element_terminal.value);
-        if(res == NULL){
+        tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
+        if(res == NULL) {
             //we are pushing a static value
-            generate_value_push(VAL,element_terminal.dtype,element_terminal.value);
-        }else{
+            generate_value_push(VAL, element_terminal.dtype, element_terminal.value);
+        }
+        else{
             //we are pushing variable
             fprintf(stderr,"Pushing variable %s to stack\n",res->data.name.str);
             generate_value_push(VAR, res->data.dtype , res->data.name.str);
         }
     }
+
     //generate operation code
     if(rule->generator_function != NULL)
         rule->generator_function();
-    print_operands(ops, sym_stack, symtab); /**< It will be probably substituted for code generating */
+    print_operands(ops, &syms->symtab_st, &syms->symtab); /**< It will be probably substituted for code generating */
 
     if(!pp_push(st, non_term(*result_type, will_be_zero))) {
         return INTERNAL_ERROR;
@@ -594,7 +594,7 @@ int reduce(pp_stack_t *st, pp_stack_t *ops, symtabs_stack_t *sym_stack,
 /**
  * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
  */ 
-int reduce_top(pp_stack_t *s, symtabs_stack_t *sym_stack, symtab_t *symtab,
+int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
                char ** failed_op_msg, sym_dtype_t *ret_type) {
 
     string_t to_be_reduced;
@@ -605,9 +605,10 @@ int reduce_top(pp_stack_t *s, symtabs_stack_t *sym_stack, symtab_t *symtab,
         return INTERNAL_ERROR;
     }
 
-    get_str_to_reduction(s, &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string  from it*/
-    int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
+    get_str_to_reduction(s, &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string from it*/
+    
     expr_rule_t *rule;
+    int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     for(int i = 0; (rule = get_rule(i)); i++) {
         if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
             int t_check_res = type_check(operands, rule, ret_type);
@@ -617,8 +618,8 @@ int reduce_top(pp_stack_t *s, symtabs_stack_t *sym_stack, symtab_t *symtab,
             }
             else {
                 bool will_be_zero = resolve_res_zero(operands, rule);
-                retval = reduce(s, &operands, sym_stack,
-                                symtab, rule, ret_type, will_be_zero);
+                retval = reduce(s, &operands, symtabs, 
+                                rule, ret_type, will_be_zero);
             }
 
         }
@@ -634,11 +635,8 @@ int reduce_top(pp_stack_t *s, symtabs_stack_t *sym_stack, symtab_t *symtab,
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-int get_input_symbol(bool stop_flag,
-                     expr_el_t *on_input, 
-                     tok_buffer_t *t_buff, 
-                     symtabs_stack_t *symstack,
-                     symtab_t *symtab,
+int get_input_symbol(bool stop_flag, expr_el_t *on_input, 
+                     tok_buffer_t *t_buff, symbol_tables_t *symtabs,
                      pp_stack_t *garbage_stack) {
 
     int retval = EXPRESSION_SUCCESS;
@@ -646,7 +644,7 @@ int get_input_symbol(bool stop_flag,
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, t_buff, symstack, symtab);
+        retval = from_input_token(on_input, t_buff, symtabs);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -795,17 +793,16 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, void *symstack, 
-                     symtab_t *symtab, sym_dtype_t *ret_type) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, sym_dtype_t *dtype) {
 
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
     
-    tok_buffer_t tok_buffer;
+    tok_buffer_t tok_buff;
     pp_stack_t stack;
     pp_stack_t garbage;
     
-    prepare_buffer(sc, &tok_buffer);
+    prepare_buffer(sc, &tok_buff);
     retval = prepare_stacks(&stack, &garbage);
     if(retval != EXPRESSION_SUCCESS) {
         return retval;
@@ -813,17 +810,15 @@ int parse_expression(scanner_t *sc, void *symstack,
     
     bool stop_flag = false, empty_expr = true, empty_cycle = false;
     while(retval == EXPRESSION_SUCCESS) { //Main cycle
-        tok_buffer.current = lookahead(sc);
+        tok_buff.current = lookahead(sc);
 
-        if(tok_buffer.current.token_type == ERROR_TYPE) {
+        if(tok_buff.current.token_type == ERROR_TYPE) {
             retval = LEXICAL_ERROR;
             break;
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(stop_flag, &on_input, &tok_buffer, 
-                                  (symtabs_stack_t *)symstack, 
-                                  symtab, &garbage);
+        retval = get_input_symbol(stop_flag, &on_input, &tok_buff, s, &garbage);
 
         if(retval != EXPRESSION_SUCCESS) {
             break;
@@ -844,17 +839,16 @@ int parse_expression(scanner_t *sc, void *symstack,
                 retval = INTERNAL_ERROR;
             }
 
-            token_aging(&tok_buffer); /**< Make last token from current token */
+            token_aging(&tok_buff); /**< Make last token from current token */
             empty_cycle = false;
         }
         else if(precedence == '<') {  /**< Put input symbol to the top of the stack*/
             has_lower_prec(&stack, on_input);
-            token_aging(&tok_buffer);
+            token_aging(&tok_buff);
             empty_cycle = false;
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
-            retval = reduce_top(&stack, (symtabs_stack_t *)symstack, 
-                                symtab, &failed_op_msg, ret_type);
+            retval = reduce_top(&stack, s, &failed_op_msg, dtype);
             empty_cycle = false;
         }
         else {
@@ -871,7 +865,7 @@ int parse_expression(scanner_t *sc, void *symstack,
         empty_expr = false;
     }
 
-    print_err_message(&retval, &tok_buffer, &failed_op_msg);
+    print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
     //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));

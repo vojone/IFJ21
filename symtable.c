@@ -337,11 +337,10 @@ sym_data_t* search_builtin(const char *f_name) {
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(void *sym_stack, 
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
                                symtab_t *start_symtab, 
                                char *key) {
 
-    symtabs_stack_t *sym_stack_ptr = (symtabs_stack_t *)sym_stack;
     symtab_t *curr_tab = start_symtab;
     
     while(curr_tab != NULL) {
@@ -350,7 +349,7 @@ tree_node_t * search_in_tables(void *sym_stack,
             return result_of_searching;
         }
         else { //If not, try to search it in 'parent' symbol table
-            curr_tab = symtabs_get_ptr(sym_stack_ptr, curr_tab->parent_ind);
+            curr_tab = symtabs_get_ptr(sym_stack, curr_tab->parent_ind);
         }
     }
 

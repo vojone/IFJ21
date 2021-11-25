@@ -172,7 +172,7 @@ sym_data_t* search_builtin(const char *f_name);
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(void *sym_stack, 
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
                                symtab_t *start_symtab, 
                                char *key);
 
