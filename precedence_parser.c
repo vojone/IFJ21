@@ -358,7 +358,8 @@ int process_identifier(expr_el_t *result,
     symbol = search_in_tables(&syms->symtab_st, &syms->symtab, id_name);
 
     if(symbol == NULL) {
-        //Check builtin
+        //Check if it is builtin function
+        check_builtin(id_name, &syms->global);
 
         symbol = search(&syms->global, id_name);
         if(symbol == NULL) { //Symbol was not found in variables nor in global table with functions
@@ -392,7 +393,8 @@ int process_identifier(expr_el_t *result,
  */ 
 int from_input_token(expr_el_t *result, 
                      tok_buffer_t *tok_b,
-                     symbol_tables_t *syms) {
+                     symbol_tables_t *syms,
+                     bool *was_id) {
 
     result->type = tok_to_type(tok_b);
     result->value = NULL;
@@ -404,17 +406,25 @@ int from_input_token(expr_el_t *result,
     {
     case INTEGER:
         make_type_str(&result->dtype, 'i');
+        *was_id = false;
         break;
     case NUMBER:
         make_type_str(&result->dtype, 'n');
+        *was_id = false;
         break;
     case STRING:
         make_type_str(&result->dtype, 's');
+        *was_id = false;
         break;
     case IDENTIFIER:
-        retval = process_identifier(result, tok_b, syms);
-        if(retval != EXPRESSION_SUCCESS) {
-            return retval;
+        if(!*was_id) {
+            retval = process_identifier(result, tok_b, syms);
+            if(retval != EXPRESSION_SUCCESS) {
+                return retval;
+            }
+            else {
+                *was_id = true;
+            }
         }
 
         break;
@@ -425,6 +435,8 @@ int from_input_token(expr_el_t *result,
         else {
              make_type_str(&result->dtype, ' ');
         }
+
+        *was_id = false;
 
         break;
     }
@@ -625,9 +637,11 @@ void resolve_res_type(string_t *res, expr_rule_t *rule,
     }
 }
 
+
+
 int get_tcheck_ret(expr_el_t *current_operand) {
     int result;
-    if(prim_type(&current_operand->dtype) == NIL) {
+    if(prim_type(&current_operand->dtype) == NIL && PREVENT_NIL) {
         result = NIL_ERROR;
     }
     else {
@@ -741,11 +755,11 @@ void print_operands(pp_stack_t *ops, symtabs_stack_t *sym_stack,
 
     while(!pp_is_empty(ops)) {
         expr_el_t cur = pp_pop(ops);
-        fprintf(stderr, "Operand: %s (is zero: %d, data_type: %s)\n", (char *)cur.value, cur.is_zero, to_str(&cur.dtype));
+        //fprintf(stderr, "Operand: %s (is zero: %d, data_type: %s)\n", (char *)cur.value, cur.is_zero, to_str(&cur.dtype));
 
         tree_node_t *symbol = search_in_tables(sym_stack, symtab, (char *)cur.value);
         if(symbol) {
-            fprintf(stderr, "Operand name: %s\n", to_str(&symbol->data.name));
+            //fprintf(stderr, "Operand name: %s\n", to_str(&symbol->data.name));
         }
     }
 }
@@ -881,7 +895,7 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
         if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
             int t_check_res = type_check(operands, rule, ret_types);
 
-            fprintf(stderr, "Ret. types: %s Retval:%d\n", to_str(ret_types), t_check_res);
+            //fprintf(stderr, "Ret. types: %s Retval:%d\n", to_str(ret_types), t_check_res);
 
             if(t_check_res != EXPRESSION_SUCCESS) { /**< Type check was not succesfull */
                 *failed_op_msg = rule->error_message;
@@ -910,14 +924,14 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
  */ 
 int get_input_symbol(bool stop_flag, expr_el_t *on_input, 
                      tok_buffer_t *t_buff, symbol_tables_t *symtabs,
-                     pp_stack_t *garbage_stack) {
+                     pp_stack_t *garbage_stack, bool *was_func) {
 
     int retval = EXPRESSION_SUCCESS;
     if(stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, t_buff, symtabs);
+        retval = from_input_token(on_input, t_buff, symtabs, was_func);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -1084,7 +1098,8 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
         return retval;
     }
     
-    bool stop_flag = false, empty_expr = true, empty_cycle = false;
+    bool stop_flag = false, empty_expr = true, 
+         empty_cycle = false, was_func = false;
     while(retval == EXPRESSION_SUCCESS) { //Main cycle
         tok_buff.current = lookahead(sc);
 
@@ -1094,7 +1109,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
         }
 
         expr_el_t on_input, on_top;
-        retval = get_input_symbol(stop_flag, &on_input, &tok_buff, s, &garbage);
+        retval = get_input_symbol(stop_flag, &on_input, &tok_buff, s, &garbage, &was_func);
 
         if(retval != EXPRESSION_SUCCESS) {
             break;
@@ -1144,7 +1159,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
+    //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }
 

@@ -790,7 +790,7 @@ class f_call6 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(a(a((a(a(7))))) local
+            R"(a(a((a(a(7))))) write("a")
             )";
         }
 };
@@ -805,13 +805,14 @@ class f_call7 : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"(a("s") write("a")
+            R"(a("s") a("a") local
             )";
         }
 };
 
 TEST_F(f_call7, only_parse) {
-    insert_sym(&syms.global, "a", {{0, 0, (char *)"a"}, FUNC, {2, 0, (char *)""}, {0, 0, (char *)"s"}, INT, DECLARED});
+    insert_sym(&syms.global, "a", {{0, 0, (char *)"a"}, FUNC, {2, 0, (char *)"ss"}, {0, 0, (char *)"s"}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type), EXPRESSION_SUCCESS);
     ASSERT_EQ(parse_expression(&uut, &syms, &ret_type), EXPRESSION_SUCCESS);
 }
 

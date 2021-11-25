@@ -102,13 +102,6 @@ void parser_dtor() {
 }
 
 
-void check_builtin(token_t *id_token) {
-    sym_data_t *bfunc_data_ptr = search_builtin(get_attr(id_token, scanner));
-    if(bfunc_data_ptr) {
-        insert_sym(&sym.global, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
-    }
-}
-
 
 /**
  * @brief Checks if all declared functions were defined
@@ -1127,7 +1120,8 @@ int parse_function_def() {
         return LEXICAL_ERROR;
     }
 
-    check_builtin(&id_fc); //Adds builtin function into symtable so semantic checks can detects its redefinition
+    //Adds builtin function into symtable, so semantic checks can detects its redefinition
+    check_builtin(get_attr(&id_fc, scanner), &sym.global);
 
     //generate function start
     generate_start_function(get_attr(&id_fc, scanner));
@@ -1540,7 +1534,8 @@ int parse_global_identifier() {
 
     debug_print("got identifier\n");
 
-    check_builtin(&id_token); //Puts builtin fction into symtable if (identifier is symtable)
+    //Puts builtin fction into symtable if (identifier is symtable)
+    check_builtin(get_attr(&id_token, scanner), &sym.global);
 
     char *func = get_attr(&id_token, scanner);
     tree_node_t *func_valid = search(&sym.global, func);
@@ -1578,7 +1573,8 @@ int parse_identifier() {
     //Check if it is a function call
     if(compare_token_attr(t, SEPARATOR, "(")) {
 
-        check_builtin(&id_token); //Adds builtin functions into symtable
+        
+        check_builtin(get_attr(&id_token, scanner), &sym.global); //Adds builtin functions into symtable
 
         char *func = get_attr(&id_token, scanner);
         tree_node_t *func_valid = search(&sym.global, func);

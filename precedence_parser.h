@@ -36,6 +36,7 @@
 
 
 #define PREVENT_ZERO_DIV false
+#define PREVENT_NIL false
 
 
 /**

@@ -340,6 +340,17 @@ sym_data_t* search_builtin(const char *f_name) {
 
 
 /**
+ * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ */
+void check_builtin(char *key, symtab_t *dst) {
+    sym_data_t *bfunc_data_ptr = search_builtin(key);
+    if(bfunc_data_ptr) {
+        insert_sym(dst, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+    }
+}
+
+
+/**
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
