@@ -26,6 +26,7 @@ void generate_init(){
     code_print(".IFJcode21");
     code_print("CREATEFRAME");
     generate_write_function();
+    generate_checkzero_function();
 }
 
 /**
@@ -123,6 +124,9 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token
             code_print("PUSHS %s@%s",convert_type(dtype), token_s.str);
             
             str_dtor(&token_s);
+        }if(dtype == NUM){
+            double num = atof(token);
+            code_print("PUSHS %s@%a",convert_type(dtype), num);
         }else{
             code_print("PUSHS %s@%s",convert_type(dtype), token);
         }
@@ -189,11 +193,19 @@ void generate_operation_mul(){
 }
 
 void generate_operation_div(){
+
+    generate_call_function("$OP$checkzero");
+    
     code_print("DIVS");
 }
 
 void generate_operation_idiv(){
     code_print("IDIVS");
+}
+
+void generate_operation_unary_minus(){
+    code_print("PUSHS int@-1");
+    code_print("MULS");
 }
 
 void generate_operation_eq(){
@@ -257,6 +269,9 @@ void generate_operation_lte(){
 
     code_print("POPS TF@!TMP!B");
     code_print("POPS TF@!TMP!A");
+    
+    code_print("DEFVAR TF@!TYPE!A");
+    code_print("TYPE TF@!TYPE!A TF@!TMP!A");
 
     //make the stack to this form ->[B,A,B,A]
     code_print("PUSHS TF@!TMP!A");
@@ -329,6 +344,22 @@ void generate_write_function(){
     generate_end_function("write");         //end
 }
 
+void generate_checkzero_function(){
+    //->[b,a]
+    generate_start_function("$OP$checkzero");   //function write()
+    generate_parameter("$TEMP_CHECKZERO$");
+
+    code_print("PUSHS float@%a",0.0f);
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("JUMPIFNEQS $CHECKZERO$");
+    code_print("EXIT int@9");
+    code_print("LABEL $CHECKZERO$");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+
+    generate_end_function("$OP$checkzero");         //end
+
+}
+
 
 
 const char *convert_type(sym_dtype_t dtype){
@@ -389,8 +420,8 @@ bool is_prefix_of(char * prefix, char * str){
 
 char_mapping_t get_mapping(char * buffer){
     char_mapping_t mappings[] = {
-        {" ","\032"},
-        {"\n","\010"},
+        {"\n","\\010"},
+        {"\n","\\010"},
     };
     int mappings_length = sizeof(mappings)/sizeof(char_mapping_t);
     for (int i = 0; i < mappings_length; i++)
@@ -403,38 +434,46 @@ char_mapping_t get_mapping(char * buffer){
     return null_map;
 }
 
+// void to_ascii(const char * str, string_t * out){
+//     for (size_t i = 1; i < strlen(str)-1; i++)
+//     {
+//         char c = str[i];
+//         if( c == ' '){
+//             app_str(out, "\\032");
+//         }else{
+//             app_char(c,out);
+//         }
+//     }
+// }
+
 void to_ascii(const char * str, string_t * out){
+    // char buffer[3] = "";
+
+    // bool overwrite = false;
+    char c ='\0';
+    char c_prev = c;
     for (size_t i = 1; i < strlen(str)-1; i++)
     {
-        char c = str[i];
-        if( c == ' '){
-            app_str(out, "\\032");
+        c_prev = c;
+        c = str[i];
+        if(c == ' '){
+            app_str(out,"\\032");
+        }else if(c_prev == 92){
+            switch (c)
+            {
+            case 'n':
+                app_str(out,"010");
+                break;
+            default:
+                break;
+            }
+            // app_str(out,"\\032");
+            app_char(c,out);
         }else{
             app_char(c,out);
         }
     }
-    
 }
-// void to_ascii(const char * str, string_t * out){
-//     int i = 0;
-//     char buffer[3] = "";
-
-//     char c = str[i];
-//     char c_prev = '\0';
-
-//     while (c != '\0')
-//     {
-//         buffer[0]=c;
-//         buffer[1]=c_prev;
-        
-
-
-//         i++;
-//         app_char(c_prev,out);
-//         c_prev = c;
-//         c = str[i];
-//     }
-// }
 
 
 /***                            End of generator.c                         ***/

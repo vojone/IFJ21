@@ -324,7 +324,7 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands", generate_operation_mul},
         {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands", generate_operation_div},
         {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands", generate_operation_idiv},
-        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands", NULL},
+        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands", generate_operation_unary_minus},
         {"#E", "s", INT, NONE, "Only string can be operand of \"#\"", generate_operation_strlen},
         {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"", generate_operation_lt},
         {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"", generate_operation_gt},

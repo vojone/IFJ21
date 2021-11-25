@@ -134,6 +134,7 @@ void generate_operation_sub();
 void generate_operation_mul();
 void generate_operation_div();
 void generate_operation_idiv();
+void generate_operation_unary_minus();
 
 void generate_operation_eq();
 void generate_operation_gt();
@@ -153,6 +154,8 @@ void generate_operation_strlen();
  * @note supports exactly one argument
  */ 
 void generate_write_function();
+
+void generate_checkzero_function();
 
 
 /**

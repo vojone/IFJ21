@@ -1671,6 +1671,7 @@ bool is_expression(token_t t) {
             t.token_type == INTEGER || 
             t.token_type == STRING || 
             t.token_type == IDENTIFIER ||
+            (t.token_type == OPERATOR && str_cmp(get_attr(&t, scanner), "#") == 0) ||
             (t.token_type == KEYWORD && str_cmp(get_attr(&t, scanner), "nil") == 0));
 }
 

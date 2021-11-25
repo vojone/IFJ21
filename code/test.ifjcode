@@ -17,12 +17,63 @@ LABEL $END_FUN$write
 
 
 
-JUMP $END_FUN$a
-#function a ()
-LABEL $FUN$a
+JUMP $END_FUN$$OP$checkzero
+#function $OP$checkzero ()
+LABEL $FUN$$OP$checkzero
 CREATEFRAME
-DEFVAR TF@&VAR&a$b$0
-PUSHS string@
-#assign value to a$b$0
-POPS TF@&VAR&a$b$0
-DEFVAR TF@&VAR&a$c$1
+#define param $TEMP_CHECKZERO$
+DEFVAR TF@&VAR&$TEMP_CHECKZERO$
+POPS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS float@0x0p+0
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+JUMPIFNEQS $CHECKZERO$
+EXIT int@9
+LABEL $CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+
+
+RETURN
+LABEL $END_FUN$$OP$checkzero
+
+
+
+JUMP $END_FUN$main
+#function main ()
+LABEL $FUN$main
+CREATEFRAME
+DEFVAR TF@&VAR&main$a$0
+PUSHS float@0x1.e666666666666p+4
+#assign value to main$a$0
+POPS TF@&VAR&main$a$0
+DEFVAR TF@&VAR&main$b$1
+PUSHS int@1
+#assign value to main$b$1
+POPS TF@&VAR&main$b$1
+DEFVAR TF@&VAR&main$d$2
+PUSHS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$b$1
+# start operator A>B
+GTS
+# end operator A>B
+#if 0
+PUSHS bool@true
+JUMPIFNEQS $ELSE$START$0
+PUSHS int@1
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#end of if 0
+JUMP $ELSE$END$0
+LABEL $ELSE$START$0
+#end of else and the whole if 0 statement
+LABEL $ELSE$END$0
+
+
+RETURN
+LABEL $END_FUN$main
+
+# main()
+PUSHFRAME
+CALL $FUN$main
+POPFRAME
