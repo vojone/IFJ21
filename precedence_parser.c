@@ -155,12 +155,20 @@ int tok_to_type(tok_buffer_t *tok_b) {
     return UNDEFINED;
 }
 
+
+/**
+ * @brief Makes dynamic string from given character
+ */ 
 void make_type_str(string_t *dst, char type_c) {
     str_clear(dst);
     app_char(type_c, dst);
 }
 
 
+/**
+ * @brief Returns primary type of return types (first return type)
+ * @note When we use function in expression we will work only with primary return type in the rest of expr.
+ */ 
 sym_dtype_t prim_type(string_t *type_string) {
     return char_to_dtype(to_str(type_string)[0]);
 }
@@ -173,6 +181,209 @@ bool is_compatible_type_c(string_t *dtypes, char type_char) {
     return (prim_type(dtypes) == char_to_dtype(type_char) ||
             (prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) ||
             (char_to_dtype(type_char) == INT && prim_type(dtypes) == NUM));
+}
+
+/**
+ * @brief Checks if expected token type end token type of fiven token are equal
+ */
+bool is_tok_type(token_type_t exp_type, token_t *t) {
+    return t->token_type == exp_type;
+}
+
+
+/**
+ * @brief Checks whether expected token attribute end token attribute of fiven token are equal
+ */
+bool is_tok_attr(char *exp_attr, token_t *t, tok_buffer_t *tok_b) {
+    return str_cmp(get_attr(t, tok_b->scanner), exp_attr) == 0;
+}
+
+
+/**
+ * @brief Prints error msg to stderr
+ */ 
+void fcall_sem_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", 
+            tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+
+    fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! ", get_attr(func_id, tok_b->scanner));
+    fprintf(stderr, "%s\n", msg);
+}
+
+
+/**
+ * @brief Prints error msg to stderr
+ */ 
+void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", 
+            tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
+
+    fprintf(stderr, "In function call of \033[1;33m%s\033[0m! ", get_attr(func_id, tok_b->scanner));
+    fprintf(stderr, "%s\n", msg);
+}
+
+
+/**
+ * @brief Parses arguments in function call in expression
+ */ 
+int argument_parser(token_t *func_id, char *params_s, 
+                    symbol_tables_t *syms, tok_buffer_t *tok_b) {
+
+    size_t argument_cnt = 0;             
+    bool closing_bracket = false;
+    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
+    while(!closing_bracket) {
+        token_aging(tok_b);
+
+        token_t t = lookahead(tok_b->scanner);
+        if(t.token_type == ERROR_TYPE) {
+            return LEXICAL_ERROR;
+        }
+        else if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
+            
+            string_t ret_type;
+            str_init(&ret_type);
+        
+            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type);
+            if(expr_retval != EXPRESSION_SUCCESS) {
+                str_dtor(&ret_type);
+                return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
+            }
+
+            if(!is_variadic) {
+                if(!is_compatible_type_c(&ret_type, params_s[argument_cnt])) {
+                    fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
+                    str_dtor(&ret_type);
+                    return SEMANTIC_ERROR_PARAMETERS_EXPR;
+                }
+                else {
+                    //Parameter is ok
+                }
+            }
+
+            str_dtor(&ret_type);
+
+            argument_cnt++;
+        }
+        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
+            token_aging(tok_b);
+            closing_bracket = true;
+            continue;
+        }
+        else {
+            fcall_syn_error(tok_b, func_id, "Missing ')' after function arguments!\n");
+            return SYNTAX_ERROR_IN_EXPR;
+        }
+
+        //Check if there will be next argument
+        t = lookahead(tok_b->scanner);
+        if(t.token_type == ERROR_TYPE) {
+            return LEXICAL_ERROR;
+        }
+        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
+            if(argument_cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
+                fcall_sem_error(tok_b, func_id, "Too many arguments!");
+                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+            }
+            else {
+                //Ok
+            }
+        }
+        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
+            closing_bracket = true;
+            if((argument_cnt < strlen(params_s) ) && !is_variadic) { //Function needs more arguments
+                fcall_sem_error(tok_b, func_id, "Missing arguments!");
+                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+            }
+        }
+        else {
+            fcall_syn_error(tok_b, func_id, "Missing ',' or ')' between arguments!\n");
+            return SYNTAX_ERROR_IN_EXPR;
+        }
+    }
+    if(argument_cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
+        fcall_sem_error(tok_b, func_id, "Missing arguments!");
+        return SEMANTIC_ERROR_PARAMETERS_EXPR;
+    }
+
+
+    return EXPRESSION_SUCCESS;
+}
+
+
+/**
+ * @brief Parses function call inside expression
+ * @return EXPRESSION SUCCESS if wverything was ok
+ */ 
+int fcall_parser(tree_node_t *symbol, 
+                 symbol_tables_t *syms, 
+                 tok_buffer_t *tok_b) {
+
+    token_t func_id = tok_b->current;
+    char *params_s = to_str(&symbol->data.params);
+
+    token_aging(tok_b);
+
+    token_t t = lookahead(tok_b->scanner);
+    if(t.token_type == ERROR_TYPE) {
+        return LEXICAL_ERROR;
+    }
+    else if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) {
+        tok_b->current = t;
+        fcall_syn_error(tok_b, &func_id, "Missing '(' after function indentifier!\n");
+        return SYNTAX_ERROR_IN_EXPR;
+    }
+    else {
+        int retval = argument_parser(&func_id, params_s, syms, tok_b);
+
+        if(retval != EXPRESSION_SUCCESS) {
+            return retval;
+        }
+    }
+
+    return EXPRESSION_SUCCESS;
+}
+
+
+/**
+ * @brief Processes identifier got on input
+ */
+int process_identifier(expr_el_t *result, 
+                       tok_buffer_t *tok_b,
+                       symbol_tables_t *syms) { 
+
+    char *id_name = get_attr(&(tok_b->current), tok_b->scanner);
+
+    tree_node_t *symbol;
+    symbol = search_in_tables(&syms->symtab_st, &syms->symtab, id_name);
+
+    if(symbol == NULL) {
+        //Check builtin
+
+        symbol = search(&syms->global, id_name);
+        if(symbol == NULL) { //Symbol was not found in variables nor in global table with functions
+            return UNDECLARED_IDENTIFIER;
+        }
+        else {
+            str_cpy((char **)&result->value, id_name, strlen(id_name));
+
+            int retval = fcall_parser(symbol, syms, tok_b); //Process function call and arguments
+            if(retval != EXPRESSION_SUCCESS) {
+                return retval;
+            }
+
+            //Function was succesfully called
+            cpy_strings(&result->dtype, &(symbol->data.ret_types));
+
+            return EXPRESSION_SUCCESS;
+        }
+    }
+    else {
+        char type_c = dtype_to_char(symbol->data.dtype);
+        make_type_str(&result->dtype, type_c);
+
+        return EXPRESSION_SUCCESS;
+    }
 }
 
 
@@ -188,7 +399,7 @@ int from_input_token(expr_el_t *result,
     result->is_zero = false;
     str_init(&result->dtype);
 
-    tree_node_t * symbol;
+    int retval = EXPRESSION_SUCCESS;
     switch (tok_b->current.token_type)
     {
     case INTEGER:
@@ -201,125 +412,11 @@ int from_input_token(expr_el_t *result,
         make_type_str(&result->dtype, 's');
         break;
     case IDENTIFIER:
-        symbol = search_in_tables(&syms->symtab_st, &syms->symtab, get_attr(&(tok_b->current), tok_b->scanner));
-
-        if(symbol == NULL) {
-            symbol = search(&syms->global, get_attr(&(tok_b->current), tok_b->scanner));
-            
-            if(symbol == NULL) {
-                return UNDECLARED_IDENTIFIER;
-            }
-            else {
-                token_t func_id = tok_b->current;
-                char *params_s = to_str(&symbol->data.params);
-
-                token_aging(tok_b);
-
-                token_t t = lookahead(tok_b->scanner);
-                size_t argument_cnt = 0;
-               
-                if(t.token_type == ERROR_TYPE) {
-                    return LEXICAL_ERROR;
-                }
-                else if(t.token_type != SEPARATOR || str_cmp(get_attr(&t, tok_b->scanner), "(") != 0) {
-                    tok_b->current = t;
-                    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                    fprintf(stderr, "Missing '(' after function identifier (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
-                    return SYNTAX_ERROR_IN_EXPR;
-                }
-                else {                  
-                    bool closing_bracket = false;
-                    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
-                    while(!closing_bracket) {
-                        token_aging(tok_b);
-                        t = lookahead(tok_b->scanner);
-                        if(t.token_type == ERROR_TYPE) {
-                            return LEXICAL_ERROR;
-                        }
-                        else if(!is_EOE(tok_b->scanner, &t) && str_cmp(get_attr(&t, tok_b->scanner), ")") != 0) {
-                            
-                            string_t ret_type;
-                            str_init(&ret_type);
-                        
-                            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type);
-                            if(expr_retval != EXPRESSION_SUCCESS) {
-                                str_dtor(&ret_type);
-                                return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
-                            }
-
-                            if(!is_variadic) {
-                                if(!is_compatible_type_c(&ret_type, params_s[argument_cnt])) {
-                                    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                                    fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!\n", get_attr(&func_id, tok_b->scanner));
-                                    str_dtor(&ret_type);
-                                    return SEMANTIC_ERROR_PARAMETERS_EXPR;
-                                }
-                                else {
-                                    //Ok
-                                }
-                            }
-
-                            str_dtor(&ret_type);
-
-                            argument_cnt++;
-                        }
-                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ")") == 0) {
-                            token_aging(tok_b);
-                            closing_bracket = true;
-                            continue;
-                        }
-                        else {
-                            fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                            fprintf(stderr, "Missing ')' after function arguments (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
-                            return SYNTAX_ERROR_IN_EXPR;
-                        }
-
-                        //Check if there will be next argument
-                        t = lookahead(tok_b->scanner);
-                        if(t.token_type == ERROR_TYPE) {
-                            return LEXICAL_ERROR;
-                        }
-                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ",") == 0) {
-                            if(argument_cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
-                                fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                                fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!\n", get_attr(&func_id, tok_b->scanner));
-                                return SEMANTIC_ERROR_PARAMETERS_EXPR;
-                            }
-                            else {
-                                //Ok
-                            }
-                        }
-                        else if(t.token_type == SEPARATOR && str_cmp(get_attr(&t, tok_b->scanner), ")") == 0) {
-                            closing_bracket = true;
-                            if((argument_cnt < strlen(params_s) ) && !is_variadic) { //Function needs more arguments
-                                fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                                fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!\n", get_attr(&func_id, tok_b->scanner));
-                                return SEMANTIC_ERROR_PARAMETERS_EXPR;
-                            }
-                        }
-                        else {
-                            fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                            fprintf(stderr, "Missing ',' or ')' between arguments (\"\033[1;33m%s\033[0m\")!\n", get_attr(&func_id, tok_b->scanner));
-                            return SYNTAX_ERROR_IN_EXPR;
-                        }
-                    }
-                    if(argument_cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
-                        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
-                        fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!\n", get_attr(&func_id, tok_b->scanner));
-                        return SEMANTIC_ERROR_PARAMETERS_EXPR;
-                    }
-                }
-            }
-
-            //Function was succesfully called
-
-            cpy_strings(&result->dtype, &(symbol->data.ret_types));
+        retval = process_identifier(result, tok_b, syms);
+        if(retval != EXPRESSION_SUCCESS) {
+            return retval;
         }
-        else {
-            char type_c = dtype_to_char(symbol->data.dtype);
-            make_type_str(&result->dtype, type_c);
-        }
-    
+
         break;
     default:
         if(is_nil(tok_b->scanner, &tok_b->current)) {
@@ -332,15 +429,17 @@ int from_input_token(expr_el_t *result,
         break;
     }
 
-    if(is_zero(tok_b->scanner, &tok_b->current)) {
+    if(is_zero(tok_b->scanner, &tok_b->current) && PREVENT_ZERO_DIV) {
         result->is_zero = true;
     }
-
-    char * curr_val = get_attr(&(tok_b->current), tok_b->scanner);
-    str_cpy((char **)&result->value, curr_val, strlen(curr_val));
+    if(result->value == NULL) {
+        char * curr_val = get_attr(&(tok_b->current), tok_b->scanner);
+        str_cpy((char **)&result->value, curr_val, strlen(curr_val));
+    }
 
     return EXPRESSION_SUCCESS;
 }
+
 
 /**
  * @brief Creates stop symbol and initializes it
@@ -945,6 +1044,7 @@ void print_err_message(int *return_value,
     }
 }
 
+
 /**
  * @brief Inits all parts of auxiliary structure tok_buffer_t
  */ 
@@ -971,7 +1071,6 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 
 
 int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
-
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
     
@@ -1045,7 +1144,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
+    token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }
 

@@ -35,6 +35,9 @@
 #define INTERNAL_ERROR 99
 
 
+#define PREVENT_ZERO_DIV true
+
+
 /**
  * @brief Structure, that groups token buffer with given scanner to get tokens and their attributes easily
  */ 
