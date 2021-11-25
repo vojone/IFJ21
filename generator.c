@@ -402,14 +402,15 @@ char_mapping_t get_mapping(char * buffer){
     char_mapping_t null_map = {"",""};
     return null_map;
 }
+
 void to_ascii(const char * str, string_t * out){
-    for (size_t i = 0; i < strlen(str); i++)
+    for (size_t i = 1; i < strlen(str)-1; i++)
     {
         char c = str[i];
         if( c == ' '){
-            app_char(c,out);
+            app_str(out, "\\032");
         }else{
-            app_str(out, "\032");
+            app_char(c,out);
         }
     }
     

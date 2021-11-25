@@ -1263,6 +1263,7 @@ int parse_function_arguments(token_t *id_func) {
             }
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
+            get_next_token(scanner);
             closing_bracket = true;
             continue;
         }

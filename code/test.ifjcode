@@ -21,11 +21,8 @@ JUMP $END_FUN$a
 #function a ()
 LABEL $FUN$a
 CREATEFRAME
-#define param a$c$1
-DEFVAR TF@&VAR&a$c$1
-POPS TF@&VAR&a$c$1
-#define param a$b$0
 DEFVAR TF@&VAR&a$b$0
+PUSHS string@
+#assign value to a$b$0
 POPS TF@&VAR&a$b$0
-#while 0
-LABEL $WHILE$COND$0
+DEFVAR TF@&VAR&a$c$1

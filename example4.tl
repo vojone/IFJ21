@@ -1,7 +1,6 @@
-function a(b:integer,c:integer)
-    while c==b do
-        write(b)
-        b = b+1
-    end
+function a()
+    local b : string = ""
+    local c : string = "b"
+    write(10)
 end
-a(1,10)
+a()
