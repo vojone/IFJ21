@@ -1,4 +1,6 @@
-function sum (a:string,b:string) --jump
-    write(a..b)
+function a()
+    local b : string = ""
+    local c : string = "b"
+    write(10)
 end
-sum(55,550)
+a()

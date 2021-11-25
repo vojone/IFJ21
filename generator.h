@@ -31,6 +31,11 @@ typedef struct gen {
     void *declare_variable;
 } gen_t;
 
+typedef struct char_mapping{
+    char input[3];
+    char output[4];
+} char_mapping_t;
+
 /**
  * @brief inicializes the code
  */ 
@@ -102,6 +107,26 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name 
 
 
 /**
+ * *--------CONDIONS--------
+ */ 
+void generate_if_condition(size_t n);
+
+void generate_if_end(size_t n);
+
+void generate_else_end(size_t n);
+
+
+/**
+ * *--------LOOPS--------
+ */ 
+void generate_while_condition_beginning(size_t n);
+
+void generate_while_condition_evaluate(size_t n);
+
+void generate_while_end(size_t n);
+
+
+/**
  * *---------OPERATIONS---------
  */ 
 void generate_operation_add();
@@ -152,6 +177,13 @@ void code_print(const char *const _Format, ...);
  * @return string with type for code generation
  */ 
 const char *convert_type(sym_dtype_t dtype);
+
+/**
+ * @brief converts string from token format ie. "this is a string" to "this\032is\032string"
+ * @param str the input string
+ * @param out pointer to the output string
+ */ 
+void to_ascii(const char * str, string_t * out);
 
 
 

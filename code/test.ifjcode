@@ -17,41 +17,12 @@ LABEL $END_FUN$write
 
 
 
-JUMP $END_FUN$sum
-#function sum ()
-LABEL $FUN$sum
+JUMP $END_FUN$a
+#function a ()
+LABEL $FUN$a
 CREATEFRAME
-#define param sum$b$1
-DEFVAR TF@&VAR&sum$b$1
-POPS TF@&VAR&sum$b$1
-#define param sum$a$0
-DEFVAR TF@&VAR&sum$a$0
-POPS TF@&VAR&sum$a$0
-PUSHS TF@&VAR&sum$a$0
-PUSHS TF@&VAR&sum$b$1
-# start operator A..B
-PUSHFRAME
-CREATEFRAME
-DEFVAR TF@!TMP!A
-DEFVAR TF@!TMP!B
-DEFVAR TF@!TMP!RESULT
-POPS TF@!TMP!B
-POPS TF@!TMP!A
-CONCAT TF@!TMP!RESULT TF@!TMP!A TF@!TMP!B
-PUSHS TF@!TMP!RESULT
-POPFRAME
-# end operator A..B
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-
-
-RETURN
-LABEL $END_FUN$sum
-
-PUSHS int@55
-# sum()
-PUSHFRAME
-CALL $FUN$sum
-POPFRAME
+DEFVAR TF@&VAR&a$b$0
+PUSHS string@
+#assign value to a$b$0
+POPS TF@&VAR&a$b$0
+DEFVAR TF@&VAR&a$c$1
