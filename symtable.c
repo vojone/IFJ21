@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                symtable.c
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *       Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Implementation of symbol table used in compiler
  * 
- *                          Last change: 21. 11 2021
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/
 
 #include "symtable.h"

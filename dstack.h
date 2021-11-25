@@ -2,11 +2,11 @@
  *                                  IFJ21
  *                                 dstack.h
  * 
- *      Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                  Authors: Vojtech Dvorak (xdvora3o)
  *  Purpose: Header file with macros that can generate auxiliary stacks
  *              Contains also stack declarations used in multiple files 
  * 
- *                    Last change: 24. 11. 2021
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
@@ -14,7 +14,7 @@
  * @brief Header file with macros that can generate auxiliary stacks
  *        Contains also stack declarations used in multiple files 
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */ 
 
 

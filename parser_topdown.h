@@ -2,7 +2,8 @@
  * @file parser-topdown.h
  * @brief Header file for recursive descent parser
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
+ *          Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
 
 #ifndef TOPDOWN_H

@@ -2,17 +2,17 @@
  *                                  IFJ21
  *                               generator.h
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *                   Purpose: Header file of code generator
+ *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
+ *                    Purpose: Header file of code generator
  * 
- *                    Last change:
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/
 
 /**
  * @file generator.h
  * @brief Header file of code generator
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
 
 #ifndef GENERATOR_H

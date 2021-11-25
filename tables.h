@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                tables.h
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                     Authors: Vojtěch Dvořák (xdvora3o)
  * Purpose: Functions, that contain static variables with defined keywords,...
  * 
- *                    Last change: 24. 10. 2021
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**

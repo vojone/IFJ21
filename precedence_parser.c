@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                            precedence_parser.c
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
  *              Purpose:  Implementation of precedence parsing (PP)
  * 
- *                    Last change:
+ *                       Last change: 25. 11. 2021
  *****************************************************************************/
 
 #include "precedence_parser.h"

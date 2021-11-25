@@ -2,7 +2,8 @@
  * @file parser-topdown.c
  * @brief Source file for recursive descent parser
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
+ *          Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */
 
 #include "parser_topdown.h"
@@ -34,7 +35,7 @@ static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
 
-#define DEBUG true
+#define DEBUG false
 
 
 /**
@@ -337,7 +338,7 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
     for(size_t i = 0; i < *id_number; i++) {
         //check for valid expression
         debug_print("Calling precedence parser...\n");
-
+    
         string_t ret_types;
         str_init(&ret_types);
         int expr_retval = parse_expression(scanner, &sym, &ret_types);

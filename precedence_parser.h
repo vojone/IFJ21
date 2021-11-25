@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                            precedence_parser.h
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *            Purpose:  Header file of precedence parsing functions
+ *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
+ *            Purpose: Header file of precedence parsing functions
  * 
- *                    Last change:
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 #ifndef PRECEDENCE_PARSER_H

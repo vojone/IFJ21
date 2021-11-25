@@ -2,17 +2,17 @@
  *                                  IFJ21
  *                               generator.c
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  *              Purpose: Implementation of code generating functions
  * 
- *                    Last change:
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/
 
 /**
  * @file generator.c
  * @brief Source file with implementation of code generator
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
 
 //?done:TODO work on function calling with arguments
