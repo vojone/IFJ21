@@ -9,11 +9,10 @@
  *****************************************************************************/
 
 #include "symtable.h"
-#include "dstack.h"
 
-DSTACK(tree_node_t*, ts,)
+DSTACK(tree_node_t*, ts,) /**< Operations with tree nodes stack (used in destroy tab function) */
 
-DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key))
+DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key)) /**< Operations with stack of symtabs */
 
 /**
  * @brief Initializes symbol table

@@ -17,29 +17,30 @@ LABEL $END_FUN$write
 
 
 
-JUMP $END_FUN$main
-#function main ()
-LABEL $FUN$main
+JUMP $END_FUN$sum
+#function sum ()
+LABEL $FUN$sum
 CREATEFRAME
-#define param main$b$1
-DEFVAR TF@&VAR&main$b$1
-POPS TF@&VAR&main$b$1
-#define param main$a$0
-DEFVAR TF@&VAR&main$a$0
-POPS TF@&VAR&main$a$0
-PUSHS TF@&VAR&main$a$0
-# write()
+#define param sum$b$1
+DEFVAR TF@&VAR&sum$b$1
+POPS TF@&VAR&sum$b$1
+#define param sum$a$0
+DEFVAR TF@&VAR&sum$a$0
+POPS TF@&VAR&sum$a$0
+PUSHS TF@&VAR&sum$a$0
+PUSHS TF@&VAR&sum$b$1
+# start operator A..B
 PUSHFRAME
-CALL $FUN$write
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+DEFVAR TF@!TMP!RESULT
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+CONCAT TF@!TMP!RESULT TF@!TMP!A TF@!TMP!B
+PUSHS TF@!TMP!RESULT
 POPFRAME
-PUSHS TF@&VAR&main$a$0
-PUSHS TF@&VAR&main$b$1
-ADDS
-# foo()
-PUSHFRAME
-CALL $FUN$foo
-POPFRAME
-PUSHS TF@&VAR&main$b$1
+# end operator A..B
 # write()
 PUSHFRAME
 CALL $FUN$write
@@ -47,66 +48,10 @@ POPFRAME
 
 
 RETURN
-LABEL $END_FUN$main
+LABEL $END_FUN$sum
 
-
-
-JUMP $END_FUN$heh
-#function heh ()
-LABEL $FUN$heh
-CREATEFRAME
-#define param heh$c$2
-DEFVAR TF@&VAR&heh$c$2
-POPS TF@&VAR&heh$c$2
-PUSHS TF@&VAR&heh$c$2
-PUSHS int@4
-MULS
-# write()
+PUSHS int@55
+# sum()
 PUSHFRAME
-CALL $FUN$write
-POPFRAME
-
-
-RETURN
-LABEL $END_FUN$heh
-
-
-
-JUMP $END_FUN$foo
-#function foo ()
-LABEL $FUN$foo
-CREATEFRAME
-#define param foo$a$3
-DEFVAR TF@&VAR&foo$a$3
-POPS TF@&VAR&foo$a$3
-PUSHS TF@&VAR&foo$a$3
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&foo$a$3
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&foo$a$3
-# heh()
-PUSHFRAME
-CALL $FUN$heh
-POPFRAME
-
-
-RETURN
-LABEL $END_FUN$foo
-
-PUSHS int@3
-# foo()
-PUSHFRAME
-CALL $FUN$foo
-POPFRAME
-PUSHS int@10
-PUSHS int@4
-# main()
-PUSHFRAME
-CALL $FUN$main
+CALL $FUN$sum
 POPFRAME

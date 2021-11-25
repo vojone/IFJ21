@@ -6,7 +6,6 @@
  */
 
 #include "parser_topdown.h"
-#include "dstack.h"
 
 static scanner_t * scanner;
 static parser_t * parser;
@@ -1216,6 +1215,7 @@ int parse_function_call(token_t *id_func) {
  * @brief Parses function arguments when function is called
  * @note Functon argument can be also expression as well as variable or immediate value
  */ 
+//!Check the implementation for strlen: "#E"
 int parse_function_arguments(token_t *id_func) {
     bool closing_bracket = false;
 

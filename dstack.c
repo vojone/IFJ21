@@ -3,10 +3,11 @@
  *                                 dstack.c
  * 
  *    Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *             
  *   Purpose: Contains stack definitions used in multiple files 
  *                 (to avoid redefinitions and redundancy)
  * 
- *                    Last change: 11. 11. 2021
+ *                    Last change: 24. 11. 2021
  *****************************************************************************/ 
 
 /**

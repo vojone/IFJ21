@@ -4,7 +4,7 @@
  * 
  *       Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
  *Purpose: Declaration of basic functions to process (dynamic) string and chars
- *                    Last change: 24. 10. 2021
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
@@ -57,11 +57,20 @@ int str_init(string_t *string);
  */
 int app_char(char c, string_t *string);
 
-int app_str(string_t *dst, char *src);
+/**
+ * @brief Appends cstring after dynamic string
+ */ 
+int app_str(string_t *dst, const char *src);
 
+/**
+ * @brief Puts chracter c at the start of the dynimic string
+ */ 
 int prep_char(char c, string_t *string);
 
-int prep_str(string_t *dst, char *src);
+/**
+ * @brief Puts cstring at the start of the dynimic string
+ */ 
+int prep_str(string_t *dst, const char *src);
 
 /**
  * @brief Cuts string to given length

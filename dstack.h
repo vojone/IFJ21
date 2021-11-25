@@ -12,6 +12,7 @@
 /**
  * @file dstack.h
  * @brief Header file with macros that can generate auxiliary stacks
+ *        Contains also stack declarations used in multiple files 
  * 
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
  */ 

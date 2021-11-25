@@ -1,22 +1,4 @@
---jump %%ENDmain
---label %%FUNmain
-global foo : function(integer)
-
-function main (a:integer,b:integer) --jump
-    write(a)
-    foo(a+b)
-    write(b)
+function sum (a:string,b:string) --jump
+    write(a..b)
 end
-
-function heh(c: integer)
-    write(c*4)
-end
-
-function foo (a:integer) --jump
-    write(a)
-    write(a)
-    heh(a)
-end
---label %%ENDmain
-foo(3)
-main(10,4)
+sum(55,550)

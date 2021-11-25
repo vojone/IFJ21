@@ -80,7 +80,7 @@ typedef struct symtab {
     int parent_ind; /**< Is used for switching contexts int parser */
 } symtab_t; 
 
-DSTACK_DECL(symtab_t, symtabs)
+DSTACK_DECL(symtab_t, symtabs) /** Stack of symbol tables */
 
 /**
  * @brief Symbol table data type, that can support superimposing of symbols 
