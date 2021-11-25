@@ -111,6 +111,7 @@ void parser_setup(parser_t *p, scanner_t *s) {
     //semantic_init();
     parser->decl_cnt = 0;
     parser->cond_cnt = 0;
+    parser->loop_cnt = 0;
 }
 
 
@@ -1480,6 +1481,12 @@ int parse_end() {
 int parse_while() {
     //go one token forward
     get_next_token(scanner);
+
+    //save the counter to prevent overwriting in nested loops
+    size_t current_cnt = parser->loop_cnt;
+
+    //generate while beginning
+    generate_while_condition_beginning(current_cnt);
     
     debug_print("Calling precedence parser...\n");
     sym_dtype_t ret_type;
@@ -1492,6 +1499,9 @@ int parse_while() {
     if(!then) {
         return false;
     }
+
+    //generate additional condition check
+    generate_while_condition_evaluate(current_cnt);
 
     to_inner_ctx(parser); //Switch context
 
@@ -1508,6 +1518,9 @@ int parse_while() {
     }
     else if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(t, KEYWORD, "end")) {
+
+            //generate end of while
+            generate_while_end(current_cnt);
 
             debug_print("Ended while\n");
             return PARSE_SUCCESS;

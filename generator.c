@@ -115,7 +115,17 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token
     if(type == VAR){
         code_print("PUSHS TF@&VAR&%s",token);
     }else if(type == VAL){
-        code_print("PUSHS %s@%s",convert_type(dtype), token);
+        if(dtype == STR){
+            string_t token_s;
+            str_init(&token_s);
+            to_ascii(token, &token_s);
+
+            code_print("PUSHS %s@%s",convert_type(dtype), token_s.str);
+            
+            str_dtor(&token_s);
+        }else{
+            code_print("PUSHS %s@%s",convert_type(dtype), token);
+        }
     }else{
         fprintf(stderr,"Code generation: Error not supported yet\n");
     }
@@ -140,6 +150,26 @@ void generate_if_end(size_t n){
 void generate_else_end(size_t n){
     code_print("#end of else and the whole if %i statement",n);
     code_print("LABEL $ELSE$END$%i",n);
+}
+
+/**
+ * *LOOPS
+ */ 
+
+void generate_while_condition_beginning(size_t n){
+    code_print("#while %i",n);
+    code_print("LABEL $WHILE$COND$%i",n);
+}
+
+void generate_while_condition_evaluate(size_t n){
+    code_print("PUSHS bool@true");
+    code_print("JUMPIFNEQS $WHILE$END$%i",n);
+}
+
+void generate_while_end(size_t n){
+    code_print("#end of while %i loop",n);
+    code_print("JUMP $WHILE$COND$%i",n);
+    code_print("LABEL $WHILE$END$%i",n);
 }
 
 
@@ -180,7 +210,7 @@ void generate_operation_gt(){
 
 void generate_operation_lt(){
     code_print("# start operator A<B");
-    code_print("GTS");
+    code_print("LTS");
     code_print("# end operator A<B");
 }
 
@@ -346,20 +376,64 @@ string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, sc
 
 }
 
-
-void to_ascii(const char * str, string_t * out){
-    int i = 0;
-    char c = str[i];
-    str_init(out);
-    while (c != '\0')
+bool is_prefix_of(char * prefix, char * str){
+    if(strlen(prefix) > strlen(str))
+        return false;
+    for (int i = 0; i < strlen(prefix); i++)
     {
-        if(c == ' '){
-            
-        }
-        i++;
-        c = str[i];
+        if(prefix[i] != str[i])
+            return false;
     }
+    return true;
 }
+
+char_mapping_t get_mapping(char * buffer){
+    char_mapping_t mappings[] = {
+        {" ","\032"},
+        {"\n","\010"},
+    };
+    int mappings_length = sizeof(mappings)/sizeof(char_mapping_t);
+    for (int i = 0; i < mappings_length; i++)
+    {
+        char_mapping_t map = mappings[i];
+        if(is_prefix_of(map.input,buffer))
+            return map;
+    }
+    char_mapping_t null_map = {"",""};
+    return null_map;
+}
+void to_ascii(const char * str, string_t * out){
+    for (size_t i = 0; i < strlen(str); i++)
+    {
+        char c = str[i];
+        if( c == ' '){
+            app_char(c,out);
+        }else{
+            app_str(out, "\032");
+        }
+    }
+    
+}
+// void to_ascii(const char * str, string_t * out){
+//     int i = 0;
+//     char buffer[3] = "";
+
+//     char c = str[i];
+//     char c_prev = '\0';
+
+//     while (c != '\0')
+//     {
+//         buffer[0]=c;
+//         buffer[1]=c_prev;
+        
+
+
+//         i++;
+//         app_char(c_prev,out);
+//         c_prev = c;
+//         c = str[i];
+//     }
+// }
 
 
 /***                            End of generator.c                         ***/
