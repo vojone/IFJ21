@@ -59,7 +59,7 @@ generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCAN
 	$(CC) $(CFLAGS) -o generator $^
 
 clean:
-	rm -f *.o $(EXES)
+	rm -f *.o $(EXES) $(ZIPNAME).zip
 
 zip: clean
 	zip $(ZIPNAME).zip $(INZIP)

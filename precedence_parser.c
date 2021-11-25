@@ -745,7 +745,7 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
         pp_pop(s);
     }
 
-    fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
+    //fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
 }
 
 
@@ -850,7 +850,7 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
         }
         else{
             //We are pushing variable
-            fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
+            //fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
             generate_value_push(VAR, res->data.dtype , res->data.name.str);
         }
     }
