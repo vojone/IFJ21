@@ -61,31 +61,6 @@ void to_inner_ctx(parser_t *p) {
     sym.symtab = new_ctx;
 }
 
-/**-----------------------------------------------------
-void str_app_str(string_t* dst, const char *src, size_t length){
-    for (size_t i = 0; i < length; i++)
-    {
-        app_char(src[i], dst);
-    }
-}
-
-void param_app(string_t* dst, const char *src){
-    str_app_str(dst, src, sizeof(src));
-    app_char('&',dst);
-}
-*/
-
-// void semantic_init() {
-//     sym_data_t symtab_data;
-//     init_data(&symtab_data);
-
-//     string_t params;
-//     str_init(&params);
-
-//     app_char('%', &params);
-//     symtab_data.params = params;
-//     insert_sym(&symtab, "write", symtab_data);
-// }
 
 void parser_setup(parser_t *p, scanner_t *s) {
     parser = p;
@@ -101,14 +76,11 @@ void parser_setup(parser_t *p, scanner_t *s) {
     init_tab(&global_tab);
     sym.global = global_tab;
 
-    //This symtab will not be used (unless global variables are supported), 
-    //but it keeps switching context consistent for all cases
     symtab_t symbol_tab;
     init_tab(&symbol_tab);
     sym.symtab = symbol_tab;
 
     //load_builtin_f(&symtab);
-    //semantic_init();
     parser->decl_cnt = 0;
 }
 
@@ -371,11 +343,14 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
         //check for valid expression
         debug_print("Calling precedence parser...\n");
 
-        sym_dtype_t ret_type;
-        int expr_retval = parse_expression(scanner, &sym, &ret_type);
+        string_t ret_types;
+        str_init(&ret_types);
+        int expr_retval = parse_expression(scanner, &sym, &ret_types);
         if(expr_retval == EXPRESSION_SUCCESS) {
-            if(!is_valid_assign(char_to_dtype(id_types->str[i]), ret_type)) {
+            sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]);
+            if(!is_valid_assign(char_to_dtype(id_types->str[i]), prim_dtype)) {
                 error_semantic("Type of variable is not compatible with rvalue in assignment!");
+                str_dtor(&ret_types);
                 return SEMANTIC_ERROR_DEFINITION;
             }
             else {
@@ -384,8 +359,11 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
         }
         else {
             debug_print("Error while parsing expression for multiple assignment\n");
+            str_dtor(&ret_types);
             return expr_retval;
         }
+
+        str_dtor(&ret_types);
 
         //If we are not at the end check for comma
         if(i + 1 != *id_number) {
@@ -480,8 +458,10 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
         debug_print("Calling precedence parser...\n");
 
 
-        sym_dtype_t ret_type;
-        int return_val = parse_expression(, &sym, &ret_type)
+        string_t ret_types; //TODO
+        str_init(&ret_types);
+        int return_val = parse_expression(scanner, &sym, &ret_types);
+        str_dtor(&ret_types);
         if(return_val != EXPRESSION_SUCCESS) {
             return return_val;
         }
@@ -1235,22 +1215,28 @@ int parse_function_arguments(token_t *id_func) {
             return LEXICAL_ERROR;
         }
         else if(is_expression(t)) {
-            sym_dtype_t ret_type;
-            int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
+            string_t ret_types;
+            str_init(&ret_types);
+            int expr_retval = parse_expression(scanner, &sym, &ret_types);
             if(expr_retval != EXPRESSION_SUCCESS) {
+                str_dtor(&ret_types);
                 return expr_retval;
             }
 
             if(!is_variadic) {
                 sym_dtype_t d_type = char_to_dtype(params_str[argument_cnt]);
-                if(!is_valid_assign(d_type, ret_type)) {
+                sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]);
+                if(!is_valid_assign(d_type, prim_dtype)) {
                     error_semantic("Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, scanner));
+                    str_dtor(&ret_types);
                     return SEMANTIC_ERROR_PARAMETERS;
                 }
                 else {
                     //Ok
                 }
             }
+
+            str_dtor(&ret_types);
         }
         else if(compare_token_attr(t, SEPARATOR, ")")) {
             closing_bracket = true;
@@ -1307,8 +1293,10 @@ int parse_if() {
 
     debug_print("Calling precedence parser...\n");
 
-    sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
+    string_t ret_types;
+    str_init(&ret_types);
+    int expr_retval = parse_expression(scanner, &sym, &ret_types);
+    str_dtor(&ret_types);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
@@ -1407,21 +1395,27 @@ int parse_return() {
             }
         }
         else {
-            sym_dtype_t ret_type;
-            int retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
+            string_t ret_types;
+            str_init(&ret_types);
+            int retval = parse_expression(scanner, &sym, &ret_types);
             if(retval != EXPRESSION_SUCCESS) {
+                str_dtor(&ret_types);
                 return retval;
             }
             else {
                 sym_dtype_t dec_type = char_to_dtype(returns_str[returns_cnt]);
-                if(!is_valid_assign(dec_type, ret_type)) {
+                sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]);
+                if(!is_valid_assign(dec_type, prim_dtype)) {
                     error_semantic("Bad data type of return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
+                    str_dtor(&ret_types);
                     return SEMANTIC_ERROR_OTHER;
                 }
                 else {
                     //Ok
                 }
             }
+
+            str_dtor(&ret_types);
         }
 
         //If there is no comma we should be at the end of the list
@@ -1464,8 +1458,10 @@ int parse_while() {
     get_next_token(scanner);
     
     debug_print("Calling precedence parser...\n");
-    sym_dtype_t ret_type;
-    int expr_retval = parse_expression(scanner, &sym.symtab_st, &sym.symtab, &ret_type);
+    string_t ret_types;
+    str_init(&ret_types);
+    int expr_retval = parse_expression(scanner, &sym, &ret_types);
+    str_dtor(&ret_types);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
     }
