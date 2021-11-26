@@ -1,9 +1,10 @@
 EXECUTABLE = IFJ21
 
-PARSER_EXE = IFJ21Parser
+
+ZIPNAME = xdvora3o
 
 CC = gcc
-CFLAGS = -Werror -Wall -pedantic -std=c99 -g
+CFLAGS = -Werror -Wall -pedantic -std=c99
 
 
 SCANNER = scanner
@@ -11,6 +12,10 @@ SYMTAB = symtable
 PARSER = parser_topdown
 
 PP_PARSER = precedence_parser
+
+PARSER_EXE = IFJ21Parser
+
+INZIP = *.c *.h Makefile README.md
 
 
 #--------------------------------------TESTS-----------------------------------
@@ -20,7 +25,7 @@ TESTLIB_NAME = libgtest
 TEST_DIR = googletest-master/googletest/
 
 CXX = g++
-CXXFLAGS := -Werror -Wall -pedantic -std=c++11 -g
+CXXFLAGS := -Werror -Wall -pedantic -std=c++11
 
 PARSER_TEST_NAME = parser_topdown_tests
 PARSER_TEST_BIN = $(PARSER_TEST_NAME)
@@ -37,14 +42,17 @@ SCAN_TEST_BIN = $(SCAN_TEST_NAME)
 #------------------------------------------------------------------------------
 
 OBJS = $(PARSER).o $(PP_PARSER).o $(SCANNER).o $(SYMTAB).o \
-	   parser_wrapper.o dstring.o tables.o dstack.o generator.o
+	   main.o dstring.o tables.o dstack.o generator.o
 
 EXES = $(EXECUTABLE) $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 	   $(SYMTAB_TEST_BIN) $(PARSER_EXE)
 
-.PHONY: all clean unit_tests
+.PHONY: all parser generator clean unit_tests
 
-parser: $(OBJS) generator.o 
+all : $(OBJS)
+	$(CC) $(CFLAGS) -o $(EXECUTABLE) $^
+
+parser: $(OBJS)
 	$(CC) $(CFLAGS) -o $(PARSER_EXE) $^
 
 generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCANNER).o $(PP_PARSER).o tables.o
@@ -52,9 +60,10 @@ generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCAN
 
 clean:
 	rm -f *.o $(EXES)
+
+zip: clean
+	zip $(ZIPNAME).zip $(INZIP)
 	
-
-
 
 unit_tests:  $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 	   		 $(SYMTAB_TEST_BIN)

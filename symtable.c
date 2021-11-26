@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                symtable.c
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *       Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Implementation of symbol table used in compiler
  * 
- *                          Last change: 21. 11 2021
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/
 
 #include "symtable.h"
@@ -212,6 +212,9 @@ sym_dtype_t char_to_dtype(char type_c) {
     case 'z':
         type = NIL;
         break;
+    case 'b':
+        type = BOOL;
+        break;
     default:
         type = UNDEFINED;
     }
@@ -238,6 +241,9 @@ char dtype_to_char(sym_dtype_t type) {
         break;
     case NIL:
         type_c = 'z';
+        break;
+    case BOOL:
+        type_c = 'b';
         break;
     default:
         type_c = ' ';
@@ -334,14 +340,24 @@ sym_data_t* search_builtin(const char *f_name) {
 
 
 /**
+ * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ */
+void check_builtin(char *key, symtab_t *dst) {
+    sym_data_t *bfunc_data_ptr = search_builtin(key);
+    if(bfunc_data_ptr) {
+        insert_sym(dst, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+    }
+}
+
+
+/**
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(void *sym_stack, 
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
                                symtab_t *start_symtab, 
                                char *key) {
 
-    symtabs_stack_t *sym_stack_ptr = (symtabs_stack_t *)sym_stack;
     symtab_t *curr_tab = start_symtab;
     
     while(curr_tab != NULL) {
@@ -350,7 +366,7 @@ tree_node_t * search_in_tables(void *sym_stack,
             return result_of_searching;
         }
         else { //If not, try to search it in 'parent' symbol table
-            curr_tab = symtabs_get_ptr(sym_stack_ptr, curr_tab->parent_ind);
+            curr_tab = symtabs_get_ptr(sym_stack, curr_tab->parent_ind);
         }
     }
 

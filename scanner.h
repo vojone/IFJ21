@@ -2,17 +2,17 @@
  *                                  IFJ21
  *                                scanner.h
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                   Authors: Vojtěch Dvořák (xdvora3o)
  *   Purpose: File, that contains declarations of lexer (scanner) functions
  * 
- *                    Last change: 30. 10. 2021
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file scanner.h
  * @brief File, that contains declarations of lexer (scanner) functions
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtěch Dvořák (xdvora3o)
  */ 
 
 #ifndef SCANNER_H

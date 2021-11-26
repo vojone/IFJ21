@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                            precedence_parser.h
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *            Purpose:  Header file of precedence parsing functions
+ *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
+ *            Purpose: Header file of precedence parsing functions
  * 
- *                    Last change:
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 #ifndef PRECEDENCE_PARSER_H
@@ -26,12 +26,17 @@
 #define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
 #define SYNTAX_ERROR_IN_EXPR 2
-#define MISSING_EXPRESSION -2
+#define MISSING_EXPRESSION 12
 #define UNDECLARED_IDENTIFIER 3
+#define SEMANTIC_ERROR_PARAMETERS_EXPR 5
 #define SEM_ERROR_IN_EXPR 6
 #define NIL_ERROR 8
 #define DIV_BY_ZERO 9
 #define INTERNAL_ERROR 99
+
+
+#define PREVENT_ZERO_DIV false
+#define PREVENT_NIL false
 
 
 /**
@@ -42,6 +47,12 @@ typedef struct tok_buffer {
     token_t last;
     token_t current;
 } tok_buffer_t;
+
+
+/**
+ * @brief Makes last token from current token and destructs old token
+ */ 
+void token_aging(tok_buffer_t *token_buffer);
 
 
 /**
@@ -61,7 +72,7 @@ typedef enum grm_sym_type {
  */ 
 typedef struct expr_el {
     grm_sym_type_t type; /**< Determines type of element (and it is index to precedence table) */
-    sym_dtype_t dtype; /**< Data type of element in expression (string, integer, number) */
+    string_t dtype; /**< Data type of element in expression (string, integer, number) */
     bool is_zero;
     void *value; /**< Value of element (or pointer to symbol table) */
 } expr_el_t;
@@ -88,8 +99,12 @@ typedef struct expr_rule {
     void (*generator_function)();
 } expr_rule_t;
 
-int parse_expression(scanner_t *sc, void *sym_stack,
-                     symtab_t *symtab, sym_dtype_t *ret_type);
+
+/**
+ * @brief Parses expression due to defined precedence table
+ */
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes);
+
 
 #endif
 

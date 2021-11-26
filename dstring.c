@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                dstring.c
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                  Authors: Vojtech Dvorak (xdvora3o)
  * Purpose: Source file of functions to process (dynamic) strings and chars
  * 
- *                    Last change: 24. 10. 2021
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
@@ -13,7 +13,7 @@
  * @brief Source file of functions to process (dynamic) strings and chars
  * @see dstring.h to get functions description
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */
 
 #include "dstring.h"

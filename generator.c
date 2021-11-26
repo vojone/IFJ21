@@ -2,17 +2,17 @@
  *                                  IFJ21
  *                               generator.c
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  *              Purpose: Implementation of code generating functions
  * 
- *                    Last change:
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/
 
 /**
  * @file generator.c
  * @brief Source file with implementation of code generator
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
 
 //?done:TODO work on function calling with arguments
@@ -26,7 +26,10 @@ void generate_init(){
     code_print(".IFJcode21");
     code_print("CREATEFRAME");
     generate_write_function();
+    generate_reads_function();
     generate_checkzero_function();
+    generate_unaryminus_function();
+    generate_same_types();
 }
 
 /**
@@ -124,7 +127,7 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token
             code_print("PUSHS %s@%s",convert_type(dtype), token_s.str);
             
             str_dtor(&token_s);
-        }if(dtype == NUM){
+        }else if(dtype == NUM){
             double num = atof(token);
             code_print("PUSHS %s@%a",convert_type(dtype), num);
         }else{
@@ -181,21 +184,23 @@ void generate_while_end(size_t n){
  * *---------OPERATIONS---------
  */ 
 void generate_operation_add(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("ADDS");
 }
 
 void generate_operation_sub(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("SUBS");
 }
 
 void generate_operation_mul(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("MULS");
 }
 
 void generate_operation_div(){
-
     generate_call_function("$OP$checkzero");
-    
+    generate_call_function("$BUILTIN$sametypes");
     code_print("DIVS");
 }
 
@@ -204,29 +209,32 @@ void generate_operation_idiv(){
 }
 
 void generate_operation_unary_minus(){
-    code_print("PUSHS int@-1");
-    code_print("MULS");
+    generate_call_function("$OP$unaryminus");
 }
 
 void generate_operation_eq(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A==B");
     code_print("EQS");
     code_print("# end operator A==B");
 }
 
 void generate_operation_gt(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A>B");
     code_print("GTS");
     code_print("# end operator A>B");
 }
 
 void generate_operation_lt(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A<B");
     code_print("LTS");
     code_print("# end operator A<B");
 }
 
 void generate_operation_gte(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A>=B");
     code_print("PUSHFRAME");
     code_print("CREATEFRAME");
@@ -259,6 +267,7 @@ void generate_operation_gte(){
 }
 
 void generate_operation_lte(){
+    generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A<=B");
     code_print("PUSHFRAME");
     code_print("CREATEFRAME");
@@ -344,6 +353,13 @@ void generate_write_function(){
     generate_end_function("write");         //end
 }
 
+void generate_reads_function(){
+    generate_start_function("reads");
+    code_print("DEFVAR TF@$TEMP$");
+    code_print("READ TF@$TEMP$ string");
+    generate_end_function("reads");
+}
+
 void generate_checkzero_function(){
     //->[b,a]
     generate_start_function("$OP$checkzero");   //function write()
@@ -359,6 +375,69 @@ void generate_checkzero_function(){
     generate_end_function("$OP$checkzero");         //end
 
 }
+
+void generate_unaryminus_function(){
+    //start
+    generate_start_function("$OP$unaryminus");
+    generate_parameter("$TEMP$");
+    //define string for type
+    code_print("DEFVAR TF@$TEMP$type");
+    code_print("TYPE TF@$TEMP$type TF@&VAR&$TEMP$");
+    
+    //generate 
+    code_print("PUSHS TF@$TEMP$type");
+    code_print("PUSHS string@int");
+    code_print("JUMPIFNEQS $UNARY$FLOAT$");
+        code_print("PUSHS int@-1");
+        code_print("JUMP $UNARY$END$");
+    code_print("LABEL $UNARY$FLOAT$");
+        code_print("PUSHS float@%a",-1.0f);
+    code_print("LABEL $UNARY$END$");
+    code_print("PUSHS TF@&VAR&$TEMP$");
+    code_print("MULS");
+    generate_end_function("$OP$unaryminus");
+}
+
+void generate_same_types(){
+    generate_start_function("$BUILTIN$sametypes");
+
+    //get param B
+    generate_parameter("$TEMP$B");
+    code_print("DEFVAR TF@$TEMP$typeB");
+    code_print("TYPE TF@$TEMP$typeB TF@&VAR&$TEMP$B");
+    
+    //get param A
+    generate_parameter("$TEMP$A");
+    code_print("DEFVAR TF@$TEMP$typeA");
+    code_print("TYPE TF@$TEMP$typeA TF@&VAR&$TEMP$A");
+    
+
+    code_print("PUSHS TF@$TEMP$typeA");
+    code_print("PUSHS TF@$TEMP$typeB");
+    code_print("JUMPIFEQS $BUILTIN$sametypes$END");
+    //if they are not equal convert one of them to float
+    code_print("PUSHS string@int");
+    code_print("PUSHS TF@$TEMP$typeA");
+    code_print("JUMPIFNEQS $BTOFLOAT$");
+    //CONVERT A to FLOAT
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("INT2FLOATS");
+    code_print("POPS TF@&VAR&$TEMP$A");
+    
+    code_print("JUMP $BUILTIN$sametypes$END");
+    code_print("LABEL $BTOFLOAT$");
+    //CONVERT B to FLOAT
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("INT2FLOATS");
+    code_print("POPS TF@&VAR&$TEMP$B");
+
+    //end
+    code_print("LABEL $BUILTIN$sametypes$END");
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+    generate_end_function("$BUILTIN$sametypes");
+}
+
 
 
 
@@ -447,31 +526,40 @@ char_mapping_t get_mapping(char * buffer){
 // }
 
 void to_ascii(const char * str, string_t * out){
-    // char buffer[3] = "";
-
-    // bool overwrite = false;
     char c ='\0';
-    char c_prev = c;
+    bool escape_sequence = c;
     for (size_t i = 1; i < strlen(str)-1; i++)
     {
-        c_prev = c;
+        bool escape_sequence_previous = false;
         c = str[i];
         if(c == ' '){
             app_str(out,"\\032");
-        }else if(c_prev == 92){
+        }else if(escape_sequence){
+                escape_sequence_previous = true;
+                escape_sequence = false;
             switch (c)
             {
             case 'n':
                 app_str(out,"010");
                 break;
+            case '"':
+                app_str(out,"034");
+                break;
+            case '\\':
+                app_str(out,"092");
+                break;
+            case 't':
+                app_str(out,"009");
+                break;
             default:
+                app_char(c,out);    
                 break;
             }
-            // app_str(out,"\\032");
-            app_char(c,out);
         }else{
             app_char(c,out);
         }
+        if(!escape_sequence_previous && c == 92)
+            escape_sequence = true;
     }
 }
 

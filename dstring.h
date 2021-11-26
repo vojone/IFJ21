@@ -2,16 +2,17 @@
  *                                  IFJ21
  *                                dstring.h
  * 
- *       Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                   Authors: Vojtech Dvorak (xdvora3o)
  *Purpose: Declaration of basic functions to process (dynamic) string and chars
- *                    Last change: 25. 11. 2021
+ *
+ *                       Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstring.h
  * @brief Declaration of basic functions to process (dynamic) string and chars
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */ 
 
 #ifndef DSTRING_H

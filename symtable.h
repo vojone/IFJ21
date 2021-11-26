@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                symtable.h
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *          Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Declaration of symbol table functions and structures
  * 
- *                  Last change:
+ *                  Last change: 25. 11. 2021
  *****************************************************************************/
 
 #ifndef SYMTABLE_H
@@ -169,10 +169,16 @@ sym_data_t* search_builtin(const char *f_name);
 
 
 /**
+ * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ */
+void check_builtin(char *key, symtab_t *dst);
+
+
+/**
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(void *sym_stack, 
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
                                symtab_t *start_symtab, 
                                char *key);
 

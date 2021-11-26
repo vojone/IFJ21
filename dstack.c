@@ -2,19 +2,19 @@
  *                                  IFJ21
  *                                 dstack.c
  * 
- *    Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                 Authors: Vojtech Dvorak (xdvora3o)
  *             
  *   Purpose: Contains stack definitions used in multiple files 
  *                 (to avoid redefinitions and redundancy)
  * 
- *                    Last change: 24. 11. 2021
+ *                      Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstack.c
  * @brief Purpose: Contains stack definitions used in multiple files 
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */ 
 
 
