@@ -234,12 +234,12 @@ int statement() {
 
 
 void int2num_conv() {
-
+    code_print("INT2FLOATS");
 }
 
 
 void num2int_conv() {
-
+    code_print("FLOAT2INTS");
 }
 
 

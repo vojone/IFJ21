@@ -575,7 +575,7 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands", generate_operation_mul},
         {"E/E", "ni|!ni", ORIGIN, FIRST, "\"/\" expects number/integer as operands", generate_operation_div},
         {"E//E", "ni|!ni", INT, FIRST, "\"//\" expects number/integer as operands", generate_operation_idiv},
-        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands", NULL},
+        {"_E", "ni", ORIGIN, FIRST, "Unary minus expects number/integer as operands", generate_operation_unary_minus},
         {"#E", "s", INT, NONE, "Only string can be operand of \"#\"", generate_operation_strlen},
         {"E<E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<\"", generate_operation_lt},
         {"E>E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">\"", generate_operation_gt},
@@ -743,6 +743,7 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
         pp_pop(s);
     }
 
+    // fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
 }
 
 
@@ -847,7 +848,7 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
         }
         else{
             //We are pushing variable
-            //fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
+            // fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
             generate_value_push(VAR, res->data.dtype , res->data.name.str);
         }
     }
