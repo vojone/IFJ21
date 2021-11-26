@@ -35,7 +35,7 @@ static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
 
-#define DEBUG true
+#define DEBUG false
 
 
 /**
@@ -1414,7 +1414,6 @@ int parse_return() {
     char * returns_str = to_str(&symbol->data.ret_types);
     while(!finished) {
         token_t t = lookahead(scanner);
-        fprintf(stderr, "%s\n", get_attr(&t, scanner));
         if(compare_token(t, ERROR_TYPE)) {
             return LEXICAL_ERROR;
         }
