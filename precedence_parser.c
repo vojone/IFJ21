@@ -266,7 +266,6 @@ int argument_parser(token_t *func_id, char *params_s,
             argument_cnt++;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
-            token_aging(tok_b);
             closing_bracket = true;
             continue;
         }
@@ -305,7 +304,6 @@ int argument_parser(token_t *func_id, char *params_s,
         fcall_sem_error(tok_b, func_id, "Missing arguments!");
         return SEMANTIC_ERROR_PARAMETERS_EXPR;
     }
-
 
     return EXPRESSION_SUCCESS;
 }
@@ -374,7 +372,8 @@ int process_identifier(expr_el_t *result,
             }
 
             //Function was succesfully called
-            cpy_strings(&result->dtype, &(symbol->data.ret_types));
+            cpy_strings(&result->dtype, &(symbol->data.ret_types), true);
+
 
             return EXPRESSION_SUCCESS;
         }
@@ -622,7 +621,7 @@ void resolve_res_type(string_t *res, expr_rule_t *rule,
 
     if(prim_type(res) == UNDEFINED) {
         if(cur_ok) {
-            cpy_strings(res, &cur_op.dtype);
+            cpy_strings(res, &cur_op.dtype, false);
         }
     }
     
@@ -655,7 +654,6 @@ int get_tcheck_ret(expr_el_t *current_operand) {
  * @note Type check is based on rules writen in get_rule() ( @see get_rule())
  */ 
 int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
-
     expr_el_t current = pp_pop(&op_stack);
     bool is_curr_ok = false, must_be_flag = false;
     int result = EXPRESSION_SUCCESS;
@@ -698,7 +696,7 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
                 if(prim_type(&must_be) == UNDEFINED && 
                    prim_type(&(current.dtype)) == char_to_dtype(c)) {
 
-                    cpy_strings(&must_be, &(current.dtype));
+                    cpy_strings(&must_be, &(current.dtype), false);
                 }
 
                 if(is_compatible(&(current.dtype), &must_be)) { /**< Type of current operator is compatible with type of earlier operator */
@@ -719,7 +717,7 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
     result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
 
     str_dtor(&must_be);
-    cpy_strings(res_type, &tmp_res_type);
+    cpy_strings(res_type, &tmp_res_type, false);
     str_dtor(&tmp_res_type);
 
     return result;
@@ -745,7 +743,6 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
         pp_pop(s);
     }
 
-    //fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
 }
 
 
@@ -816,7 +813,7 @@ expr_el_t non_term(string_t *data_type, bool is_zero) {
     non_terminal.type = NON_TERM;
 
     str_init(&(non_terminal.dtype));
-    cpy_strings(&(non_terminal.dtype), data_type);
+    cpy_strings(&(non_terminal.dtype), data_type, false);
 
     non_terminal.value = "NONTERM";
     non_terminal.is_zero = is_zero;
@@ -887,7 +884,7 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
     }
 
     get_str_to_reduction(s, &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string from it*/
-    
+    //fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
     expr_rule_t *rule;
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     for(int i = 0; (rule = get_rule(i)); i++) {
@@ -1110,7 +1107,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
         expr_el_t on_input, on_top;
         retval = get_input_symbol(stop_flag, &on_input, &tok_buff, 
                                   s, &garbage, &was_operand);
-
+    
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
@@ -1159,7 +1156,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
+    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return retval;
 }
 

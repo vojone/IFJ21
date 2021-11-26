@@ -169,9 +169,9 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
 }
 
 
-int cpy_strings(string_t* dst, string_t *src) {
+int cpy_strings(string_t* dst, string_t *src, bool zero_term) {
     str_clear(dst); //Length of source + \0
-    for(size_t i = 0; i < src->length; i++) {
+    for(size_t i = 0; zero_term ? src->str[i] != '\0' : i < src->length; i++) {
         if(app_char(src->str[i], dst) == STR_FAILURE) {
             fprintf(stderr, "dstring: str_cpy: Cannot copy a string!\n");
             return STR_FAILURE;

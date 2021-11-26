@@ -35,8 +35,8 @@
 #define INTERNAL_ERROR 99
 
 
-#define PREVENT_ZERO_DIV false
-#define PREVENT_NIL false
+#define PREVENT_ZERO_DIV true
+#define PREVENT_NIL true
 
 
 /**

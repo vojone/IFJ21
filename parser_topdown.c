@@ -35,7 +35,7 @@ static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
 
-#define DEBUG false
+#define DEBUG true
 
 
 /**
@@ -363,16 +363,16 @@ int assignment_rside(token_t* start_id, string_t *id_types, size_t *id_number) {
 
         //If we are not at the end check for comma
         if(i + 1 != *id_number) {
-            token_t t = get_next_token(scanner);
+            token_t t = lookahead(scanner);
             if(compare_token(t, ERROR_TYPE)) {
                 return LEXICAL_ERROR;
             }
-            if(compare_token_attr(t, SEPARATOR, ",")) {
+            else if(compare_token_attr(t, SEPARATOR, ",")) {
                 //Ok
+                get_next_token(scanner);
             }
             else {
-                error_unexpected_token("Missing SEPARATOR ',' in the assignment, which was", t);
-                return SYNTAX_ERROR;
+                break;
             }
         }
     }
@@ -831,9 +831,9 @@ int check_if_declared(bool *was_decl, token_t *id_tok, sym_data_t *sym_data) {
         }
         else { //Function was declared but not defined
             init_data(sym_data);
-            cpy_strings(&sym_data->name, &symbol->data.name);
-            cpy_strings(&sym_data->params, &symbol->data.params);
-            cpy_strings(&sym_data->ret_types, &symbol->data.ret_types);
+            cpy_strings(&sym_data->name, &symbol->data.name, false);
+            cpy_strings(&sym_data->params, &symbol->data.params, false);
+            cpy_strings(&sym_data->ret_types, &symbol->data.ret_types, false);
         }
     }
     else {
@@ -1202,7 +1202,7 @@ int parse_function_call(token_t *id_func) {
         bool is_variadic = (params_str[0] == '%') ? true : false;
         //generate function call unless variadic
         if(!is_variadic){
-            debug_print("function %s is not variadic",id_func);
+            debug_print("function %s is not variadic", id_func);
             generate_call_function(get_attr(id_func, scanner));
         }
 
@@ -1414,16 +1414,18 @@ int parse_return() {
     char * returns_str = to_str(&symbol->data.ret_types);
     while(!finished) {
         token_t t = lookahead(scanner);
+        fprintf(stderr, "%s\n", get_attr(&t, scanner));
         if(compare_token(t, ERROR_TYPE)) {
             return LEXICAL_ERROR;
         }
         else if(!is_expression(t)) {
             finished = true;
-
             if(len(&symbol->data.ret_types) > 0) {
                 error_semantic("Missing return values after return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
-                return SEMANTIC_ERROR_ASSIGNMENT;
+                return SEMANTIC_ERROR_PARAMETERS;
             }
+
+            break;
         }
         else {
             string_t ret_types;
@@ -1439,7 +1441,7 @@ int parse_return() {
                 if(!is_valid_assign(dec_type, prim_dtype)) {
                     error_semantic("Bad data type of return in function \033[1;33m%s\033[0m!", get_attr(id_fc, scanner));
                     str_dtor(&ret_types);
-                    return SEMANTIC_ERROR_OTHER;
+                    return SEMANTIC_ERROR_PARAMETERS;
                 }
                 else {
                     //Ok
@@ -1455,7 +1457,7 @@ int parse_return() {
             finished = true;
             if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
                 error_semantic("Function \033[1;33m%s\033[0m returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&symbol->data.ret_types), returns_cnt + 1);
-                return SEMANTIC_ERROR_ASSIGNMENT;
+                return SEMANTIC_ERROR_PARAMETERS;
             }
         }
         else {
@@ -1463,7 +1465,7 @@ int parse_return() {
             get_next_token(scanner);
             if(len(&symbol->data.ret_types) - 1 < returns_cnt + 1) {
                 error_semantic("Function \033[1;33m%s\033[0m returns %d values but more return values were found!", get_attr(id_fc, scanner), returns_cnt + 1, len(&symbol->data.ret_types));
-                return SEMANTIC_ERROR_ASSIGNMENT;
+                return SEMANTIC_ERROR_PARAMETERS;
             }
         }
 

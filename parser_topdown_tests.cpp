@@ -171,7 +171,7 @@ class if_parse_err1 : public test_fixture {
 };
 
 TEST_F(if_parse_err1, only_parse) {
-    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 class function_parse_err : public test_fixture {
@@ -192,7 +192,7 @@ class function_parse_err : public test_fixture {
 };
 
 TEST_F(function_parse_err, only_parse) {
-    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -203,7 +203,7 @@ class if_parse_not_err : public test_fixture {
             R"(require "help.tl" 
             function main() 
                 local s1 : integer 
-                if true then 
+                if s1 then 
                     local s1 : string = ", ktery jeste trochu obohatime" 
                 else
                     s1 = 0
@@ -224,10 +224,10 @@ class while_parse : public test_fixture {
             R"(
                 function main() 
                     local s1 : integer 
-                    global s2 : number
+                    local s2 : number
 
                     s1, s2 = 3, 4
-                    while a do
+                    while s1 do
                         s1 = 2
                     end
                 end
@@ -262,13 +262,15 @@ class function_types : public test_fixture {
             R"(
                 function main() : string, number
                     local s1 : string
+
+                    return 1, "h"
                 end
             )";
         }
 };
 
 TEST_F(function_types, only_parse) {
-    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
 }
 
 
@@ -290,7 +292,7 @@ class function_return : public test_fixture {
 };
 
 TEST_F(function_return, only_parse) {
-    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -299,7 +301,7 @@ class function_return2 : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(
-                function main(a : string, c: boolean) : string, integer
+                function main(a : string, c: integer) : string, integer
                     local s1 : string = "As I Was"
                     if c then
                         return a, 2
@@ -320,7 +322,7 @@ class missing_end : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(
-                function main(a : string, c: boolean) : string, integer
+                function main(a : string, c: integer) : string, integer
                     if c then
                         return a, 2
                     //missing end
@@ -330,7 +332,7 @@ class missing_end : public test_fixture {
 };
 
 TEST_F(missing_end, only_parse) {
-    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -339,10 +341,12 @@ class multiple_assignment : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(
-                function main() : string, integer
+                function main(a: string, c: integer) : string, integer
                     local s1 : string = "As I Was"
                     local b : number
                     s1, b = a, c
+
+                    return "a", 8
                 end
             )";
         }
@@ -382,20 +386,21 @@ class function_call : public test_fixture {
 };
 
 TEST_F(function_call, only_parse) {
-    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_OTHER);
 }
 
 class double_assignment_function : public test_fixture {
     protected:
         void setData() override {
             scanner_input = 
-            R"( function main(a : string, c: boolean) : string, integer
+            R"( function main(a : string, c: integer) : string, integer
                     local s1 : string = "As I Was"
-                    local b : boolean;
+                    local b : integer
                     if a then    
                         s1, b = main(a,c)
                     end
-                    return "","ang" 
+
+                    return "", 0
                 end
             )";
         }
@@ -511,25 +516,105 @@ class complexity_moderate : public test_fixture {
         void setData() override {
             scanner_input = 
             R"(-- Program 3: Prace s retezci a vestavenymi funkcemi
+                require "ifj21"
                 function main()
-                    local s1 : integer = 0
-                    local s2 : string = ", ktery jeste trochu obohatime"
-                    write(s1, "\010", s2)local s1len:integer=s1 local s1len4: integer=s1len
-                    s1len = 4 s1 = true s1len = s1len
-                    write("4 znaky od", s1len, ". znaku v \"", s2, "\":", s1, "\n")
-                    write("Zadejte serazenou posloupnost vsech malych pismen a-h, ")
-                    write("pricemz se pismena nesmeji v posloupnosti opakovat: ")
-                    s1, s2 = 3, 4
-                    while a do
-                        s1 = 2
-                    end
+                local s1 : string = "Toto je nejaky text"
+                local s2 : string = s1 .. ", ktery jeste trochu obohatime"
+                write(s1, "\010", s2)local s1len:integer=#s1 local s1len4: integer=s1len
+                s1len = s1len - 4 s1 = substr(s2, s1len, s1len4) 
+                s1len = s1len + 1
+                write("4 znaky od", s1len, ". znaku v \"", s2, "\":", s1, "\n")
+                write("Zadejte serazenou posloupnost vsech malych pismen a-h, ")
+                write("pricemz se pismena nesmeji v posloupnosti opakovat: ")
+                s1 = reads()
+                if s1 ~= nil then
+                while s1 ~= "abcdefgh" do
+                write("\n", "Spatne zadana posloupnost, zkuste znovu:")
+                s1 = reads()
                 end
-                main(true,1,0)
+                else
+                end
+                end
+                main()
             )";
         }
 };
 
 TEST_F(complexity_moderate, only_parse) {
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+class complexity_factorial : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(-- Program 2: Vypocet faktorialu (rekurzivne)
+require "ifj21"
+function factorial(n : integer) : integer
+local n1 : integer = n - 1
+if n < 2 then
+return 1
+else
+local tmp : integer = factorial(n1)
+return n * tmp
+end
+end
+function main()
+write("Zadejte cislo pro vypocet faktorialu: ")
+local a : integer = readi()
+if a ~= nil then
+if a < 0 then
+write("Faktorial nejde spocitat!", "\n")
+else
+local vysl : integer = factorial(a)
+write("Vysledek je ", vysl, "\n")
+end
+else
+write("Chyba pri nacitani celeho cisla!\n")
+end
+end
+main()
+            )";
+        }
+};
+
+TEST_F(complexity_factorial, only_parse) {
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+class complexity_factorial2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(-- Program 1: Vypocet faktorialu (iterativne)
+require "ifj21"
+function main() -- uzivatelska funkce bez parametru
+local a : integer
+local vysl : integer = 0
+write("Zadejte cislo pro vypocet faktorialu\n")
+a = readi()
+if a == nil then
+write("a je nil\n") return
+else
+end
+if a < 0 then
+write("Faktorial nelze spocitat\n")
+else
+vysl = 1
+while a > 0 do
+vysl = vysl * a a = a - 1 -- dva prikazy
+end
+write("Vysledek je: ", vysl, "\n")
+end
+end
+main() -- prikaz hlavniho tela programu
+            )";
+        }
+};
+
+TEST_F(complexity_factorial2, only_parse) {
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
