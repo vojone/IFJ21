@@ -666,6 +666,958 @@ TEST_F(variable_check_local, semantic) {
     ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
+class hash_check : public test_fixture{
+    protected: 
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Funkce vyzkouší operace '#'
+
+                require "ifj21"
+                function main()
+                    local a : string = "World Hello?"
+                    local b : integer
+
+                    b = #a
+                    write("Delka řetězce a je", b , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(hash_check, semantic){
+    ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+}
+
+class multiple_commands: public test_fixture{
+    protected: 
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Test více příkazů na jednom řádku
+
+                require "ifj21"
+                function main()
+                    local a: integer = 2 local b : number = 3 local c :string ="LMFAO" a= #c
+
+                end
+            )";
+        }
+};
+
+TEST_F(multiple_commands, semantic){
+    ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+}
+
+class mixing_data_types_1 : public test_fixture{
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+                -- Zkouška míchání datových typů NUM+INT => INT
+                -- Neprojde
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+                    local b : number = 10.5
+                    local c : integer = 0
+
+                    c = a + b
+                    write("Hodnota B je ", b ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(mixing_data_types_1, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+}
+
+class mixing_data_types_2 : public test_fixture{
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+                -- Zkouška míchání datových typů NUM+INT => NUM
+                -- Projde
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+                    local b : number = 10.5
+                    local c : number
+
+                    c = a + b
+                    write("Hodnota B je ", b ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(mixing_data_types_2, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class same_variable_different_blocks : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Použití stejné proměnné ve více blocích
+
+                require "ifj21"
+                function main()
+                    local a : integer = 1
+                    local b : integer = 2
+                    write("A(1) před IF = ", a ,"\n")
+                    if b then
+                        a = 3
+                    write("A(3) v = ", a ,"\n")
+                    end
+                    write("A(1) za IF = ", a ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(same_variable_different_blocks, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class variable_as_function : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Proměnná se jmenuje stejně jako funkce
+
+                require "ifj21"
+                function main()
+                    local main : string
+                    main = "testTextuProšel"
+                    write(main, "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(variable_as_function, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class function_as_variable : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Funkce se jmenuje stejně jako proměnná
+
+                require "ifj21"
+                function main()
+                    local lmao : string
+                    lmao = "testTextuProšel"
+                    lmao()
+                    write(lmao, "\n")
+                end
+
+                function lmao()
+
+                end
+            )";
+        }
+};
+
+TEST_F(function_as_variable, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class return_statement : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Funkce se správným počtem a typem argumentů
+
+                require "ifj21"
+                function func(a : integer, b : integer) : integer
+                    a = b
+                    return a
+                end
+
+                function main()
+                    local a : integer = 1
+                    local b : integer = 2
+                    func(a,b)
+                end
+            )";
+        }
+};
+
+TEST_F(return_statement, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class return_statement_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Funkce se správným počtem a ale špatným typem argumentů
+
+                require "ifj21"
+                function func(a : integer, b : string) : integer
+                    b = "s"
+                    return a
+                end
+
+                function main()
+                    local a : integer = 1
+                    local b : integer = 2
+                    func(a,b)
+                end
+            )";
+        }
+};
+
+TEST_F(return_statement_2, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+}
+
+class return_statement_3 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Funkce se špatným počtem a typem argumentů
+
+                require "ifj21"
+                function func(a : string, b : string, c : integer) : integer
+                    a = b
+                    return c
+                end
+
+                function main()
+                    local a : integer = 1
+                    local b : integer = 2
+                    func(a,b)
+                end
+            )";
+        }
+};
+
+TEST_F(return_statement_3, semanic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+}
+
+class return_statement_4 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Funkce s více hodnotama
+
+                require "ifj21"
+                function func(a : integer, b : integer) : integer, integer
+                    return a, b
+                end
+
+                function main()
+                    local a : integer = 1
+                    local b : integer = 3
+                    local c : integer
+                    local d : integer
+                    c, d = func(a,b)
+                    write("Hodnota a: ", a ,", hodnota b: ", b ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(return_statement_4, semanic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class return_statement_5 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Funkce s předanou hodnotou nil
+
+                require "ifj21"
+                function func(a : integer, b : integer) : integer, integer
+                    return a, b
+                end
+
+                function main()
+                    local a : integer = 1
+                    local b : integer = nil
+                    local c : integer
+                    local d : integer
+                    c, d = func(a,b)
+                    write("Hodnota a: ", a ,", hodnota b: ", b ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(return_statement_5, semanic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class return_to_var : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Testování returnu do více proměnných
+                -- Vrátí String 'Hello World' a 1
+                -- return 0;
+
+                require "ifj21"
+                function concatenate(c : string, d : string) : string, integer
+                    return c .. d, 1
+                end
+
+                function main()
+                    local a : string
+                    local b : integer
+                    a,b = concatenate("Hello", "World")
+                    write(a , " " , b , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(return_to_var, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class nil_assignment : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Testy na hodnotu nil
+                -- Not sure jestli to má projít ??
+
+                require "ifj21"
+                function main()
+                    local a : integer = nil
+                    local b : string = nil
+                    local c : number = nil
+
+                    write("Hodnoty a,b,c jsou: ", a, b, c ,"\n")
+                end
+            )";
+        }
+};
+
+TEST_F(nil_assignment, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class nil_arithmetics : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Aritmetika s hodnotou nil
+                -- not sure bout this one, ale nejspíš chyba
+
+                require "ifj21"
+                function main()
+                    local a : integer = 10
+                    local b : integer = nil
+
+                    a = a + b
+                    write("Hodnota a je: ", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(nil_arithmetics, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class nil_arithmetics_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Aritmetika s hodnotou nil
+                -- 
+
+                require "ifj21"
+                function main()
+                    local a : integer = 10
+                    local b : string = nil
+
+                    a = a + b
+                    write("Hodnota a je: ", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(nil_arithmetics_2, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_EXPRESSION);
+}
+
+class nil_arithmetics_3 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Aritmetaka s hodnotou nil
+                -- not sure bout this one, ale nejspíš chyba
+
+                require "ifj21"
+                function main()
+                    local a : integer = nil
+                    local b : integer = 2
+
+                    a = a - b
+                    write("Hodnota a je: ", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(nil_arithmetics_3, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class division_by_zero : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Dělení 0
+
+                require "ifj21"
+                function main()
+                    local a : integer = 10
+                    local c : integer
+                    c = a / 0
+                end
+            )";
+        }
+};
+
+TEST_F(division_by_zero, semantic){
+    ASSERT_EQ(parse_program(), DIVISION_BY_ZERO_ERROR);
+}
+
+class undeclared_function : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Volání nedeklarované funkce
+                -- Teoreticky by projít nemělo? Prakticky to interpretu nevadí :/
+
+                require "ifj21"
+                function main()
+                    foo()
+                end
+
+                function foo()
+                    local a : integer = 2
+                    write("Hodnota A je: ", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(undeclared_function, semantic){
+    ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
+class declared_function : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Volání deklarované funkce
+                -- Teoreticky by projít mělo?
+
+                -- return 0;
+
+                require "ifj21"
+                global foo2 : function()
+                    
+                function main()
+                    foo2()
+                end
+
+                function foo2()
+                    local a : integer = 2
+                    write("Hodnota A je: ", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(declared_function, semantic){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class function_declaration_sx : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba v deklaraci funkce
+                -- Jak jsem to nechal projít, tak si actually nejsem jistej proč to
+                -- hází semantic error, monžná to bere jako identifier ?
+                -- Will clarify
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                functiom main()
+                    write("Syntaktická chyba \n")
+                end
+            )";
+        }
+};
+
+TEST_F(function_declaration_sx, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class if_statement_syntax : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba v IF bloku
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+                    if a == 2 them
+                        write("Syntaktická chyba \n")
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(if_statement_syntax, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class if_statement_syntax_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, překlep v IF
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+                    iff a == 2 then
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(if_statement_syntax_2, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class if_statement_syntax_3 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, rovnítko ve výrazu IF
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+                    if a = 2 then
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(if_statement_syntax_3, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class if_statement_syntax_4 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Syntaktická chyba, chybějící then
+
+                -- return SYNTAX_ERR;
+
+                require "ifj21"
+                function main28()
+                    local a : integer = 2
+                    if a = 2
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(if_statement_syntax_4, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class missing_end_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, chybí 'end'
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 3
+                    if a == 3 then
+                        write("Syntaktická chyba \n")
+                end
+            )";
+        }
+};
+
+TEST_F(missing_end_2, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class parentheses_function_def : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, závorky u definice funkce
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main
+
+                end
+            )";
+        }
+};
+
+TEST_F(parentheses_function_def, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class parentheses_function_call : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, závorky u volání funkce
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+
+                function zavorky()
+
+                end
+
+                function main()
+                    zavorky
+                end
+            )";
+        }
+};
+
+TEST_F(parentheses_function_call, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class unexpected_char : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak ';'
+
+                -- return LEXICAL_ERROR;
+
+                require "ifj21"
+                function main();
+
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '='
+
+                -- return LEXICAL_ERROR;
+
+                = require "ifj21"
+                function main()
+
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_2, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_3 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '~'
+                -- Toto je hrozně weirdChamp, ono to bere tu tilde jako název funkce ._.
+
+                -- return LEXICAL_ERROR;
+
+                require "ifj21"
+                function ~main()
+
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_3, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_4 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '´'
+
+                -- return LEXICAL_ERROR;
+
+                require "ifj21"´
+                function main()
+
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_4, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_5 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak ';'
+
+                -- return LEXICAL_ERROR;
+
+                require "ifj21"
+                function main()
+
+                end;
+            )";
+        }
+};
+
+TEST_F(unexpected_char_5, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_6 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '/'
+                -- Podle mě by mělo hodit lexical, will clarify
+
+                -- return LEXICAL_ERROR;
+                require "ifj21"
+                function main()
+                /
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_6, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_7 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Syntaktická chyba, neočekávaný znak ':'
+
+                -- return SYNTAX;
+
+                require "ifj21"
+                function main27()
+                    local a : : string
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_7, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class unexpected_char_8 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '#'
+
+                -- return SYNTAX;
+
+                #
+                require "ifj21"
+                function main27()
+                    local a : string
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_8, syntax){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_9 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak za main() '('
+
+                -- return SYNTAX;
+
+                require "ifj21"
+                function main27()(
+                    local a : string
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_9, syntax){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_10 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak main( '(' )
+
+                -- return SYNTAX;
+
+                require "ifj21"
+                function main27(()
+                    local a : string
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_10, syntax){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+class unexpected_char_11 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, špatné závorky v IF
+
+                -- return SYNTAX;
+
+                require "ifj21"
+                function main27(()
+                    local a : string = "s"
+                    if [a = "s"] then
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_11, syntax){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+
+class while_statement_syntax : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, chyba ve while bloku
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+
+                    while a > 0 d00
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(while_statement_syntax, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 

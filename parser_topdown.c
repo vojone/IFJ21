@@ -237,32 +237,6 @@ void int2num_conv() {
     code_print("INT2FLOATS");
 }
 
-<<<<<<< HEAD
-    switch (t.token_type)
-    {
-    case IDENTIFIER:
-        true;
-        token_t func_token = t;
-        char *func = get_attr(&func_token, scanner);
-        // it is neccessary to look at the next lexeme also
-        token_t id_token = get_next_token(scanner);
-        t = lookahead(scanner);
-        bool is_multiple_assignment = compare_token_attr(t, SEPARATOR, ",");
-        bool is_single_assignment = compare_token_attr(t, OPERATOR, "=");
-        //check if it is a function call
-        debug_print("Calling function ------------\n");
-        if(compare_token_attr(t, SEPARATOR, "(")) {
-            debug_print("Call function %s\n", func);
-
-            tree_node_t *func_valid = search_in_tables(&symtab, func);
-
-            // Function is not declared
-            if (func_valid == NULL) { //----------------------------------------------------------------------------
-                error_semantic("Function name '%s' not defined!", func);
-                return SEMANTIC_ERROR_DEFINITION;
-            }
-=======
->>>>>>> 56d5ebf8fc651d0a91da8f0dd2763a1fc32dbeb6
 
 void num2int_conv() {
     code_print("FLOAT2INTS");
@@ -289,18 +263,6 @@ bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type) {
     }
 }
 
-<<<<<<< HEAD
-int assignment(token_t t) {
-    /*
-    token_t current_token;
-    token_init(&current_token);
-    */    
-    token_t var_id = t;
-    //char* var_id = last_token.attr;
-    //debug_print("\n\nvar_id: %s\n\n"); //current token);
-
-    int token_count = 0;
-=======
 
 /**
  * @brief Parses lside of assignment (supports also multiple assignment)
@@ -311,18 +273,11 @@ int assignment(token_t t) {
 int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, tok_stack_t *var_names) {
     *id_number = 0;
     token_t t = *start_id;
->>>>>>> 56d5ebf8fc651d0a91da8f0dd2763a1fc32dbeb6
     bool foundAssignmentOp = false;
     while(!foundAssignmentOp) {
-<<<<<<< HEAD
-
-        //first token is already read at the beginning, so we check wheter we are at the beginning
-        if(token_count != 0) {
-=======
         
         //First token is already read at the beginning, so we check wheter we are at the beginning
         if(*id_number != 0) {
->>>>>>> 56d5ebf8fc651d0a91da8f0dd2763a1fc32dbeb6
             t = get_next_token(scanner);
             if(compare_token(t, ERROR_TYPE)) {
                 return LEXICAL_ERROR;
@@ -364,29 +319,6 @@ int assignment_lside(token_t* start_id, string_t *id_types, size_t *id_number, t
         }
         else if(compare_token_attr(t, OPERATOR, "=")) {
             foundAssignmentOp = true;
-<<<<<<< HEAD
-
-            // Semantics for value assignment to variable
-            tree_node_t* symtab_var = search_in_tables(&symtab, get_attr(&(var_id), scanner));
-            debug_print("\nSEARCH TS for dtype of: '%s' is '%d'\n\n", get_attr(&(var_id),scanner), symtab_var->data.dtype);
-
-            if(!symtab_var) {
-                return SEMANTIC_ERROR_DEFINITION;
-            }
-
-            sym_dtype_t d_ret_type;
-            int dtype = parse_expression(scanner, &symtab, &d_ret_type);
-            if (dtype == 0){
-                debug_print("\nDTYPE of EXP: '%d'\n\n", d_ret_type);
-                if (symtab_var->data.dtype != d_ret_type){
-                    return SEMANTIC_ERROR_ASSIGNMENT;
-                }    
-            }
-            else{
-                return INTERNAL_ERROR_;
-            }
-=======
->>>>>>> 56d5ebf8fc651d0a91da8f0dd2763a1fc32dbeb6
         }
         else {
             error_unexpected_token("SEPARATOR ',' or OPERATOR '='", t);
