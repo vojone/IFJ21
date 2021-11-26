@@ -1,1 +1,1 @@
-write()
+write(15/5)
