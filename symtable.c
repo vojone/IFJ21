@@ -2,15 +2,17 @@
  *                                  IFJ21
  *                                symtable.c
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *       Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Implementation of symbol table used in compiler
  * 
- *                  Last change:
+ *                        Last change: 25. 11. 2021
  *****************************************************************************/
 
 #include "symtable.h"
-#include <stdbool.h>
-#include <string.h>
+
+DSTACK(tree_node_t*, ts,) /**< Operations with tree nodes stack (used in destroy tab function) */
+
+DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key)) /**< Operations with stack of symtabs */
 
 /**
  * @brief Initializes symbol table
@@ -57,6 +59,8 @@ void insert_sym(symtab_t *tab, const char *key, sym_data_t newdata) {
     while(*cur_node && !was_inserted) { //Find place for new node
         int comparison_result = str_cmp((*cur_node)->key, key);
         if(comparison_result == 0) {
+            
+            data_dtor(&(*cur_node)->data);
             (*cur_node)->data = newdata;
             was_inserted = true;
         }
@@ -141,6 +145,7 @@ void delete_sym(symtab_t *tab, const char *key) {
                     *cur_node = NULL;
                 }
 
+                data_dtor(&to_be_deleted->data);
                 free(to_be_deleted->key);
                 free(to_be_deleted);
             }
@@ -176,6 +181,7 @@ void destroy_tab(symtab_t *tab) {
             }
             curr_node = curr_node->l_ptr;
 
+            data_dtor(&tmp->data);
             free(tmp->key);
             free(tmp);
         }
@@ -203,11 +209,169 @@ sym_dtype_t char_to_dtype(char type_c) {
     case 's':
         type = STR;
         break;
+    case 'z':
+        type = NIL;
+        break;
+    case 'b':
+        type = BOOL;
+        break;
     default:
         type = UNDEFINED;
     }
 
     return type;
 }
+
+
+/**
+ * @brief Converts enum type used in symtable to correspoding character symbol
+ */ 
+char dtype_to_char(sym_dtype_t type) {
+    char type_c;
+    switch (type)
+    {
+    case NUM:
+        type_c = 'n';
+        break;
+    case INT:
+        type_c = 'i';
+        break;
+    case STR:
+        type_c = 's';
+        break;
+    case NIL:
+        type_c = 'z';
+        break;
+    case BOOL:
+        type_c = 'b';
+        break;
+    default:
+        type_c = ' ';
+    }
+
+    return type_c;
+}
+
+
+/**
+ * @brief Initializes strings data structure of symbol
+ * @return If there were error during initialization returns EXIT_FAILURE, otherwise EXIT_SUCCESS
+ */ 
+int init_data(sym_data_t *new_data) {
+    if(str_init(&new_data->name) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->params) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    if(str_init(&new_data->ret_types) != STR_SUCCESS) {
+        return EXIT_FAILURE;
+    }
+
+    new_data->was_used = false;
+
+    return EXIT_SUCCESS;
+}
+
+
+/**
+ * @brief Frees all resources that data holds and sets it to the state before initialization
+ */ 
+void data_dtor(sym_data_t *data) {
+    str_dtor(&data->name);
+    str_dtor(&data->params);
+    str_dtor(&data->ret_types);
+}
+
+
+/**
+ * @brief Contains static array with builtin functions and its attributes (parameter, return types)
+ */ 
+sym_data_t* builtin_functions(unsigned int index) {
+    if (index >= BUILTIN_TABLE_SIZE) {
+        return NULL;
+    }
+
+    static sym_data_t builtin_functions[BUILTIN_TABLE_SIZE] = {
+    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "i"}, UNSET, DECLARED, false},
+    {{0, 0, "ord"}, FUNC, {0, 0, "si"}, {0, 0, "i"}, UNSET, DECLARED, false},
+    {{0, 0, "readi"}, FUNC, {0, 0, "i"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "readn"}, FUNC, {0, 0, "n"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "reads"}, FUNC, {0, 0, "s"}, {0, 0, ""}, UNSET, DECLARED, false},
+    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "sin"}, UNSET, DECLARED, false},
+    {{0, 0, "tointeger"}, FUNC, {0, 0, "i"}, {0, 0, "n"}, UNSET, DECLARED, false},
+    {{0, 0, "write"}, FUNC, {0, 0, ""}, {0, 0, "%"}, UNSET, DECLARED, false}};
+
+    return &builtin_functions[index];
+}
+
+
+/**
+ * @brief Inserts all builtin functions into given symbol table
+ * @note Inseted functions will have same name as key in symbol table
+ */ 
+void load_builtin_f(symtab_t *dst) {
+    for(int i = 0; builtin_functions(i); i++) {
+        char * f_name = to_str(&builtin_functions(i)->name);
+        insert_sym(dst, f_name, *builtin_functions(i));
+    }
+}
+
+
+/**
+ * @brief Tries to find function by name in table of builtin functions
+ * @return Pointer to function data in static table if function is found, other wise NULL
+ */ 
+sym_data_t* search_builtin(const char *f_name) {
+    //If function name start with 'z' (for example) -> search from the end 
+    int i = f_name[0] < 'z' - 'a' / 2 ? 0 : BUILTIN_TABLE_SIZE - 1;
+    int inc = f_name[0] < 'z' - 'a' / 2 ? 1 : -1;
+
+    for(; builtin_functions(i) != NULL; i += inc) {
+        if(str_cmp(to_str(&builtin_functions(i)->name), f_name) == 0) {
+            return builtin_functions(i);
+        }
+    }
+
+    return NULL;
+}
+
+
+/**
+ * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ */
+void check_builtin(char *key, symtab_t *dst) {
+    sym_data_t *bfunc_data_ptr = search_builtin(key);
+    if(bfunc_data_ptr) {
+        insert_sym(dst, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+    }
+}
+
+
+/**
+ * @brief Performs searching in stack of symtabs
+ * @return If nothing is found returns NULL otherwise returns pointer to first occurence
+ */
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
+                               symtab_t *start_symtab, 
+                               char *key) {
+
+    symtab_t *curr_tab = start_symtab;
+    
+    while(curr_tab != NULL) {
+        tree_node_t * result_of_searching = search(curr_tab, key);
+        if(result_of_searching) { //If something is found return pointer
+            return result_of_searching;
+        }
+        else { //If not, try to search it in 'parent' symbol table
+            curr_tab = symtabs_get_ptr(sym_stack, curr_tab->parent_ind);
+        }
+    }
+
+    return NULL;
+}
+
 
 /***                          End of symtable.c                            ***/

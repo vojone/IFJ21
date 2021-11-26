@@ -24,14 +24,14 @@ GlobalStatementList :
                     | GlobalStatement GlobalStatementList;
 GlobalStatement     : 'require' string
                     | FunctionCall
-                    | 'function' id '(' ParamList ')' TypeList StatementList 'end';
+                    | 'function' id '(' ParamList ')' TypeList StatementList 'end'
+                    | 'global' id ':' 'function' '(' ParamList ')' TypeList;
 
 
 StatementList       : 
                     | Statement StatementList;
 /* VARIABLES */
-Statement           : 'global' id ':' type ValueAssignment
-                    | 'local'  id ':' type ValueAssignment
+Statement           : 'local'  id ':' type ValueAssignment
                     | Assignment
                     | 'if' expression 'then' StatementList ElseBranch 'end'
                     | 'while' expression 'do' StatementList 'end'

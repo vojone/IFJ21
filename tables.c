@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                tables.c
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                     Authors: Vojtěch Dvořák (xdvora3o)
  * Purpose: Functions, that contain static variables with defined keywords,...
  * 
- *                    Last change: 24. 10. 2021
+ *                      Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
@@ -63,20 +63,6 @@ char * get_separator(unsigned int index) {
     };
                             
     return separator_table[index];
-}
-
-/**
- * @brief Contains static array of supported builtin functions
- * @return Pointer to builtin function name 
- */ 
-char * get_builtin(unsigned int index) {
-    static char * builtin_table[BUILTIN_TABLE_SIZE] = 
-    {
-        "chr", "ord", "readi", "readn", 
-        "reads", "substr", "tointeger", "write" 
-    };
-                            
-    return builtin_table[index];
 }
 
 

@@ -2,8 +2,12 @@
  * @file parser-topdown.h
  * @brief Header file for recursive descent parser
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
+ *          Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
+
+#ifndef TOPDOWN_H
+#define TOPDOWN_H
 
 
 #include <stdio.h>
@@ -12,9 +16,13 @@
 #include <string.h>
 #include "dstring.h"
 #include "scanner.h"
-#include <stdarg.h>
+#include "dstack.h"
 #include "precedence_parser.h"
+#include <stdarg.h>
 #include "symtable.h"
+#include "generator.h"
+#include "dstack.h"
+
 
 typedef struct result{
     bool success;
@@ -40,8 +48,23 @@ typedef enum return_codes {
 } return_codes_t;
 
 
+// typedef struct symbol_tables {
+//     symtabs_stack_t symtab_st; /**< Stack for saving symbol tables */
+//     symtab_t global; /**< Global symbol table for functions */
+//     symtab_t symtab; /**< Current symbol table*/
+// } symbol_tables_t;
+
+#define DECLARATION_COUNTER_MAX_LEN 32
+
 typedef struct parser {
-    symtabs_stack_t symtabs;
+    token_t * curr_func_id; /**< Pointer to token with identifier of function, that is currently parsed */
+    size_t decl_cnt; /**< Declaration counter for making unique identifiers in target code */
+    size_t cond_cnt; /**< Condition counter for making unique labels for if else in target code */
+    size_t loop_cnt; /**< Condition counter for making unique labels for while loops in target code */
+    bool found_return; /**< Flag for propagation info about found returns */
+
+    tok_stack_t decl_func; /**< Stack with declared functions (to check if they were defined)*/
+
     int return_code;
     bool reached_EOF;
 } parser_t;
@@ -51,13 +74,16 @@ int error_rule();
 typedef struct rule {
     int (* rule_function)();
     token_t rule_first;
+    bool attrib_relevant;
 } rule_t;
 
 /**
  * @brief Finds the appropriate rule
  * @return Returns reference to rule function
+ * @param t Token based on which is going to be decided what rule to use
+ * @param ruleset is an array of rules for particular context (ie. global or inside a function) 
  */ 
-rule_t determine_rule(token_t t);
+rule_t determine_rule(token_t t, rule_t ruleset[]);
 
 /**
  * @brief sets the parser and scanner to use
@@ -88,6 +114,30 @@ int statement_list();
  * @brief Parses statements inside of a function
  */
 int statement();
+
+/**
+ * @brief parses an identifier inside a function
+ * @note decides wheter the rule to use is a function call or an assignment
+ */
+int parse_identifier(); 
+
+/**
+ * @brief parses an identifier in global scope
+ * @note workaround because parse_function_call expects the identifier to be already read
+ */
+int parse_global_identifier(); 
+
+/**
+ * @brief parses an EOF inside a function
+ * @note basically an error rule with additional error message
+ */ 
+int EOF_fun_rule();
+
+/**
+ * @brief parses an EOF inside a function
+ * @note basically an error rule with additional error message
+ */ 
+int EOF_global_rule();
 
 /**
  * @brief Parses local variable definitions
@@ -152,9 +202,13 @@ int expression_list_1();
 
 /**
  * @brief Shows error if next token is not a STRING
- * @return true if token is string
  */ 
-int parse_str();
+int parse_require();
+
+/**
+ * @brief Parses declaration of function (so just the signature)
+ */ 
+int parse_function_dec();
 
 /**
  * @brief Parses function definition, checks for signature and then parses the inside of the function
@@ -243,6 +297,12 @@ bool is_datatype(token_t t);
 int parse_datatype();
 
 /**
+ * !probably temp
+ * @brief fix for 
+ */ 
+void semantic_init();
+
+/**
  * !temporary
  * @brief shows error if token is not considered expression
  * @note checks only for INTEGER, NUMBER or STRING
@@ -265,3 +325,8 @@ bool is_expression(token_t t);
  * @note to disable the "Got token at:" and "^ Lookahead ^", delete it in the scanner.c file. My apologies for the inconvenience
  */
 void debug_print(const char *const _Format, ...);
+
+
+#endif
+
+/***                        End of parser_topdown.h                        ***/

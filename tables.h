@@ -2,10 +2,10 @@
  *                                  IFJ21
  *                                tables.h
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                     Authors: Vojtěch Dvořák (xdvora3o)
  * Purpose: Functions, that contain static variables with defined keywords,...
  * 
- *                    Last change: 24. 10. 2021
+ *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
@@ -28,7 +28,6 @@
 #define KEYWORD_TABLE_SIZE 15
 #define OPERATOR_TABLE_SIZE 14
 #define SEPARATOR_TABLE_SIZE 4
-#define BUILTIN_TABLE_SIZE 8
 
 /**
  * @brief Returns pointer to string in static array with keywords

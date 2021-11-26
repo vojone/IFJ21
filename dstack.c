@@ -2,113 +2,27 @@
  *                                  IFJ21
  *                                 dstack.c
  * 
- *          Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
- *   Purpose: Implementation of auxiliary stacks (implemented as dynamic array)
+ *                 Authors: Vojtech Dvorak (xdvora3o)
+ *             
+ *   Purpose: Contains stack definitions used in multiple files 
+ *                 (to avoid redefinitions and redundancy)
  * 
- *                    Last change: 11. 11. 2021
+ *                      Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstack.c
- * @brief Implementation of auxiliary stacks (implemented as dynamic array)
+ * @brief Purpose: Contains stack definitions used in multiple files 
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */ 
 
-/**
- * @brief Generates stack as dynamic array of elements of TYPE 
- * @param FORMATSTR is not important only for printing stack content (use format symbol e.g. "%d" for integer stack)
- */ 
 
 #include "dstack.h"
 
-/**
- * @brief Generates definition of stack (of related functions) with specific name and data type
- * @param NAME prefix that will be added to opearations and structure name
- * @param TYPE data type of elements in the stack
- * @param PRINT_CMD Command that is used for printing data in the stack (not important, used only in show)
- * @note PRINT_CMD Can be omitted if NAME##_show is not needed
- */ 
-#define DSTACK(TYPE, NAME, PRINT_CMD)                           \
-bool NAME##_stack_init(NAME##_stack_t *s) {                     \
-    s->top = 0;                                                 \
-    s->data = (TYPE *)malloc(sizeof(TYPE)*INIT_SIZE);           \
-    if(!s->data) {                                              \
-        fprintf(stderr, "Stack: Can't allocate!\n");            \
-        return false;                                           \
-    }                                                           \
-    s->allocated = INIT_SIZE;                                   \
-                                                                \
-    return true;                                                \
-}                                                               \
-                                                                \
-                                                                \
-void NAME##_stack_dtor(NAME##_stack_t *s) {                     \
-    free(s->data);                                              \
-    s->allocated = 0;                                           \
-}                                               \
-                                                \
-bool NAME##_is_empty(NAME##_stack_t *s) {       \
-    return s->top == 0;                         \
-}                                               \
-                                                \
-bool NAME##_push(NAME##_stack_t *s, TYPE  newdata) {                                \
-    if(s->top == s->allocated) { /*Allocated memory is full -> extend it*/          \
-        s->data = (TYPE *)realloc(s->data, sizeof(TYPE)*s->allocated*2);            \
-        if(!s->data) {                                                              \
-            fprintf(stderr, "Stack: Can't allocate!\n");                            \
-            return false;                                                           \
-        }                                                                           \
-        s->allocated *= 2;                                                          \
-                                                                                    \
-    }                                           \
-                                                \
-    s->data[s->top++] = newdata;                \
-                                                \
-    return true;                                \
-}                                               \
-                                                \
-TYPE NAME##_pop(NAME##_stack_t *s) {            \
-    s->top -= 1;                                \
-    return s->data[s->top];                     \
-}                                               \
-                                                \
-TYPE NAME##_top(NAME##_stack_t *s) {            \
-    return s->data[s->top - 1];                 \
-}                                               \
-                                                \
-TYPE * NAME##_get_ptr(NAME##_stack_t *s, int index) {               \
-    if(index > s->top - 1 || index < 0) {                           \
-        return NULL;                                                \
-    }                                                               \
-    else {                                                          \
-        return &(s->data[index]);                                   \
-    }                                                               \
-}                                                                   \
-                                                                    \
-                                                                    \
-unsigned int NAME##_get_top_ind(NAME##_stack_t *s) {                \
-        return s->top - 1;                                          \
-}                                                                   \
-                                                \
-void NAME##_show(NAME##_stack_t *s) {           \
-    int i = 0;                                  \
-    fprintf(stderr, "STACK: |");                \
-    while(i != s->top) {                        \
-        PRINT_CMD;                              \
-        i++;                                    \
-    }                                           \
-    fprintf(stderr, "<= top\n");                \
-}                                               \
+DSTACK(token_t, tok, fprintf(stderr," %ld", s->data[i].first_ch_index))
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~STACK DEFINITIONS~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-//DSTACK(int, pp, fprintf(stderr," %d",s->data[i]))
-DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type))
-
-DSTACK(tree_node_t*, ts,)
-
-DSTACK(symtab_t, symtabs, fprintf(stderr," %s", s->data[i].t->key))
 
 
 /***                        End of dstack.c                                ***/

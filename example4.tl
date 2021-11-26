@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 require "ifj21"
 
 function hello()
@@ -14,3 +15,6 @@ local z : integer
 z = 4
 
 end
+=======
+write(15/5)
+>>>>>>> 56d5ebf8fc651d0a91da8f0dd2763a1fc32dbeb6

@@ -2,16 +2,17 @@
  *                                  IFJ21
  *                                dstring.h
  * 
- *       Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *                   Authors: Vojtech Dvorak (xdvora3o)
  *Purpose: Declaration of basic functions to process (dynamic) string and chars
- *                    Last change: 24. 10. 2021
+ *
+ *                       Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstring.h
  * @brief Declaration of basic functions to process (dynamic) string and chars
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtech Dvorak (xdvora3o)
  */ 
 
 #ifndef DSTRING_H
@@ -57,9 +58,20 @@ int str_init(string_t *string);
  */
 int app_char(char c, string_t *string);
 
+/**
+ * @brief Appends cstring after dynamic string
+ */ 
+int app_str(string_t *dst, const char *src);
+
+/**
+ * @brief Puts chracter c at the start of the dynimic string
+ */ 
 int prep_char(char c, string_t *string);
 
-int prep_str(string_t *dst, char *src);
+/**
+ * @brief Puts cstring at the start of the dynimic string
+ */ 
+int prep_str(string_t *dst, const char *src);
 
 /**
  * @brief Cuts string to given length
@@ -99,7 +111,17 @@ bool str_search(const char c, const char *str);
  */
 int str_cpy(char **dst, const char *src, size_t length);
 
+/**
+ * @brief Copies array of characters (cstr) to string structure
+ * @param length length of source cstr from start that will be copied to string
+ */
 int str_cpy_tostring(string_t* dst, const char *src, size_t length);
+
+/**
+ * @brief Makes hard copy of two strings
+ * @param zero_term says if src string is terminated by '\0' character
+ */ 
+int cpy_strings(string_t* dst, string_t *src, bool zero_term);
 
 /**
  * @brief returns type of character

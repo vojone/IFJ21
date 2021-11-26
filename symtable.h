@@ -2,11 +2,14 @@
  *                                  IFJ21
  *                                symtable.h
  * 
- *        Authors: Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ *          Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Declaration of symbol table functions and structures
  * 
- *                  Last change:
+ *                  Last change: 25. 11. 2021
  *****************************************************************************/
+
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,23 +17,24 @@
 #include "dstring.h"
 #include "dstack.h"
 
-#ifndef SYMTABLE_H
-#define SYMTABLE_H
+#define BUILTIN_TABLE_SIZE 8
 
+#define UNDEFINED -1
 #define UNSET -1
+
 
 /**
  * @brief Specifies type of symbol
  */ 
 typedef enum sym_type {
-    FUNC, VAR
+    FUNC, VAR, VAL
 } sym_type_t;
 
 /**
  * @brief Specifies data type of variable or return type of function 
  */ 
 typedef enum sym_dtype {
-    INT, NUM, STR
+    INT, NUM, STR, NIL, BOOL
 } sym_dtype_t;
 
 
@@ -38,18 +42,20 @@ typedef enum sym_dtype {
  * @brief Specifies status of symbol (whether it was used, declared, defined)
  */ 
 typedef enum sym_status {
-    DECLARED, DEFINED, USED
+    DECLARED, DEFINED
 } sym_status_t;
 
 /**
  * @brief Structure with all necessary data
  */ 
 typedef struct sym_data {
-    char * name;
+    string_t name;
     sym_type_t type;
     string_t ret_types;
+    string_t params;
     sym_dtype_t dtype;
     sym_status_t status;
+    bool was_used;
 } sym_data_t;
 
 /**
@@ -62,19 +68,44 @@ typedef struct tree_node {
     struct tree_node *r_ptr;
 } tree_node_t;
 
+
+DSTACK_DECL(tree_node_t*, ts)
+
+
 /**
- * @brief Symbol table data type
+ * @brief Symbol table data type for basic data storing
  */
 typedef struct symtab {
     tree_node_t * t;
-    int parent_ind;
+    int parent_ind; /**< Is used for switching contexts int parser */
 } symtab_t; 
+
+DSTACK_DECL(symtab_t, symtabs) /** Stack of symbol tables */
+
+/**
+ * @brief Symbol table data type, that can support superimposing of symbols 
+ */ 
+typedef struct symbol_tables {
+    symtabs_stack_t symtab_st; /**< Stack for saving symbol tables */
+    symtab_t global; /**< Global symbol table for functions */
+    symtab_t symtab; /**< Current symbol table*/
+} symbol_tables_t;
 
 /**
  * @brief Initializes symbol table
  * @param symbol table to be initialized
  */ 
 void init_tab(symtab_t *tab);
+
+/**
+ * @brief Initializes data structure of symbol
+ */ 
+int init_data(sym_data_t *new_data);
+
+/**
+ * @brief Frees all resources that data holds and set it to the state before initialization
+ */ 
+void data_dtor(sym_data_t *new_data);
 
 /**
  * @brief Inserts a new element into existing symbol table or updates existing node
@@ -115,6 +146,42 @@ tree_node_t *search(symtab_t *tab, const char *key);
  * @brief Converts character to sym_dtype enum
  */
 sym_dtype_t char_to_dtype(char type_c);
+
+
+/**
+ * @brief Converts enum type used in symtable to correspoding character symbol
+ */ 
+char dtype_to_char(sym_dtype_t type);
+
+
+/**
+ * @brief inserts all builtin functions into given symbol table
+ * @note Inseted functions will have same name as key in symbol table
+ */ 
+void load_builtin_f(symtab_t *dst);
+
+
+/**
+ * @brief Tries to find function by name in table of builtin functions
+ * @return Pointer to function data in static table if function is found, other wise NULL
+ */ 
+sym_data_t* search_builtin(const char *f_name);
+
+
+/**
+ * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ */
+void check_builtin(char *key, symtab_t *dst);
+
+
+/**
+ * @brief Performs searching in stack of symtabs
+ * @return If nothing is found returns NULL otherwise returns pointer to first occurence
+ */
+tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
+                               symtab_t *start_symtab, 
+                               char *key);
+
 
 #endif
 
