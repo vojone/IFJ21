@@ -30,6 +30,7 @@ void generate_init(){
     generate_checkzero_function();
     generate_unaryminus_function();
     generate_same_types();
+    generate_force_floats();
 }
 
 /**
@@ -199,8 +200,8 @@ void generate_operation_mul(){
 }
 
 void generate_operation_div(){
-    generate_call_function("$OP$checkzero");
-    generate_call_function("$BUILTIN$sametypes");
+    // generate_call_function("$OP$checkzero");
+    generate_call_function("$BUILTIN$forcefloats");
     code_print("DIVS");
 }
 
@@ -438,6 +439,47 @@ void generate_same_types(){
     generate_end_function("$BUILTIN$sametypes");
 }
 
+
+void generate_force_floats(){
+    generate_start_function("$BUILTIN$forcefloats");
+
+    //get param B
+    generate_parameter("$TEMP$B");
+    code_print("DEFVAR TF@$TEMP$typeB");
+    code_print("TYPE TF@$TEMP$typeB TF@&VAR&$TEMP$B");
+    
+    //get param A
+    generate_parameter("$TEMP$A");
+    code_print("DEFVAR TF@$TEMP$typeA");
+    code_print("TYPE TF@$TEMP$typeA TF@&VAR&$TEMP$A");
+    
+    //check if A is INT
+    code_print("PUSHS string@int");
+    code_print("PUSHS TF@$TEMP$typeA");
+    code_print("JUMPIFNEQS $SKIPCONVA$");
+    
+    //CONVERT A to INT
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("INT2FLOATS");
+    code_print("POPS TF@&VAR&$TEMP$A");
+    code_print("LABEL $SKIPCONVA$");
+
+    //check if B is INT
+    code_print("PUSHS string@int");
+    code_print("PUSHS TF@$TEMP$typeB");
+    code_print("JUMPIFNEQS $SKIPCONVB$");
+    
+    //CONVERT B to INT
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("INT2FLOATS");
+    code_print("POPS TF@&VAR&$TEMP$B");
+    code_print("LABEL $SKIPCONVB$");
+
+    //end
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+    generate_end_function("$BUILTIN$forcefloats");
+}
 
 
 

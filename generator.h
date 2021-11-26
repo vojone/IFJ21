@@ -163,6 +163,8 @@ void generate_unaryminus_function();
 
 void generate_same_types();
 
+void generate_force_floats();
+
 
 /**
  * *---------UTILITY---------
