@@ -666,7 +666,7 @@ TEST_F(variable_check_local, semantic) {
     ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
-class hash_check : public test_fixture{
+class hash_check_1 : public test_fixture{
     protected: 
         void setData() override{
             scanner_input =
@@ -685,7 +685,29 @@ class hash_check : public test_fixture{
         }
 };
 
-TEST_F(hash_check, semantic){
+TEST_F(hash_check_1, semantic){
+    ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+}
+
+class hash_check_2 : public test_fixture{
+    protected: 
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Funkce vyzkouší operace '#'
+
+                require "ifj21"
+                function main()
+                    local a : integer
+
+                    a = #"Test?"
+                    write("Delka řetězce je", a , "\n")
+                end
+            )";
+        }
+};
+
+TEST_F(hash_check_2, semantic){
     ASSERT_EQ(parse_program(),PARSE_SUCCESS);
 }
 
@@ -715,7 +737,10 @@ class mixing_data_types_1 : public test_fixture{
             scanner_input =
             R"(
                 -- Zkouška míchání datových typů NUM+INT => INT
-                -- Neprojde
+                -- Podle zadání 
+                -- "Jsou-li oba operandy typu number nebo
+                -- jeden integer a druhý number, výsledek je typu number."
+                -- Takže nevím, jestli se c automaticky přetypuje, nebo ne, opravím později
 
                 require "ifj21"
                 function main()
@@ -1016,6 +1041,37 @@ class nil_assignment : public test_fixture{
 
 TEST_F(nil_assignment, semantic){
     ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+class nil_in_function : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Testy na hodnotu nil ve funkci
+                -- Nemá projít, protože se předává nil
+                -- Aktuálně to vrací hodnotu 7 (SEMANTIC_ERROR_OTHER)
+                -- ale má vracet 8 (UNEXPECTED_NIL_ERROR)
+
+                function chr(i : integer) : string
+                    local c : string = "s"
+                    return c
+                end
+
+                require "ifj21"
+                function main()
+                    local a : integer = nil
+                    local b : string
+                    b = chr(a)
+                    write("Hodnoty a,b jsou: ", a, b,"\n")
+                end
+
+            )";
+        }
+};
+
+TEST_F(nil_in_function, semantic){
+    ASSERT_EQ(parse_program(), UNEXPECTED_NIL_ERROR);
 }
 
 class nil_arithmetics : public test_fixture{
@@ -1355,6 +1411,26 @@ TEST_F(parentheses_function_call, syntax){
     ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
+class parentheses_too_many : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Hodně závorek, projde
+
+                require "ifj21"
+                function main()
+                local b : integer = 2
+                local a : integer = ( ((b) + (b)) * ( (b)- (b) + (b) ) - ( (b+b)-(b)*(b)) ) + #"TŘI"
+                end
+            )";
+        }
+};
+
+TEST_F(parentheses_too_many, syntax){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
 class unexpected_char : public test_fixture{
     protected:
         void setData() override{
@@ -1470,6 +1546,7 @@ class unexpected_char_6 : public test_fixture{
                 -- Podle mě by mělo hodit lexical, will clarify
 
                 -- return LEXICAL_ERROR;
+
                 require "ifj21"
                 function main()
                 /
@@ -1521,7 +1598,7 @@ class unexpected_char_8 : public test_fixture{
         }
 };
 
-TEST_F(unexpected_char_8, syntax){
+TEST_F(unexpected_char_8, lexical){
     ASSERT_EQ(parse_program(), LEXICAL_ERROR);
 }
 
@@ -1542,7 +1619,7 @@ class unexpected_char_9 : public test_fixture{
         }
 };
 
-TEST_F(unexpected_char_9, syntax){
+TEST_F(unexpected_char_9, lexical){
     ASSERT_EQ(parse_program(), LEXICAL_ERROR);
 }
 
@@ -1551,7 +1628,7 @@ class unexpected_char_10 : public test_fixture{
         void setData() override{
             scanner_input = 
             R"(
-                -- Lexikální chyba, neočekávaný znak main( '(' )
+                -- Syntaktická chyba, neočekávaný znak main( '(' )
 
                 -- return SYNTAX;
 
@@ -1564,7 +1641,7 @@ class unexpected_char_10 : public test_fixture{
 };
 
 TEST_F(unexpected_char_10, syntax){
-    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 class unexpected_char_11 : public test_fixture{
@@ -1577,7 +1654,7 @@ class unexpected_char_11 : public test_fixture{
                 -- return SYNTAX;
 
                 require "ifj21"
-                function main27(()
+                function main27(
                     local a : string = "s"
                     if [a = "s"] then
 
@@ -1587,12 +1664,33 @@ class unexpected_char_11 : public test_fixture{
         }
 };
 
+class unexpected_char_12 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input = 
+            R"(
+                -- Lexikální chyba, neočekávaný znak '!'
+
+                -- return LEXICAL_ERROR;
+
+                require "ifj21"
+                function !main()
+
+                end
+            )";
+        }
+};
+
+TEST_F(unexpected_char_12, lexical){
+    ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
 TEST_F(unexpected_char_11, syntax){
     ASSERT_EQ(parse_program(), LEXICAL_ERROR);
 }
 
 
-class while_statement_syntax : public test_fixture{
+class while_statement_syntax_1 : public test_fixture{
     protected:
         void setData() override{
             scanner_input =
@@ -1613,8 +1711,58 @@ class while_statement_syntax : public test_fixture{
         }
 };
 
-TEST_F(while_statement_syntax, syntax){
+TEST_F(while_statement_syntax_1, syntax){
     ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class while_statement_syntax_2 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, chyba ve while bloku
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+
+                    whilst a != 0 do
+
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(while_statement_syntax_2, syntax){
+    ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+}
+
+class while_statement_syntax_3 : public test_fixture{
+    protected:
+        void setData() override{
+            scanner_input =
+            R"(
+                -- Syntaktická chyba, chyba ve while bloku
+
+                -- return SYNTAX_ERROR;
+
+                require "ifj21"
+                function main()
+                    local a : integer = 2
+
+                    while a > 0 do
+                        a = a - 1
+                    end
+                end
+            )";
+        }
+};
+
+TEST_F(while_statement_syntax_3, syntax){
+    ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
 
