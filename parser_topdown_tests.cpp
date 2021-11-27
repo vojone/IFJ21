@@ -317,6 +317,53 @@ TEST_F(function_return2, only_parse) {
 	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
+
+class function_return3 : public test_fixture {
+	protected:
+		void setData() override {
+			scanner_input = 
+			R"(
+				function main(a : string, c: integer) : string, integer
+					local s1 : string = "As I Was"
+					if c then
+						return a, 2
+					else 
+						
+					end
+				end
+			)";
+		}
+};
+
+TEST_F(function_return3, only_parse) {
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
+class function_return4 : public test_fixture {
+	protected:
+		void setData() override {
+			scanner_input = 
+			R"(
+				function main(a : string, c: integer) : string, integer
+					local s1 : string = "As I Was"
+					if c then
+						return a, 2
+					else 
+						
+					end
+				end
+			)";
+		}
+};
+
+TEST_F(function_return4, only_parse) {
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
 class missing_end : public test_fixture {
 	protected:
 		void setData() override {
@@ -332,7 +379,7 @@ class missing_end : public test_fixture {
 };
 
 TEST_F(missing_end, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 
@@ -346,7 +393,7 @@ class multiple_assignment : public test_fixture {
 					local b : number
 					s1, b = a, c
 
-					return "a", 8
+					return "a"
 				end
 			)";
 		}
@@ -831,6 +878,32 @@ TEST_F(variable_as_function, semantic){
 	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
+
+class variable_as_function2 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				-- Proměnná se jmenuje stejně jako funkce
+
+				require "ifj21"
+                function a()
+                    write("Vojta was here")
+                end
+
+				function main()
+					local a : string
+					a = "testTextuProšel"
+					write(a, "\n")
+				end
+			)";
+		}
+};
+
+TEST_F(variable_as_function2, semantic){
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+}
+
 class function_as_variable : public test_fixture{
 	protected:
 		void setData() override{
@@ -854,7 +927,7 @@ class function_as_variable : public test_fixture{
 };
 
 TEST_F(function_as_variable, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
 class return_statement : public test_fixture{
@@ -1043,7 +1116,7 @@ TEST_F(nil_assignment, semantic){
 	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
-class nil_in_function : public test_fixture{
+class nil_in_function : public test_fixture{ //????
 	protected:
 		void setData() override{
 			scanner_input =
@@ -1071,7 +1144,7 @@ class nil_in_function : public test_fixture{
 };
 
 TEST_F(nil_in_function, semantic){
-	ASSERT_EQ(parse_program(), UNEXPECTED_NIL_ERROR);
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_OTHER);
 }
 
 class nil_in_relations_1 : public test_fixture{
@@ -1095,7 +1168,7 @@ class nil_in_relations_1 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_1, semantic){
-	ASSERT_EQ(parse_program(), UNEXPECTED_NIL_ERROR);
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
 class nil_in_relations_2 : public test_fixture{
@@ -1119,7 +1192,7 @@ class nil_in_relations_2 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_2, semantic){
-	ASSERT_EQ(parse_program(), UNEXPECTED_NIL_ERROR);
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
 class nil_in_relations_3 : public test_fixture{
@@ -1351,6 +1424,7 @@ class function_declaration_sx : public test_fixture{
 				-- return SYNTAX_ERROR;
 
 				require "ifj21"
+
 				functiom main()
 					write("Syntaktická chyba \n")
 				end
@@ -1533,7 +1607,7 @@ class parentheses_too_many : public test_fixture{
 		void setData() override{
 			scanner_input =
 			R"(
-				-- Hodně závorek, projde
+				-- Hodně závorek, projde (SUPR!!!)
 
 				require "ifj21"
 				function main()
@@ -1596,7 +1670,7 @@ class unexpected_char_3 : public test_fixture{
 			scanner_input = 
 			R"(
 				-- Lexikální chyba, neočekávaný znak '~'
-				-- Toto je hrozně weirdChamp, ono to bere tu tilde jako název funkce ._.
+				-- Toto je hrozně weirdChamp, ono to bere tu tilde jako název funkce ._. (moje chyba ve scanneru - Vojta)
 
 				-- return LEXICAL_ERROR;
 
@@ -1673,7 +1747,7 @@ class unexpected_char_6 : public test_fixture{
 };
 
 TEST_F(unexpected_char_6, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 class unexpected_char_7 : public test_fixture{
@@ -1737,7 +1811,7 @@ class unexpected_char_9 : public test_fixture{
 };
 
 TEST_F(unexpected_char_9, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 class unexpected_char_10 : public test_fixture{
@@ -1771,7 +1845,7 @@ class unexpected_char_11 : public test_fixture{
 				-- return SYNTAX;
 
 				require "ifj21"
-				function main27(
+				function main27()
 					local a : string = "s"
 					if [a = "s"] then
 
@@ -1803,6 +1877,26 @@ TEST_F(unexpected_char_12, lexical){
 }
 
 TEST_F(unexpected_char_11, syntax){
+	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+}
+
+
+class unexpected_char_13 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input = 
+			R"(
+				-- return LEXICAL_ERROR;
+
+				require "ifj21"
+				function main()
+                    local a : number = 123efg
+				end
+			)";
+		}
+};
+
+TEST_F(unexpected_char_13, lexical){
 	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
 }
 
@@ -1862,9 +1956,8 @@ class while_statement_syntax_3 : public test_fixture{
 		void setData() override{
 			scanner_input =
 			R"(
-				-- Syntaktická chyba, chyba ve while bloku
 
-				-- return SYNTAX_ERROR;
+				-- return PARSE_SUCCESS;
 
 				require "ifj21"
 				function main()
@@ -1882,114 +1975,8 @@ TEST_F(while_statement_syntax_3, syntax){
 	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
-class reference_1 : public test_fixture{
-	protected:
-		void setData() override{
-			scanner_input =
-			R"(
-				-- Program 1: Vypocet faktorialu (iterativne)
-				require "ifj21"
-				function main() -- uzivatelska funkce bez parametru
-					local a : integer
-					local vysl : integer = 0
-					write("Zadejte cislo pro vypocet faktorialu\n")
-					a = readi()
-					if a == nil then
-						write("a je nil\n") return
-					else
-					end
-					if a < 0 then
-						write("Faktorial nelze spocitat\n")
-					else
-						vysl = 1
-						while a > 0 do
-							vysl = vysl * a a = a - 1 -- dva prikazy
-						end
-						write("Vysledek je: ", vysl, "\n")
-					end
-				end
-				main() -- prikaz hlavniho tela programu
-			)";
-		}
-};
 
-TEST_F(reference_1, everything){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
-}
-
-class reference_2 : public test_fixture{
-	protected:
-		void setData() override{
-			scanner_input =
-			R"(
-				-- Program 2: Vypocet faktorialu (rekurzivne)
-				require "ifj21"
-				function factorial(n : integer) : integer
-					local n1 : integer = n - 1
-					if n < 2 then
-						return 1
-					else
-						local tmp : integer = factorial(n1)
-						return n * tmp
-					end
-				end
-				function main()
-					write("Zadejte cislo pro vypocet faktorialu: ")
-					local a : integer = readi()
-					if a ~= nil then
-						if a < 0 then
-							write("Faktorial nejde spocitat!", "\n")
-						else
-							local vysl : integer = factorial(a)
-							write("Vysledek je ", vysl, "\n")
-						end
-					else
-						write("Chyba pri nacitani celeho cisla!\n")
-					end
-				end
-				main()
-			)";
-		}
-};
-
-TEST_F(reference_2, everything){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
-}
-
-class reference_3 : public test_fixture{
-	protected:
-		void setData() override{
-			scanner_input =
-			R"(
-				-- Program 3: Prace s retezci a vestavenymi funkcemi
-				require "ifj21"
-				function main()
-					local s1 : string = "Toto je nejaky text"
-					local s2 : string = s1 .. ", ktery jeste trochu obohatime"
-					write(s1, "\010", s2)local s1len:integer=#s1 local s1len4: integer=s1len
-					s1len = s1len - 4 s1 = substr(s2, s1len, s1len4) s1len = s1len + 1
-					write("4 znaky od", s1len, ". znaku v \"", s2, "\":", s1, "\n")
-					write("Zadejte serazenou posloupnost vsech malych pismen a-h, ")
-					write("pricemz se pismena nesmeji v posloupnosti opakovat: ")
-					s1 = reads()
-					if s1 ~= nil then
-						while s1 ~= "abcdefgh" do
-							write("\n", "Spatne zadana posloupnost, zkuste znovu:")
-							s1 = reads()
-						end
-					else
-					end
-				end
-				main()
-			)";
-		}
-};
-
-TEST_F(reference_3, everything){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
-}
-
-class coment_test : public test_fixture{
+class coment_test1 : public test_fixture{
 	protected:
 		void setData() override{
 			scanner_input =
@@ -2005,7 +1992,50 @@ class coment_test : public test_fixture{
 		}
 };
 
-TEST_F(coment_test, syntax){
+TEST_F(coment_test1, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+class coment_test2 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				-- Komentáře
+
+				require "ifj21"
+				--[[function main()
+					-- world says 
+					--[[hello there
+				end
+			)";
+		}
+};
+
+TEST_F(coment_test2, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
+class coment_test3 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				-- Komentáře
+
+				---- -require "ifj21"
+				---function main()
+					-- world says 
+					--[[hello there]]
+				--[[]end]-]
+			)";
+		}
+};
+
+TEST_F(coment_test3, syntax){
 	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
 }
 
