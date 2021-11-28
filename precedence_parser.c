@@ -461,12 +461,12 @@ int from_input_token(expr_el_t *result,
     default:
         if(is_nil(tok_b->scanner, &tok_b->current)) {
             make_type_str(&result->dtype, 'z');
+            *was_operand = true;
         }
         else {
-             make_type_str(&result->dtype, ' ');
+            make_type_str(&result->dtype, ' ');
+            *was_operand = false;
         }
-
-        *was_operand = false;
 
         break;
     }

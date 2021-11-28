@@ -773,7 +773,11 @@ int parse_function_dec() {
     }
 
     //Puts builtin function into symtable 
-    check_builtin(get_attr(&id_fc, scanner), &sym.global);
+    bool is_builtin = check_builtin(get_attr(&id_fc, scanner), &sym.global);
+    if(is_builtin) {
+        error_semantic("There is builtin function with the same name as '\033[1;33m%s\033[0m' (change the name of your function)!", get_attr(&id_fc, scanner));
+        return SEMANTIC_ERROR_DEFINITION;
+    }
 
     debug_print("SHOULD BE ID_FC: %s\n\n\n", get_attr(&id_fc, scanner));
 
@@ -1160,7 +1164,11 @@ int parse_function_def() {
     }
 
     //Adds builtin function into symtable, so semantic checks can detects its redefinition
-    check_builtin(get_attr(&id_fc, scanner), &sym.global);
+    bool is_builtin = check_builtin(get_attr(&id_fc, scanner), &sym.global);
+    if(is_builtin) {
+        error_semantic("There is builtin function with the same name as '\033[1;33m%s\033[0m' (change the name of your function)!", get_attr(&id_fc, scanner));
+        return SEMANTIC_ERROR_DEFINITION;
+    }
 
     //generate function start
     generate_start_function(get_attr(&id_fc, scanner));
@@ -1221,13 +1229,17 @@ int parse_function_call(token_t *id_func) {
 
         //parsing arguments should leave the arguments at the top of the stack 
         int retval = parse_function_arguments(id_func);
+        if(retval != PARSE_SUCCESS) {
+            return retval;
+        }
+
         debug_print("function args success %i\n", (int)retval);
 
         tree_node_t *symbol = search(&sym.global, get_attr(id_func, scanner));
         char * params_str = to_str(&symbol->data.params);
         bool is_variadic = (params_str[0] == '%') ? true : false;
         //generate function call unless variadic
-        if(!is_variadic){
+        if(!is_variadic) {
             debug_print("function %s is not variadic", id_func);
             generate_call_function(get_attr(id_func, scanner));
         }
@@ -1621,7 +1633,14 @@ int parse_global_identifier() {
 
     debug_print("got identifier\n");
 
-    //Puts builtin function into symtable 
+    token_t next = lookahead(scanner);
+    bool opening_bracket = compare_token_attr(next, SEPARATOR, "(");
+    if(!opening_bracket) {
+        error_unexpected_token("'(' after identifier (to be function call)", next);
+        return SYNTAX_ERROR;
+    }
+
+    //Puts builtin function into symtable (if it exists)
     check_builtin(get_attr(&id_token, scanner), &sym.global);
 
     char *func = get_attr(&id_token, scanner);
@@ -1657,10 +1676,9 @@ int parse_identifier() {
     //Check if it is a function call
     if(compare_token_attr(t, SEPARATOR, "(")) {
 
-        
-        check_builtin(get_attr(&id_token, scanner), &sym.global); //Adds builtin functions into symtable
-
         char *func = get_attr(&id_token, scanner);
+        check_builtin(func, &sym.global); //Adds builtin correspondent function into symtable
+
         tree_node_t *func_valid = search(&sym.global, func);
         if (func_valid == NULL) { // Function is not declared
             error_semantic("Function with name '\033[1;33m%s\033[0m' not defined!", func);

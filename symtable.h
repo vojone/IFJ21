@@ -17,7 +17,7 @@
 #include "dstring.h"
 #include "dstack.h"
 
-#define BUILTIN_TABLE_SIZE 8
+#define BUILTIN_TABLE_SIZE 8 /**< There are 8 predefined buitin functions */
 
 #define UNDEFINED -1
 #define UNSET -1
@@ -170,8 +170,9 @@ sym_data_t* search_builtin(const char *f_name);
 
 /**
  * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ * @return True if symbol was found in builtin functions table otherwise false
  */
-void check_builtin(char *key, symtab_t *dst);
+bool check_builtin(char *key, symtab_t *dst);
 
 
 /**

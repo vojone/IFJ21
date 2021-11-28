@@ -1145,7 +1145,7 @@ class nil_in_function : public test_fixture{ //????
 };
 
 TEST_F(nil_in_function, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_OTHER);
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 class nil_in_relations_1 : public test_fixture{
