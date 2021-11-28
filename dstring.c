@@ -34,6 +34,20 @@ int str_init(string_t *string) {
 }
 
 
+int extend_string(string_t *string) {
+    size_t new_size = string->alloc_size*2;
+    string->str = (char *)realloc(string->str, sizeof(char)*new_size);
+    if(!string->str) {
+        fprintf(stderr, "dstring: str_init: Cannot extend string!\n");
+        return STR_FAILURE;
+    } 
+
+    string->alloc_size = new_size;
+
+    return STR_SUCCESS;
+}
+
+
 int app_char(char c, string_t *string) {
     //There must be always place for '\0' character
     if(string->alloc_size - 1 < string->length + 1) {

@@ -5,7 +5,7 @@
  *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  *              Purpose: Implementation of code generating functions
  * 
- *                    Last change: 25. 11. 2021
+ *                       Last change: 25. 11. 2021
  *****************************************************************************/
 
 /**
@@ -20,6 +20,299 @@
 
 #include "generator.h"
 
+
+/***                 Functions for internal represenation                  ***/
+
+DSTACK(instr_t *, instr,)
+
+
+instr_t *new_instruction() {
+    instr_t *instr = NULL;
+
+    instr = (instr_t *)malloc(sizeof(instr_t));
+    if(!instr) {
+        return NULL;
+    }
+
+    instr->next = NULL;
+    instr->prev = NULL;
+
+    if(str_init(&instr->content) != STR_SUCCESS) {
+        free(instr);
+        return NULL;
+    }
+
+    return instr;
+}
+
+
+int set_instruction(instr_t *instr, const char *const _Format, va_list args) {
+    size_t written = 0;
+    string_t *cont = &(instr->content);
+
+    va_list args_tmp;
+    va_copy(args_tmp, args); //Saving args for multiple use
+
+    written = vsnprintf(cont->str, cont->alloc_size, _Format, args); //First attemt to store 
+
+    while(written >= cont->alloc_size) { //Capacity of dynamic string is too small
+        str_clear(cont);
+        
+        if(extend_string(cont) != STR_SUCCESS) {
+            return INTERNAL_ERROR;
+        }
+    
+        va_copy(args, args_tmp); //Restore args (its undefined)
+        written = vsnprintf(cont->str, cont->alloc_size, _Format, args); //Next attempt
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+void instr_dtor(instr_t *instr) {
+    instr->next = NULL;
+    instr->prev = NULL;
+
+    str_dtor(&instr->content);
+    free(instr);
+}
+
+
+void init_new_prog(prog_t *program) {
+    program->first_instr = NULL;
+    program->last_instr = NULL;
+}
+
+
+void program_dtor(prog_t *program) {
+    instr_t *current = program->last_instr;
+    instr_t *next_deletion;
+
+    while(current) { //Deletion of every instruction in given program from its end
+        next_deletion = current->prev; 
+ 
+        instr_dtor(current);
+
+        current = next_deletion;
+    }
+
+    program->first_instr = NULL;
+    program->last_instr = NULL;
+}
+
+
+instr_t *get_last(prog_t *program) {
+    return program->last_instr;
+}
+
+
+instr_t *get_first(prog_t *program) {
+    return program->last_instr;
+}
+
+
+instr_t *get_next(instr_t *instr) {
+    return instr->next;
+}
+
+
+instr_t *get_prev(instr_t *instr) {
+    return instr->prev;
+}
+
+
+int app_instr(prog_t *dst, const char *const _Format, ...) {
+    //Creation of new instruction
+    instr_t *new_instr = new_instruction();
+    if(new_instr == NULL) {
+        return INTERNAL_ERROR;
+    }
+
+    va_list args;
+    va_start(args, _Format);
+
+    if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+
+    va_end(args);
+    
+    //Putting instruction to the end of program
+    if(dst->first_instr == NULL) {
+        dst->first_instr = new_instr;
+    }
+    else {
+        new_instr->prev = dst->last_instr;
+        dst->last_instr->next = new_instr;
+    }
+
+    dst->last_instr = new_instr;
+
+    return EXIT_SUCCESS;
+}
+
+
+int ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
+    if(instr == NULL) {
+        return EXIT_SUCCESS;
+    }
+
+    //Creation of new instruction
+    instr_t *new_instr  = new_instruction();
+    if(new_instr == NULL) {
+        return INTERNAL_ERROR;
+    }
+
+    va_list args;
+    va_start(args, _Format);
+
+    if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+
+    va_end(args);
+
+    instr_t * instr_after = instr->next;
+
+    //Putting instruction inside list of instructions (program)
+    instr->next = new_instr;
+    new_instr->prev = instr;
+    if(instr_after != NULL) {
+        instr_after->prev = new_instr;
+        new_instr->next = instr_after;
+    }
+    else {
+        dst->last_instr = new_instr;
+        new_instr->next = NULL;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+int ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
+    if(instr == NULL) {
+        return EXIT_SUCCESS;
+    }
+
+    instr_t *new_instr  = new_instruction();
+    if(new_instr == NULL) {
+        return INTERNAL_ERROR;
+    }
+
+    va_list args;
+    va_start(args, _Format);
+
+    if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+
+    va_end(args);
+
+    instr_t * instr_before = instr->prev;
+
+    //Putting instruction inside list of instructions (program)
+    instr->prev = new_instr;
+    new_instr->next = instr;
+    if(instr_before != NULL) {
+        instr_before->next = new_instr;
+        new_instr->prev = instr_before;
+    }
+    else {
+        dst->first_instr = new_instr;
+        new_instr->prev = NULL;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+
+instr_t * fill_stack(instr_stack_t *to_be_filled, prog_t *dst, 
+                     instr_t *from, instr_t *to) {
+
+    instr_t * current = from;
+    while(current) {
+        if(!instr_push(to_be_filled, current)) {
+            return NULL;
+        }
+
+        if(current == to) {
+            break;
+        }
+
+        current = current->next;
+    }
+
+    return current;
+}
+
+
+void revert(prog_t *dst, instr_t *from, instr_t *to) {
+    if(from == NULL || to == NULL) {
+        return;
+    }
+
+    instr_stack_t stack;
+    if(!instr_stack_init(&stack)) {
+        return;
+    }
+
+    instr_t * instr_before = from->prev;
+    instr_t * instr_after = to->next;
+    
+    if(!fill_stack(&stack, dst, from, to)) { //Fill stack with instructions that will be reverted
+        instr_stack_dtor(&stack);
+        return;
+    }
+
+    instr_t *last = NULL;
+    instr_t *current = NULL;
+    if(!instr_is_empty(&stack)) { //Handling instruction before
+        current = instr_top(&stack);
+
+        if(instr_before) {
+            instr_before->next = instr_pop(&stack);
+            current->prev = instr_before;
+        }
+        else {
+            dst->first_instr = instr_pop(&stack);
+            current->prev = NULL;
+        }
+    }
+    while(!instr_is_empty(&stack)) //Inserts instructions from stack (in reversed order)
+    {
+        current->next = instr_top(&stack);
+        last = current;
+        current = instr_pop(&stack);
+        current->prev = last;
+    }
+    if(current) { //Handling instruction after
+        if(instr_after) {
+            current->next = instr_after;
+            instr_after->prev = current;
+        }
+        else {
+            dst->last_instr = current;
+            current->next = NULL;
+        }
+    }
+
+    instr_stack_dtor(&stack);
+}
+
+
+void print_program(prog_t *source) {
+    instr_t *current_instr = source->first_instr;
+
+    while(current_instr) {
+        fprintf(stdout, "%s\n", to_str(&current_instr->content));
+
+        current_instr = current_instr->next;
+    }
+}
+
+/***                 End of functions for internal representation          ***/
 
 
 void generate_init(){

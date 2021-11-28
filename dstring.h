@@ -50,6 +50,9 @@ enum char_type {
  */
 int str_init(string_t *string);
 
+
+int extend_string(string_t *string);
+
 /**
  * @brief Appends character to end of string
  * @param c character to append
