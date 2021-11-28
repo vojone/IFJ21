@@ -2042,6 +2042,59 @@ TEST_F(coment_test3, syntax){
 }
 
 
+class coment_test4 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				-- Komentáře
+
+				---- -require "ifj21"
+				---function main()
+					-- world says 
+					--[[hell--[[o there]]
+				--[[]end]-]
+			)";
+		}
+};
+
+TEST_F(coment_test4, syntax) {
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
+class function_inside_argument1 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				write(reads())
+			)";
+		}
+};
+
+TEST_F(function_inside_argument1, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
+class function_inside_argument2 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+				write(readi())
+			)";
+		}
+};
+
+TEST_F(function_inside_argument2, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);
 
