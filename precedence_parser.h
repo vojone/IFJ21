@@ -102,8 +102,13 @@ typedef struct expr_rule {
 
 /**
  * @brief Parses expression due to defined precedence table
+ * @param dtypes Output parameter, p. parser will load it with string that 
+ *               specifies return types of expression
+ * @param was_smth_called Output parameter, will be set to true, if was ONLY 
+ *                        function called inside expression (there aren't any other operations)
  */
-int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes);
+int parse_expression(scanner_t *sc, symbol_tables_t *s, 
+                     string_t *dtypes, bool *was_only_f_call);
 
 
 #endif

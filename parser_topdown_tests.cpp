@@ -372,7 +372,7 @@ class missing_end : public test_fixture {
 				function main(a : string, c: integer) : string, integer
 					if c then
 						return a, 2
-					//missing end
+					--missing end
 				end
 			)";
 		}
@@ -433,7 +433,7 @@ class function_call : public test_fixture {
 };
 
 TEST_F(function_call, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_OTHER);
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
 }
 
 class double_assignment_function : public test_fixture {
@@ -710,7 +710,7 @@ class variable_check_local : public test_fixture {
 };
 
 TEST_F(variable_check_local, semantic) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
 }
 
 class hash_check_1 : public test_fixture{
@@ -911,6 +911,7 @@ class function_as_variable : public test_fixture{
 			R"(
 				-- Funkce se jmenuje stejně jako proměnná
 
+                global lmao : function()
 				require "ifj21"
 				function main()
 					local lmao : string
@@ -927,7 +928,7 @@ class function_as_variable : public test_fixture{
 };
 
 TEST_F(function_as_variable, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
 }
 
 class return_statement : public test_fixture{
@@ -1661,7 +1662,7 @@ class unexpected_char_2 : public test_fixture{
 };
 
 TEST_F(unexpected_char_2, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 class unexpected_char_3 : public test_fixture{
@@ -1783,6 +1784,7 @@ class unexpected_char_8 : public test_fixture{
 				#
 				require "ifj21"
 				function main27()
+                    write("abc")
 					local a : string
 				end
 			)";
@@ -1790,7 +1792,7 @@ class unexpected_char_8 : public test_fixture{
 };
 
 TEST_F(unexpected_char_8, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
 }
 
 class unexpected_char_9 : public test_fixture{
