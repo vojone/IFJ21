@@ -431,6 +431,7 @@ int from_input_token(expr_el_t *result,
     result->type = tok_to_type(tok_b, was_only_f_call);
     result->value = NULL;
     result->is_zero = false;
+    result->is_fcall = false;
     str_init(&result->dtype);
     int retval = EXPRESSION_SUCCESS;
     switch (tok_b->current.token_type)
