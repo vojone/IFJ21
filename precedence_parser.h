@@ -75,6 +75,7 @@ typedef struct expr_el {
     string_t dtype; /**< Data type of element in expression (string, integer, number) */
     bool is_zero;
     void *value; /**< Value of element (or pointer to symbol table) */
+    bool is_fcall;
 } expr_el_t;
 
 

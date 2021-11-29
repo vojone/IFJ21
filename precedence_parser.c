@@ -402,6 +402,7 @@ int process_identifier(expr_el_t *result,
 
             //Function was succesfully called
             cpy_strings(&result->dtype, &(symbol->data.ret_types), true);
+            result->is_fcall = true;
 
 
             return EXPRESSION_SUCCESS;
@@ -495,7 +496,8 @@ expr_el_t stop_symbol() {
             .str = NULL
         }, 
         .value = NULL, 
-        .is_zero = false
+        .is_zero = false,
+        .is_fcall = false
     };
 
     return stop_symbol;
@@ -510,7 +512,8 @@ expr_el_t prec_sign(char sign) {
             .alloc_size = 0, 
             .length = 0, 
             .str = NULL
-        }
+        },
+        .is_fcall = false
     };
 
     switch(sign) {
@@ -850,6 +853,7 @@ expr_el_t non_term(string_t *data_type, bool is_zero) {
 
     non_terminal.value = "NONTERM";
     non_terminal.is_zero = is_zero;
+    non_terminal.is_fcall = false;
 
     return non_terminal;
 }
@@ -873,6 +877,12 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
     if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
+
+        if(element_terminal.is_fcall) {
+            //Only function was called during reduction 
+            fprintf(stderr, "Only function was called!\n");
+        }
+
         if(res == NULL) {
             sym_dtype_t dtype = char_to_dtype(to_str(&element_terminal.dtype)[0]);
             //We are pushing a static value
