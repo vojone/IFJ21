@@ -81,6 +81,11 @@ void generate_call_function(const char * name);
 void generate_additional_returns(size_t n); 
 
 /**
+ * @brief generates return statement
+ */ 
+void generate_return();
+
+/**
  * *---------VARIABLES---------
  */
 

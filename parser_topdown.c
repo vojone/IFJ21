@@ -35,7 +35,7 @@ static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
 
-#define DEBUG false
+#define DEBUG true
 
 
 /**
@@ -1454,8 +1454,8 @@ int parse_return() {
         if(!comma) {
             finished = true;
             if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
-                error_semantic("Function \033[1;33m%s\033[0m returns %d values but only %d were found!", get_attr(id_fc, scanner), len(&symbol->data.ret_types), returns_cnt + 1);
-                return SEMANTIC_ERROR_ASSIGNMENT;
+                int nils_to_append = (len(&symbol->data.ret_types) - 1) - returns_cnt;
+                generate_additional_returns(nils_to_append);
             }
         }
         else {
@@ -1471,6 +1471,8 @@ int parse_return() {
     }
 
     parser->found_return = true;
+
+    generate_return();
     
     return PARSE_SUCCESS;
 }

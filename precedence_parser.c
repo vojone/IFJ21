@@ -835,16 +835,14 @@ expr_el_t non_term(string_t *data_type, bool is_zero) {
  * @param ops Stack with operands
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
- */ 
-//TODO pushing i only works for static values
-//TODO we need to know wheter it is static value or a variable 
+ */  
 int reduce(pp_stack_t *st, pp_stack_t ops, 
            symbol_tables_t *syms,
            expr_rule_t *rule,
            string_t *result_type,
            bool will_be_zero,
            pp_stack_t *garbage) {
-    
+    //todo fix function calls being generated as variables
     if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
@@ -1164,7 +1162,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
+    // token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
     return retval;
 }
 

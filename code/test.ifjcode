@@ -226,197 +226,48 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$fdoesntworko
-#function fdoesntworko ()
-LABEL $FUN$fdoesntworko
+JUMP $END_FUN$g
+#function g ()
+LABEL $FUN$g
 CREATEFRAME
-#here
-PUSHS string@hehe
-
-
-RETURN
-LABEL $END_FUN$fdoesntworko
-
-
-
-JUMP $END_FUN$print
-#function print ()
-LABEL $FUN$print
-CREATEFRAME
-#define param print$b$1
-DEFVAR TF@&VAR&print$b$1
-POPS TF@&VAR&print$b$1
-#define param print$a$0
-DEFVAR TF@&VAR&print$a$0
-POPS TF@&VAR&print$a$0
-PUSHS TF@&VAR&print$a$0
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&print$b$1
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-
-
-RETURN
-LABEL $END_FUN$print
-
-
-
-JUMP $END_FUN$matrix
-#function matrix ()
-LABEL $FUN$matrix
-CREATEFRAME
-#define param matrix$jmax$3
-DEFVAR TF@&VAR&matrix$jmax$3
-POPS TF@&VAR&matrix$jmax$3
-#define param matrix$imax$2
-DEFVAR TF@&VAR&matrix$imax$2
-POPS TF@&VAR&matrix$imax$2
-DEFVAR TF@&VAR&matrix$i$4
-MOVE TF@&VAR&matrix$i$4 nil@nil
-PUSHS int@1
-#assign value to matrix$i$4
-POPS TF@&VAR&matrix$i$4
-DEFVAR TF@&VAR&matrix$j$5
-MOVE TF@&VAR&matrix$j$5 nil@nil
-PUSHS int@1
-#assign value to matrix$j$5
-POPS TF@&VAR&matrix$j$5
-#while 0
-LABEL $WHILE$COND$0
-PUSHS TF@&VAR&matrix$i$4
-PUSHS TF@&VAR&matrix$imax$2
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
+DEFVAR TF@&VAR&g$a$0
+MOVE TF@&VAR&g$a$0 nil@nil
+PUSHS int@8
+#assign value to g$a$0
+POPS TF@&VAR&g$a$0
+PUSHS TF@&VAR&g$a$0
+PUSHS int@8
 # $BUILTIN$sametypes()
 PUSHFRAME
 CALL $FUN$$BUILTIN$sametypes
 POPFRAME
-# start operator A<=B
-PUSHFRAME
-CREATEFRAME
-DEFVAR TF@!TMP!A
-DEFVAR TF@!TMP!B
-POPS TF@!TMP!B
-POPS TF@!TMP!A
-DEFVAR TF@!TYPE!A
-TYPE TF@!TYPE!A TF@!TMP!A
-PUSHS TF@!TMP!A
-PUSHS TF@!TMP!B
-PUSHS TF@!TMP!A
-PUSHS TF@!TMP!B
-DEFVAR TF@!TMP!LTRES
-LTS
-POPS TF@!TMP!LTRES
+# start operator A==B
 EQS
-PUSHS TF@!TMP!LTRES
-ORS
-POPFRAME
-# end operator A<=B
+# end operator A==B
+#if 0
 PUSHS bool@true
-JUMPIFNEQS $WHILE$END$0
-#here
-PUSHS string@\010
+JUMPIFNEQS $ELSE$START$0
+DEFVAR TF@&VAR&g$a$1
+MOVE TF@&VAR&g$a$1 nil@nil
+PUSHS TF@&VAR&g$a$1
+#assign value to g$a$1
+POPS TF@&VAR&g$a$1
+PUSHS TF@&VAR&g$a$1
 # write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
-#while 1
-LABEL $WHILE$COND$1
-PUSHS TF@&VAR&matrix$j$5
-PUSHS TF@&VAR&matrix$jmax$3
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-# start operator A<=B
-PUSHFRAME
-CREATEFRAME
-DEFVAR TF@!TMP!A
-DEFVAR TF@!TMP!B
-POPS TF@!TMP!B
-POPS TF@!TMP!A
-DEFVAR TF@!TYPE!A
-TYPE TF@!TYPE!A TF@!TMP!A
-PUSHS TF@!TMP!A
-PUSHS TF@!TMP!B
-PUSHS TF@!TMP!A
-PUSHS TF@!TMP!B
-DEFVAR TF@!TMP!LTRES
-LTS
-POPS TF@!TMP!LTRES
-EQS
-PUSHS TF@!TMP!LTRES
-ORS
-POPFRAME
-# end operator A<=B
-PUSHS bool@true
-JUMPIFNEQS $WHILE$END$1
-PUSHS TF@&VAR&matrix$i$4
-PUSHS TF@&VAR&matrix$j$5
-# print()
-PUSHFRAME
-CALL $FUN$print
-POPFRAME
-#here
-PUSHS string@\009
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&matrix$j$5
-PUSHS int@1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-ADDS
-#assign value to matrix$j$5
-POPS TF@&VAR&matrix$j$5
-#end of while 1 loop
-JUMP $WHILE$COND$1
-LABEL $WHILE$END$1
-PUSHS TF@&VAR&matrix$i$4
-PUSHS int@1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-ADDS
-#assign value to matrix$i$4
-POPS TF@&VAR&matrix$i$4
-PUSHS int@1
-#assign value to matrix$j$5
-POPS TF@&VAR&matrix$j$5
-#end of while 0 loop
-JUMP $WHILE$COND$0
-LABEL $WHILE$END$0
+#end of if 0
+JUMP $ELSE$END$0
+LABEL $ELSE$START$0
+#end of else and the whole if 0 statement
+LABEL $ELSE$END$0
 
 
 RETURN
-LABEL $END_FUN$matrix
+LABEL $END_FUN$g
 
-PUSHS int@3
-PUSHS int@4
-# matrix()
+# g()
 PUSHFRAME
-CALL $FUN$matrix
+CALL $FUN$g
 POPFRAME

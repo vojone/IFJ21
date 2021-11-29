@@ -101,6 +101,10 @@ void generate_additional_returns(size_t n){
     }
 }
 
+void generate_return(){
+    code_print("RETURN");
+}
+
 /**
  * *---------VARIABLES---------
  */

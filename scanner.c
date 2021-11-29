@@ -624,8 +624,7 @@ token_t get_next_token(scanner_t *sc) {
     if(result.token_type == ERROR_TYPE) {
         lex_err(sc, &result);
     }
-    
-    //fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
+    fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 
