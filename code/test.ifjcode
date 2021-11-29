@@ -31,6 +31,85 @@ LABEL $END_FUN$reads
 
 
 
+JUMP $END_FUN$readi
+#function readi ()
+LABEL $FUN$readi
+CREATEFRAME
+DEFVAR TF@$TEMP$
+READ TF@$TEMP$ int
+PUSHS TF@$TEMP$
+
+
+RETURN
+LABEL $END_FUN$readi
+
+
+
+JUMP $END_FUN$readn
+#function readn ()
+LABEL $FUN$readn
+CREATEFRAME
+DEFVAR TF@$TEMP$
+READ TF@$TEMP$ float
+PUSHS TF@$TEMP$
+
+
+RETURN
+LABEL $END_FUN$readn
+
+
+
+JUMP $END_FUN$tointeger
+#function tointeger ()
+LABEL $FUN$tointeger
+CREATEFRAME
+DEFVAR TF@&VAR&$TEMP_CHECKNIL$
+POPS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+JUMPIFNEQS $TOINTCONV$
+JUMP $TOINTSKIP$
+LABEL $TOINTCONV$
+FLOAT2INTS
+LABEL $TOINTSKIP$
+
+
+RETURN
+LABEL $END_FUN$tointeger
+
+
+
+JUMP $END_FUN$$OP$unaryminus
+#function $OP$unaryminus ()
+LABEL $FUN$$OP$unaryminus
+CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
+#define param $TEMP$
+DEFVAR TF@&VAR&$TEMP$
+POPS TF@&VAR&$TEMP$
+DEFVAR TF@$TEMP$type
+TYPE TF@$TEMP$type TF@&VAR&$TEMP$
+PUSHS TF@$TEMP$type
+PUSHS string@int
+JUMPIFNEQS $UNARY$FLOAT$
+PUSHS int@-1
+JUMP $UNARY$END$
+LABEL $UNARY$FLOAT$
+PUSHS float@-0x1p+0
+LABEL $UNARY$END$
+PUSHS TF@&VAR&$TEMP$
+MULS
+
+
+RETURN
+LABEL $END_FUN$$OP$unaryminus
+
+
+
 JUMP $END_FUN$$OP$checkzero_float
 #function $OP$checkzero_float ()
 LABEL $FUN$$OP$checkzero_float
@@ -121,36 +200,6 @@ LABEL $END_FUN$$OP$checknil_double
 
 
 
-JUMP $END_FUN$$OP$unaryminus
-#function $OP$unaryminus ()
-LABEL $FUN$$OP$unaryminus
-CREATEFRAME
-# $OP$checknil_single()
-PUSHFRAME
-CALL $FUN$$OP$checknil_single
-POPFRAME
-#define param $TEMP$
-DEFVAR TF@&VAR&$TEMP$
-POPS TF@&VAR&$TEMP$
-DEFVAR TF@$TEMP$type
-TYPE TF@$TEMP$type TF@&VAR&$TEMP$
-PUSHS TF@$TEMP$type
-PUSHS string@int
-JUMPIFNEQS $UNARY$FLOAT$
-PUSHS int@-1
-JUMP $UNARY$END$
-LABEL $UNARY$FLOAT$
-PUSHS float@-0x1p+0
-LABEL $UNARY$END$
-PUSHS TF@&VAR&$TEMP$
-MULS
-
-
-RETURN
-LABEL $END_FUN$$OP$unaryminus
-
-
-
 JUMP $END_FUN$$BUILTIN$sametypes
 #function $BUILTIN$sametypes ()
 LABEL $FUN$$BUILTIN$sametypes
@@ -226,71 +275,22 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$add
-#function add ()
-LABEL $FUN$add
-CREATEFRAME
-#define param add$b$1
-DEFVAR TF@&VAR&add$b$1
-POPS TF@&VAR&add$b$1
-#define param add$a$0
-DEFVAR TF@&VAR&add$a$0
-POPS TF@&VAR&add$a$0
-PUSHS TF@&VAR&add$a$0
-PUSHS TF@&VAR&add$b$1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-ADDS
-RETURN
-
-
-RETURN
-LABEL $END_FUN$add
-
-
-
 JUMP $END_FUN$g
 #function g ()
 LABEL $FUN$g
 CREATEFRAME
-DEFVAR TF@&VAR&g$a$2
-MOVE TF@&VAR&g$a$2 nil@nil
-PUSHS int@6
-PUSHS int@2
-# add()
+# readn()
 PUSHFRAME
-CALL $FUN$add
+CALL $FUN$readn
 POPFRAME
-#assign value to g$a$2
-POPS TF@&VAR&g$a$2
-PUSHS TF@&VAR&g$a$2
-PUSHS int@8
-# $BUILTIN$sametypes()
+# tointeger()
 PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
+CALL $FUN$tointeger
 POPFRAME
-# start operator A==B
-EQS
-# end operator A==B
-#if 0
-PUSHS bool@true
-JUMPIFNEQS $ELSE$START$0
-PUSHS TF@&VAR&g$a$2
 # write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
-#end of if 0
-JUMP $ELSE$END$0
-LABEL $ELSE$START$0
-#end of else and the whole if 0 statement
-LABEL $ELSE$END$0
 
 
 RETURN

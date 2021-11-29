@@ -1460,10 +1460,9 @@ int parse_return() {
         else if(!is_expression(t)) {
             finished = true;
             if(len(&symbol->data.ret_types) > 0) {
-                size_t difference = (len(&symbol->data.ret_types) -1) - returns_cnt;
-                generate_additional_returns(difference);
-                //TODO
                 //Implicit nil return
+                size_t difference = len(&symbol->data.ret_types)  - returns_cnt;
+                generate_additional_returns(difference);
             }
 
             break;
@@ -1505,8 +1504,9 @@ int parse_return() {
         if(!comma) {
             finished = true;
             if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
-                //TODO
                 //Implicit nil return
+                size_t difference = (len(&symbol->data.ret_types) -1) - returns_cnt;
+                generate_additional_returns(difference);
             }
         }
         else {

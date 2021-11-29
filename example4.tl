@@ -22,18 +22,23 @@
 
 -- local b : integer = val()
 
-function add(a:integer, b:integer) : integer
-    return a+b
-end
+-- function add(a:integer, b:integer) : integer, integer, integer
+--     return a, b
+-- end
 
-function g() 
-    local a : integer = add(6,2)
-    if a == 8 then
-        -- local a : integer = a --[[ to vnitřní 'a' by mělo být taky8]]
-        write(a)
-    end
+function g()
+    write( tointeger( readn() ))
 end
 g()
+
+-- function g() 
+--     local a : integer = add(6,2)
+--     if a == 8 then
+--         -- local a : integer = a --[[ to vnitřní 'a' by mělo být taky8]]
+--         write(a)
+--     end
+-- end
+-- g()
 
 -- function matrix(imax :integer, jmax:integer )
 --     local i : integer = 1

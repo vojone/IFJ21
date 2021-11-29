@@ -23,6 +23,7 @@
 //?done:todo checknil for operation
 //todo builtin functions
 //todo cycle declaration
+//todo write "nil" when input nil
 
 #include "generator.h"
 
@@ -322,15 +323,25 @@ void print_program(prog_t *source) {
 
 
 void generate_init(){
+    
     code_print(".IFJcode21");
     code_print("CREATEFRAME");
+
+    //builtin
     generate_write_function();
     generate_reads_function();
+    generate_readi_function();
+    generate_readn_function();
+    generate_tointeger_function();
+    
+    //operation functions
+    generate_unaryminus_function();
+
+    //custom builtin
     generate_checkzero_function_float();
     generate_checkzero_function_int();
     generate_checknil_function_single();
     generate_checknil_function_double();
-    generate_unaryminus_function();
     generate_same_types();
     generate_force_floats();
 }
@@ -688,6 +699,43 @@ void generate_reads_function(){
     code_print("READ TF@$TEMP$ string");
     code_print("PUSHS TF@$TEMP$");
     generate_end_function("reads");
+}
+
+void generate_readi_function(){
+    generate_start_function("readi");
+    code_print("DEFVAR TF@$TEMP$");
+    code_print("READ TF@$TEMP$ int");
+    code_print("PUSHS TF@$TEMP$");
+    generate_end_function("readi");
+}
+
+void generate_readn_function(){
+    generate_start_function("readn");
+    code_print("DEFVAR TF@$TEMP$");
+    code_print("READ TF@$TEMP$ float");
+    code_print("PUSHS TF@$TEMP$");
+    generate_end_function("readn");
+}
+
+void generate_tointeger_function(){
+    generate_start_function("tointeger");
+    //local a = a
+    code_print("DEFVAR TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("POPS TF@&VAR&$TEMP_CHECKNIL$");
+    //if(a != nil) 
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS nil@nil");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    
+    code_print("JUMPIFNEQS $TOINTCONV$");
+    code_print("JUMP $TOINTSKIP$");
+    
+    code_print("LABEL $TOINTCONV$");
+    //convert
+    code_print("FLOAT2INTS");
+
+    code_print("LABEL $TOINTSKIP$");
+    generate_end_function("tointeger");
 }
 
 void generate_checknil_function_single(){

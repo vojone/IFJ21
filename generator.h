@@ -297,6 +297,12 @@ void generate_write_function();
 
 void generate_reads_function();
 
+void generate_readi_function();
+
+void generate_readn_function();
+
+void generate_tointeger_function();
+
 void generate_checkzero_function_int();
 
 void generate_checkzero_function_float();
