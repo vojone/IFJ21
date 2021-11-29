@@ -295,14 +295,15 @@ sym_data_t* builtin_functions(unsigned int index) {
     }
 
     static sym_data_t builtin_functions[BUILTIN_TABLE_SIZE] = {
-    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "i"}, UNSET, DECLARED, false},
-    {{0, 0, "ord"}, FUNC, {0, 0, "si"}, {0, 0, "i"}, UNSET, DECLARED, false},
-    {{0, 0, "readi"}, FUNC, {0, 0, "i"}, {0, 0, ""}, UNSET, DECLARED, false},
-    {{0, 0, "readn"}, FUNC, {0, 0, "n"}, {0, 0, ""}, UNSET, DECLARED, false},
-    {{0, 0, "reads"}, FUNC, {0, 0, "s"}, {0, 0, ""}, UNSET, DECLARED, false},
-    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "sin"}, UNSET, DECLARED, false},
-    {{0, 0, "tointeger"}, FUNC, {0, 0, "i"}, {0, 0, "n"}, UNSET, DECLARED, false},
-    {{0, 0, "write"}, FUNC, {0, 0, ""}, {0, 0, "%"}, UNSET, DECLARED, false}};
+    //Name                Return types   Parameters
+    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "i"}, UNSET, DEFINED, false},
+    {{0, 0, "ord"}, FUNC, {0, 0, "si"}, {0, 0, "i"}, UNSET, DEFINED, false},
+    {{0, 0, "readi"}, FUNC, {0, 0, "i"}, {0, 0, ""}, UNSET, DEFINED, false},
+    {{0, 0, "readn"}, FUNC, {0, 0, "n"}, {0, 0, ""}, UNSET, DEFINED, false},
+    {{0, 0, "reads"}, FUNC, {0, 0, "s"}, {0, 0, ""}, UNSET, DEFINED, false},
+    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "sin"}, UNSET, DEFINED, false},
+    {{0, 0, "tointeger"}, FUNC, {0, 0, "i"}, {0, 0, "n"}, UNSET, DEFINED, false},
+    {{0, 0, "write"}, FUNC, {0, 0, ""}, {0, 0, "%"}, UNSET, DEFINED, false}};
 
     return &builtin_functions[index];
 }
@@ -341,11 +342,19 @@ sym_data_t* search_builtin(const char *f_name) {
 
 /**
  * @brief Checks if key identifies any of builtin functions, if yes puts it into given symtable
+ * @return True if symbol was found in builtin functions table otherwise false
  */
-void check_builtin(char *key, symtab_t *dst) {
+bool check_builtin(char *key, symtab_t *dst) {
     sym_data_t *bfunc_data_ptr = search_builtin(key);
+
     if(bfunc_data_ptr) {
         insert_sym(dst, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
+
+        return true;
+    }
+    else {
+
+        return false;
     }
 }
 

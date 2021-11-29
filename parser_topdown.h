@@ -242,6 +242,12 @@ void error_unexpected_token(char * expected, token_t t);
  * */
 void error_semantic(const char * _Format, ...);
 
+
+/**
+ * @brief Prints formated warnings to stderr
+ */ 
+void warn(const char * _Format, ...);
+
 /**
  * @param expecting The token type to expect to be the next
  * @brief Checks wheter the expected token type is at the next place

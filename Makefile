@@ -15,7 +15,7 @@ PP_PARSER = precedence_parser
 
 PARSER_EXE = IFJ21Parser
 
-INZIP = *.c *.h Makefile README.md
+INZIP = *.c *.h Makefile rozdeleni rozsireni README.md
 
 
 #--------------------------------------TESTS-----------------------------------
@@ -39,13 +39,16 @@ SYMTAB_TEST_BIN = $(SYMTAB_TEST_NAME)
 SCAN_TEST_NAME = scanner_tests
 SCAN_TEST_BIN = $(SCAN_TEST_NAME)
 
+GEN_TEST_NAME = gen_tests
+GEN_TEST_BIN = $(GEN_TEST_NAME)
+
 #------------------------------------------------------------------------------
 
 OBJS = $(PARSER).o $(PP_PARSER).o $(SCANNER).o $(SYMTAB).o \
 	   main.o dstring.o tables.o dstack.o generator.o
 
 EXES = $(EXECUTABLE) $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
-	   $(SYMTAB_TEST_BIN) $(PARSER_EXE)
+	   $(SYMTAB_TEST_BIN) $(GEN_TEST_NAME) $(PARSER_EXE)
 
 .PHONY: all parser generator clean unit_tests
 
@@ -59,14 +62,14 @@ generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCAN
 	$(CC) $(CFLAGS) -o generator $^
 
 clean:
-	rm -f *.o $(EXES)
+	rm -f *.o $(EXES) $(ZIPNAME).zip
 
 zip: clean
 	zip $(ZIPNAME).zip $(INZIP)
 	
 
 unit_tests:  $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
-	   		 $(SYMTAB_TEST_BIN)
+	   		 $(SYMTAB_TEST_BIN) $(GEN_TEST_BIN)
 #			 ./$(PARSER_TEST_BIN)
 #			 ./$(SCAN_TEST_BIN)
 #		 	 ./$(PP_TEST_BIN)
@@ -125,6 +128,21 @@ $(PP_TEST_BIN) : $(SYMTAB).o $(PP_PARSER).o $(PP_TEST_BIN).o $(SCANNER).o \
 #compilation of obj file with test
 $(PP_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
 $(PP_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
+
+#------------------------------------------------------------------------------
+
+
+#---------------------PRECEDENCE PARSER (PP) TESTS-----------------------------
+
+#linking binary with test
+$(GEN_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
+$(GEN_TEST_BIN) : LDFLAGS := -L$(TEST_DIR)lib
+$(GEN_TEST_BIN) : $(SYMTAB).o $(PP_PARSER).o $(GEN_TEST_BIN).o $(SCANNER).o \
+				 dstring.o tables.o dstack.o generator.o
+
+#compilation of obj file with test
+$(GEN_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
+$(GEN_TEST_BIN).o : $(GEN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 
 #------------------------------------------------------------------------------
 

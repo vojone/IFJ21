@@ -50,6 +50,9 @@ enum char_type {
  */
 int str_init(string_t *string);
 
+
+int extend_string(string_t *string);
+
 /**
  * @brief Appends character to end of string
  * @param c character to append
@@ -119,8 +122,9 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length);
 
 /**
  * @brief Makes hard copy of two strings
+ * @param zero_term says if src string is terminated by '\0' character
  */ 
-int cpy_strings(string_t* dst, string_t *src);
+int cpy_strings(string_t* dst, string_t *src, bool zero_term);
 
 /**
  * @brief returns type of character

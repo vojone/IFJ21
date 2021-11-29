@@ -459,7 +459,7 @@ void OP_1_trans(char c, token_t * token, scanner_t *sc) {
         sc->state = OP_F1;
     }
     else {
-        got_token(OPERATOR, c, token, sc);
+        got_token(ERROR_TYPE, c, token, sc);
     }
 }
 

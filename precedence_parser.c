@@ -135,12 +135,17 @@ grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
 /**
  * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
  */ 
-int tok_to_type(tok_buffer_t *tok_b) {
+int tok_to_type(tok_buffer_t *tok_b, bool *was_only_f_call) {
     token_t token = tok_b->current;
 
     if(token.token_type == IDENTIFIER || token.token_type == NUMBER ||
        token.token_type == STRING || token.token_type == INTEGER || 
        is_nil(tok_b->scanner, &tok_b->current)) {
+
+        if(token.token_type != IDENTIFIER) {
+            *was_only_f_call = false;
+        }
+
            return OPERAND;
     }
     else if(token.token_type == OPERATOR || token.token_type == SEPARATOR) {
@@ -148,6 +153,10 @@ int tok_to_type(tok_buffer_t *tok_b) {
         int char_num = 0;
         char first_ch = (get_attr(&token, tok_b->scanner))[char_num++],
         next_ch = (get_attr(&token, tok_b->scanner))[char_num];
+
+        if(token.token_type == OPERATOR) {
+            *was_only_f_call = false;
+        }
 
         return operator_type(first_ch, next_ch, tok_b);
     }
@@ -181,6 +190,24 @@ bool is_compatible_type_c(string_t *dtypes, char type_char) {
     return (prim_type(dtypes) == char_to_dtype(type_char) ||
             (prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) ||
             (char_to_dtype(type_char) == INT && prim_type(dtypes) == NUM));
+}
+
+
+void int2num() {
+
+}
+
+bool is_compatible_in_arg(string_t *dtypes, char type_char) {
+    if(prim_type(dtypes) == char_to_dtype(type_char)) {
+        return true;
+    }
+    else if(prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) {
+        int2num();
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 /**
@@ -244,14 +271,15 @@ int argument_parser(token_t *func_id, char *params_s,
             string_t ret_type;
             str_init(&ret_type);
         
-            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type);
+            bool is_func_in_arg;
+            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_type);
                 return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
             }
 
             if(!is_variadic) {
-                if(!is_compatible_type_c(&ret_type, params_s[argument_cnt])) {
+                if(!is_compatible_in_arg(&ret_type, params_s[argument_cnt])) {
                     fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
                     str_dtor(&ret_type);
                     return SEMANTIC_ERROR_PARAMETERS_EXPR;
@@ -266,7 +294,6 @@ int argument_parser(token_t *func_id, char *params_s,
             argument_cnt++;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
-            token_aging(tok_b);
             closing_bracket = true;
             continue;
         }
@@ -306,7 +333,6 @@ int argument_parser(token_t *func_id, char *params_s,
         return SEMANTIC_ERROR_PARAMETERS_EXPR;
     }
 
-
     return EXPRESSION_SUCCESS;
 }
 
@@ -321,8 +347,7 @@ int fcall_parser(tree_node_t *symbol,
 
     token_t func_id = tok_b->current;
 
-    //code for function
-    generate_call_function(get_attr(&func_id,tok_b->scanner));
+
 
 
     char *params_s = to_str(&symbol->data.params);
@@ -355,7 +380,8 @@ int fcall_parser(tree_node_t *symbol,
  */
 int process_identifier(expr_el_t *result, 
                        tok_buffer_t *tok_b,
-                       symbol_tables_t *syms) { 
+                       symbol_tables_t *syms,
+                       bool* was_only_f_call) { 
 
     char *id_name = get_attr(&(tok_b->current), tok_b->scanner);
 
@@ -379,12 +405,16 @@ int process_identifier(expr_el_t *result,
             }
 
             //Function was succesfully called
-            cpy_strings(&result->dtype, &(symbol->data.ret_types));
+            cpy_strings(&result->dtype, &(symbol->data.ret_types), true);
+            result->is_fcall = true;
+
 
             return EXPRESSION_SUCCESS;
         }
     }
     else {
+        *was_only_f_call = false;
+
         char type_c = dtype_to_char(symbol->data.dtype);
         make_type_str(&result->dtype, type_c);
 
@@ -399,11 +429,13 @@ int process_identifier(expr_el_t *result,
 int from_input_token(expr_el_t *result, 
                      tok_buffer_t *tok_b,
                      symbol_tables_t *syms,
-                     bool *was_operand) {
+                     bool *was_operand,
+                     bool *was_only_f_call) {
 
-    result->type = tok_to_type(tok_b);
+    result->type = tok_to_type(tok_b, was_only_f_call);
     result->value = NULL;
     result->is_zero = false;
+    result->is_fcall = false;
     str_init(&result->dtype);
     int retval = EXPRESSION_SUCCESS;
     switch (tok_b->current.token_type)
@@ -422,7 +454,7 @@ int from_input_token(expr_el_t *result,
         break;
     case IDENTIFIER:
         if(!*was_operand) {
-            retval = process_identifier(result, tok_b, syms);
+            retval = process_identifier(result, tok_b, syms, was_only_f_call);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
@@ -435,12 +467,12 @@ int from_input_token(expr_el_t *result,
     default:
         if(is_nil(tok_b->scanner, &tok_b->current)) {
             make_type_str(&result->dtype, 'z');
+            *was_operand = true;
         }
         else {
-             make_type_str(&result->dtype, ' ');
+            make_type_str(&result->dtype, ' ');
+            *was_operand = false;
         }
-
-        *was_operand = false;
 
         break;
     }
@@ -469,7 +501,8 @@ expr_el_t stop_symbol() {
             .str = NULL
         }, 
         .value = NULL, 
-        .is_zero = false
+        .is_zero = false,
+        .is_fcall = false
     };
 
     return stop_symbol;
@@ -484,7 +517,8 @@ expr_el_t prec_sign(char sign) {
             .alloc_size = 0, 
             .length = 0, 
             .str = NULL
-        }
+        },
+        .is_fcall = false
     };
 
     switch(sign) {
@@ -627,7 +661,7 @@ void resolve_res_type(string_t *res, expr_rule_t *rule,
 
     if(prim_type(res) == UNDEFINED) {
         if(cur_ok) {
-            cpy_strings(res, &cur_op.dtype);
+            cpy_strings(res, &cur_op.dtype, false);
         }
     }
     
@@ -660,7 +694,6 @@ int get_tcheck_ret(expr_el_t *current_operand) {
  * @note Type check is based on rules writen in get_rule() ( @see get_rule())
  */ 
 int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
-
     expr_el_t current = pp_pop(&op_stack);
     bool is_curr_ok = false, must_be_flag = false;
     int result = EXPRESSION_SUCCESS;
@@ -703,7 +736,7 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
                 if(prim_type(&must_be) == UNDEFINED && 
                    prim_type(&(current.dtype)) == char_to_dtype(c)) {
 
-                    cpy_strings(&must_be, &(current.dtype));
+                    cpy_strings(&must_be, &(current.dtype), false);
                 }
 
                 if(is_compatible(&(current.dtype), &must_be)) { /**< Type of current operator is compatible with type of earlier operator */
@@ -724,7 +757,7 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
     result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
 
     str_dtor(&must_be);
-    cpy_strings(res_type, &tmp_res_type);
+    cpy_strings(res_type, &tmp_res_type, false);
     str_dtor(&tmp_res_type);
 
     return result;
@@ -821,10 +854,11 @@ expr_el_t non_term(string_t *data_type, bool is_zero) {
     non_terminal.type = NON_TERM;
 
     str_init(&(non_terminal.dtype));
-    cpy_strings(&(non_terminal.dtype), data_type);
+    cpy_strings(&(non_terminal.dtype), data_type, false);
 
     non_terminal.value = "NONTERM";
     non_terminal.is_zero = is_zero;
+    non_terminal.is_fcall = false;
 
     return non_terminal;
 }
@@ -846,7 +880,13 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
     if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
-        if(res == NULL) {
+
+        if(element_terminal.is_fcall) {
+            //Only function was called during reduction 
+            // fprintf(stderr, "Only function was called!\n");
+            //code for function
+            generate_call_function(element_terminal.value);
+        }else if(res == NULL) {
             sym_dtype_t dtype = char_to_dtype(to_str(&element_terminal.dtype)[0]);
             //We are pushing a static value
             generate_value_push(VAL, dtype, element_terminal.value);
@@ -890,7 +930,7 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
     }
 
     get_str_to_reduction(s, &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string from it*/
-    
+    //fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
     expr_rule_t *rule;
     int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
     for(int i = 0; (rule = get_rule(i)); i++) {
@@ -926,14 +966,15 @@ int reduce_top(pp_stack_t *s, symbol_tables_t *symtabs,
  */ 
 int get_input_symbol(bool stop_flag, expr_el_t *on_input, 
                      tok_buffer_t *t_buff, symbol_tables_t *symtabs,
-                     pp_stack_t *garbage_stack, bool *was_operand) {
+                     pp_stack_t *garbage_stack, bool *was_operand,
+                     bool *was_only_f_call) {
 
     int retval = EXPRESSION_SUCCESS;
     if(stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
         *on_input = stop_symbol();
     }
     else {
-        retval = from_input_token(on_input, t_buff, symtabs, was_operand);
+        retval = from_input_token(on_input, t_buff, symtabs, was_operand, was_only_f_call);
         pp_push(garbage_stack, *on_input);
     }
 
@@ -1086,9 +1127,10 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *was_only_f_call) {
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
+    *was_only_f_call = true;
     
     tok_buffer_t tok_buff;
     pp_stack_t stack;
@@ -1112,8 +1154,8 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
 
         expr_el_t on_input, on_top;
         retval = get_input_symbol(stop_flag, &on_input, &tok_buff, 
-                                  s, &garbage, &was_operand);
-
+                                  s, &garbage, &was_operand, was_only_f_call);
+    
         if(retval != EXPRESSION_SUCCESS) {
             break;
         }
@@ -1162,7 +1204,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes) {
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    // token_t next = lookahead(sc); fprintf(stderr, "%s\n", get_attr(&next, sc));
+    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return retval;
 }
 

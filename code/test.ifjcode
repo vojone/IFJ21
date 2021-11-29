@@ -226,16 +226,50 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
+JUMP $END_FUN$add
+#function add ()
+LABEL $FUN$add
+CREATEFRAME
+#define param add$b$1
+DEFVAR TF@&VAR&add$b$1
+POPS TF@&VAR&add$b$1
+#define param add$a$0
+DEFVAR TF@&VAR&add$a$0
+POPS TF@&VAR&add$a$0
+PUSHS TF@&VAR&add$a$0
+PUSHS TF@&VAR&add$b$1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+RETURN
+
+
+RETURN
+LABEL $END_FUN$add
+
+
+
 JUMP $END_FUN$g
 #function g ()
 LABEL $FUN$g
 CREATEFRAME
-DEFVAR TF@&VAR&g$a$0
-MOVE TF@&VAR&g$a$0 nil@nil
-PUSHS int@8
-#assign value to g$a$0
-POPS TF@&VAR&g$a$0
-PUSHS TF@&VAR&g$a$0
+DEFVAR TF@&VAR&g$a$2
+MOVE TF@&VAR&g$a$2 nil@nil
+PUSHS int@6
+PUSHS int@2
+# add()
+PUSHFRAME
+CALL $FUN$add
+POPFRAME
+#assign value to g$a$2
+POPS TF@&VAR&g$a$2
+PUSHS TF@&VAR&g$a$2
 PUSHS int@8
 # $BUILTIN$sametypes()
 PUSHFRAME
@@ -247,12 +281,7 @@ EQS
 #if 0
 PUSHS bool@true
 JUMPIFNEQS $ELSE$START$0
-DEFVAR TF@&VAR&g$a$1
-MOVE TF@&VAR&g$a$1 nil@nil
-PUSHS TF@&VAR&g$a$1
-#assign value to g$a$1
-POPS TF@&VAR&g$a$1
-PUSHS TF@&VAR&g$a$1
+PUSHS TF@&VAR&g$a$2
 # write()
 PUSHFRAME
 CALL $FUN$write
