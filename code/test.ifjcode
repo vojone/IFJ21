@@ -23,6 +23,7 @@ LABEL $FUN$reads
 CREATEFRAME
 DEFVAR TF@$TEMP$
 READ TF@$TEMP$ string
+PUSHS TF@$TEMP$
 
 
 RETURN
@@ -30,23 +31,93 @@ LABEL $END_FUN$reads
 
 
 
-JUMP $END_FUN$$OP$checkzero
-#function $OP$checkzero ()
-LABEL $FUN$$OP$checkzero
+JUMP $END_FUN$$OP$checkzero_float
+#function $OP$checkzero_float ()
+LABEL $FUN$$OP$checkzero_float
 CREATEFRAME
 #define param $TEMP_CHECKZERO$
 DEFVAR TF@&VAR&$TEMP_CHECKZERO$
 POPS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
 PUSHS float@0x0p+0
-PUSHS TF@&VAR&$TEMP_CHECKZERO$
-JUMPIFNEQS $CHECKZERO$
+JUMPIFNEQS $CHECKZERO_float$
 EXIT int@9
-LABEL $CHECKZERO$
-PUSHS TF@&VAR&$TEMP_CHECKZERO$
+LABEL $CHECKZERO_float$
 
 
 RETURN
-LABEL $END_FUN$$OP$checkzero
+LABEL $END_FUN$$OP$checkzero_float
+
+
+
+JUMP $END_FUN$$OP$checkzero_int
+#function $OP$checkzero_int ()
+LABEL $FUN$$OP$checkzero_int
+CREATEFRAME
+#define param $TEMP_CHECKZERO$
+DEFVAR TF@&VAR&$TEMP_CHECKZERO$
+POPS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS int@0
+JUMPIFNEQS $CHECKZERO_int$
+EXIT int@9
+LABEL $CHECKZERO_int$
+
+
+RETURN
+LABEL $END_FUN$$OP$checkzero_int
+
+
+
+JUMP $END_FUN$$OP$checknil_single
+#function $OP$checknil_single ()
+LABEL $FUN$$OP$checknil_single
+CREATEFRAME
+#define param $TEMP_CHECKNIL$
+DEFVAR TF@&VAR&$TEMP_CHECKNIL$
+POPS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS nil@nil
+JUMPIFNEQS $CHECKNIL_single$
+EXIT int@8
+LABEL $CHECKNIL_single$
+
+
+RETURN
+LABEL $END_FUN$$OP$checknil_single
+
+
+
+JUMP $END_FUN$$OP$checknil_double
+#function $OP$checknil_double ()
+LABEL $FUN$$OP$checknil_double
+CREATEFRAME
+#define param $TEMP$B
+DEFVAR TF@&VAR&$TEMP$B
+POPS TF@&VAR&$TEMP$B
+#define param $TEMP$A
+DEFVAR TF@&VAR&$TEMP$A
+POPS TF@&VAR&$TEMP$A
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP$A
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP$B
+JUMPIFNEQS $SKIPEXIT1$
+EXIT int@8
+LABEL $SKIPEXIT1$
+JUMPIFNEQS $SKIPEXIT2$
+EXIT int@8
+LABEL $SKIPEXIT2$
+LABEL $ENDCHECKNILDOUBLE$
+PUSHS TF@&VAR&$TEMP$A
+PUSHS TF@&VAR&$TEMP$B
+
+
+RETURN
+LABEL $END_FUN$$OP$checknil_double
 
 
 
@@ -54,6 +125,10 @@ JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
 CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
 #define param $TEMP$
 DEFVAR TF@&VAR&$TEMP$
 POPS TF@&VAR&$TEMP$
@@ -149,14 +224,199 @@ PUSHS TF@&VAR&$TEMP$B
 RETURN
 LABEL $END_FUN$$BUILTIN$forcefloats
 
-PUSHS int@15
-PUSHS int@5
-# $BUILTIN$forcefloats()
-PUSHFRAME
-CALL $FUN$$BUILTIN$forcefloats
-POPFRAME
-DIVS
+
+
+JUMP $END_FUN$fdoesntworko
+#function fdoesntworko ()
+LABEL $FUN$fdoesntworko
+CREATEFRAME
+#here
+PUSHS string@hehe
+
+
+RETURN
+LABEL $END_FUN$fdoesntworko
+
+
+
+JUMP $END_FUN$print
+#function print ()
+LABEL $FUN$print
+CREATEFRAME
+#define param print$b$1
+DEFVAR TF@&VAR&print$b$1
+POPS TF@&VAR&print$b$1
+#define param print$a$0
+DEFVAR TF@&VAR&print$a$0
+POPS TF@&VAR&print$a$0
+PUSHS TF@&VAR&print$a$0
 # write()
 PUSHFRAME
 CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&print$b$1
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+
+
+RETURN
+LABEL $END_FUN$print
+
+
+
+JUMP $END_FUN$matrix
+#function matrix ()
+LABEL $FUN$matrix
+CREATEFRAME
+#define param matrix$jmax$3
+DEFVAR TF@&VAR&matrix$jmax$3
+POPS TF@&VAR&matrix$jmax$3
+#define param matrix$imax$2
+DEFVAR TF@&VAR&matrix$imax$2
+POPS TF@&VAR&matrix$imax$2
+DEFVAR TF@&VAR&matrix$i$4
+MOVE TF@&VAR&matrix$i$4 nil@nil
+PUSHS int@1
+#assign value to matrix$i$4
+POPS TF@&VAR&matrix$i$4
+DEFVAR TF@&VAR&matrix$j$5
+MOVE TF@&VAR&matrix$j$5 nil@nil
+PUSHS int@1
+#assign value to matrix$j$5
+POPS TF@&VAR&matrix$j$5
+#while 0
+LABEL $WHILE$COND$0
+PUSHS TF@&VAR&matrix$i$4
+PUSHS TF@&VAR&matrix$imax$2
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+PUSHS bool@true
+JUMPIFNEQS $WHILE$END$0
+#here
+PUSHS string@\010
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#while 1
+LABEL $WHILE$COND$1
+PUSHS TF@&VAR&matrix$j$5
+PUSHS TF@&VAR&matrix$jmax$3
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+PUSHS bool@true
+JUMPIFNEQS $WHILE$END$1
+PUSHS TF@&VAR&matrix$i$4
+PUSHS TF@&VAR&matrix$j$5
+# print()
+PUSHFRAME
+CALL $FUN$print
+POPFRAME
+#here
+PUSHS string@\009
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&matrix$j$5
+PUSHS int@1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+#assign value to matrix$j$5
+POPS TF@&VAR&matrix$j$5
+#end of while 1 loop
+JUMP $WHILE$COND$1
+LABEL $WHILE$END$1
+PUSHS TF@&VAR&matrix$i$4
+PUSHS int@1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+#assign value to matrix$i$4
+POPS TF@&VAR&matrix$i$4
+PUSHS int@1
+#assign value to matrix$j$5
+POPS TF@&VAR&matrix$j$5
+#end of while 0 loop
+JUMP $WHILE$COND$0
+LABEL $WHILE$END$0
+
+
+RETURN
+LABEL $END_FUN$matrix
+
+PUSHS int@3
+PUSHS int@4
+# matrix()
+PUSHFRAME
+CALL $FUN$matrix
 POPFRAME

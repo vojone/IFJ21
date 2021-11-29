@@ -75,6 +75,12 @@ void generate_end_function(const char * name);
 void generate_call_function(const char * name);
 
 /**
+ * @brief pushes NILs to stack
+ * @param n how many NIL returns to push
+ */
+void generate_additional_returns(size_t n); 
+
+/**
  * *---------VARIABLES---------
  */
 
@@ -133,6 +139,7 @@ void generate_operation_add();
 void generate_operation_sub();
 void generate_operation_mul();
 void generate_operation_div();
+void generate_operation_div();
 void generate_operation_idiv();
 void generate_operation_unary_minus();
 
@@ -157,7 +164,13 @@ void generate_write_function();
 
 void generate_reads_function();
 
-void generate_checkzero_function();
+void generate_checkzero_function_int();
+
+void generate_checkzero_function_float();
+
+void generate_checknil_function_single();
+
+void generate_checknil_function_double();
 
 void generate_unaryminus_function();
 

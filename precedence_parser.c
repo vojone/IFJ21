@@ -320,6 +320,11 @@ int fcall_parser(tree_node_t *symbol,
                  tok_buffer_t *tok_b) {
 
     token_t func_id = tok_b->current;
+
+    //code for function
+    generate_call_function(get_attr(&func_id,tok_b->scanner));
+
+
     char *params_s = to_str(&symbol->data.params);
 
     token_aging(tok_b);

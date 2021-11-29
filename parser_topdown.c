@@ -1490,6 +1490,7 @@ int parse_while() {
 
     //save the counter to prevent overwriting in nested loops
     size_t current_cnt = parser->loop_cnt;
+    parser->loop_cnt++;
 
     //generate while beginning
     generate_while_condition_beginning(current_cnt);
