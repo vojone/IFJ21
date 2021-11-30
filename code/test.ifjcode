@@ -9,7 +9,14 @@ CREATEFRAME
 #define param str
 DEFVAR TF@&VAR&str
 POPS TF@&VAR&str
+PUSHS TF@&VAR&str
+PUSHS nil@nil
+JUMPIFNEQS $CHECKNIL_WRITE$
+WRITE string@nil
+JUMP $WRITESKIP$
+LABEL $CHECKNIL_WRITE$
 WRITE TF@&VAR&str
+LABEL $WRITESKIP$
 
 
 RETURN
@@ -275,18 +282,21 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$g
-#function g ()
-LABEL $FUN$g
+JUMP $END_FUN$foo
+#function foo ()
+LABEL $FUN$foo
 CREATEFRAME
-# readn()
-PUSHFRAME
-CALL $FUN$readn
-POPFRAME
-# tointeger()
-PUSHFRAME
-CALL $FUN$tointeger
-POPFRAME
+DEFVAR TF@&VAR&foo$a$0
+MOVE TF@&VAR&foo$a$0 nil@nil
+PUSHS int@10
+#assign value to foo$a$0
+POPS TF@&VAR&foo$a$0
+DEFVAR TF@&VAR&foo$b$1
+MOVE TF@&VAR&foo$b$1 nil@nil
+PUSHS nil@nil
+#assign value to foo$b$1
+POPS TF@&VAR&foo$b$1
+PUSHS TF@&VAR&foo$b$1
 # write()
 PUSHFRAME
 CALL $FUN$write
@@ -294,9 +304,31 @@ POPFRAME
 
 
 RETURN
-LABEL $END_FUN$g
+LABEL $END_FUN$foo
 
-# g()
+# foo()
 PUSHFRAME
-CALL $FUN$g
+CALL $FUN$foo
 POPFRAME
+
+
+JUMP $END_FUN$add
+#function add ()
+LABEL $FUN$add
+CREATEFRAME
+#define param add$b$3
+DEFVAR TF@&VAR&add$b$3
+POPS TF@&VAR&add$b$3
+#define param add$a$2
+DEFVAR TF@&VAR&add$a$2
+POPS TF@&VAR&add$a$2
+PUSHS nil@nil
+PUSHS nil@nil
+PUSHS nil@nil
+PUSHS nil@nil
+RETURN
+
+
+RETURN
+LABEL $END_FUN$add
+

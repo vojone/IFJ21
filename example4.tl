@@ -1,35 +1,25 @@
--- -- write(reads())
 
--- function fdoesntworko() : string, string, number, integer
---     local b : string
---     return fdoesntworko()
--- end
-
--- function print(a : integer, b:integer)
---     write(a,b)
--- end
-
--- function val() : integer, integer
---     return 1,2
--- end
-
--- a, b = val()
-
--- write( 10 // 1 )
-
-
-
+function foo()
+    local a: integer = 10
+    local b: integer = nil
+    write(b)
+end
+foo()
 
 -- local b : integer = val()
 
--- function add(a:integer, b:integer) : integer, integer, integer
---     return a, b
--- end
-
-function g()
-    write( tointeger( readn() ))
+function add(a:integer, b:integer) : integer, integer, integer, integer
+    return
 end
-g()
+
+-- function g()
+--     local a : integer = 8 
+--     if a == 8 then
+--         local a : integer = a+2 --[[ to vnitřní 'a' by mělo být taky8]]
+--         write(a)
+--     end
+-- end
+-- g()
 
 -- function g() 
 --     local a : integer = add(6,2)
