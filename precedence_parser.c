@@ -183,25 +183,21 @@ sym_dtype_t prim_type(string_t *type_string) {
 }
 
 
-/**
- * @brief Returns true if two types are compatible
- */ 
-bool is_compatible_type_c(string_t *dtypes, char type_char) {
-    return (prim_type(dtypes) == char_to_dtype(type_char) ||
-            (prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) ||
-            (char_to_dtype(type_char) == INT && prim_type(dtypes) == NUM));
-}
-
-
 void int2num() {
-
+    code_print("INT2FLOATS");
 }
 
-bool is_compatible_in_arg(string_t *dtypes, char type_char) {
-    if(prim_type(dtypes) == char_to_dtype(type_char)) {
+/**
+ * @brief Checks copatibility of data type string (returned from function or expression) and arg. type
+ */ 
+bool is_compatible_in_arg(char arg_type, string_t *dtypes) {
+    if(prim_type(dtypes) == char_to_dtype(arg_type)) {
         return true;
     }
-    else if(prim_type(dtypes) == INT && char_to_dtype(type_char) == NUM) {
+    else if(prim_type(dtypes) == NIL) {
+        return true;
+    }
+    else if(prim_type(dtypes) == INT && char_to_dtype(arg_type) == NUM) {
         int2num();
         return true;
     }
@@ -279,7 +275,7 @@ int argument_parser(token_t *func_id, char *params_s,
             }
 
             if(!is_variadic) {
-                if(!is_compatible_in_arg(&ret_type, params_s[argument_cnt])) {
+                if(!is_compatible_in_arg(params_s[argument_cnt], &ret_type)) {
                     fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
                     str_dtor(&ret_type);
                     return SEMANTIC_ERROR_PARAMETERS_EXPR;
