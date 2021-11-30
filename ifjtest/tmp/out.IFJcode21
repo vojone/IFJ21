@@ -282,32 +282,48 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$foo
-#function foo ()
-LABEL $FUN$foo
+JUMP $END_FUN$strfn
+#function strfn ()
+LABEL $FUN$strfn
 CREATEFRAME
+#here
+PUSHS string@hello\032there
+#here
+PUSHS string@
+PUSHS nil@nil
 RETURN
 
 
 RETURN
-LABEL $END_FUN$foo
+LABEL $END_FUN$strfn
 
 
 
-JUMP $END_FUN$main
-#function main ()
-LABEL $FUN$main
+JUMP $END_FUN$intfn
+#function intfn ()
+LABEL $FUN$intfn
 CREATEFRAME
-# foo()
-PUSHFRAME
-CALL $FUN$foo
-POPFRAME
+PUSHS int@4
+PUSHS nil@nil
+RETURN
 
 
 RETURN
-LABEL $END_FUN$main
+LABEL $END_FUN$intfn
 
-# main()
-PUSHFRAME
-CALL $FUN$main
-POPFRAME
+
+
+JUMP $END_FUN$numfn
+#function numfn ()
+LABEL $FUN$numfn
+CREATEFRAME
+PUSHS float@0x1.199999999999ap+0
+PUSHS int@1
+INT2FLOATS
+PUSHS float@0x1.199999999999ap+0
+PUSHS nil@nil
+PUSHS nil@nil
+PUSHS nil@nil
+PUSHS nil@nil
+PUSHS nil@nil
+RETURN
