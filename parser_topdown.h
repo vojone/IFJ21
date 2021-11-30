@@ -81,9 +81,9 @@ typedef struct rule {
  * @brief Finds the appropriate rule
  * @return Returns reference to rule function
  * @param t Token based on which is going to be decided what rule to use
- * @param ruleset is an array of rules for particular context (ie. global or inside a function) 
+ * @param ruleset_function is a function, that contains array with ruleset
  */ 
-rule_t determine_rule(token_t t, rule_t ruleset[]);
+rule_t *determine_rule(token_t t, rule_t *(*ruleset_function)(size_t));
 
 /**
  * @brief sets the parser and scanner to use

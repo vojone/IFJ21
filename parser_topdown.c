@@ -12,32 +12,59 @@ static scanner_t * scanner;
 static parser_t * parser;
 static symbol_tables_t sym;
 
-#define RULESET_GLOBAL_LENGTH 5
-
-static rule_t ruleset_global[RULESET_GLOBAL_LENGTH] = {
-    {parse_require,             {KEYWORD, UNSET, "require"},  true },
-    {parse_function_dec,        {KEYWORD, UNSET, "global"},   true },
-    {parse_function_def,        {KEYWORD, UNSET, "function"}, true },
-    {parse_global_identifier,   {IDENTIFIER, UNSET, NULL},    false},
-    {EOF_global_rule,           {EOF_TYPE, UNSET, NULL},      false},
-};
-
-#define RULESET_INSIDE_LENGTH 8
-
-static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
-    {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
-    {parse_if,          {KEYWORD, UNSET, "if"},     true  },
-    {parse_else,        {KEYWORD, UNSET, "else"},   true  },
-    {parse_while,       {KEYWORD, UNSET, "while"},  true  },
-    {parse_return,      {KEYWORD, UNSET, "return"}, true  },
-    {parse_end,         {KEYWORD, UNSET, "end"},    true  },
-    {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
-    {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
-};
 
 #define DEBUG false
 
 #define PRINT_WARNINGS true
+
+
+
+#define RULESET_GLOBAL_LENGTH 5 /**< Number of rules that can be used for parsing rules in global scopes */
+
+/**
+ * @return Pointer to rule that corresponds to given index (or NULL if index is to high)
+ */
+rule_t * get_global_rule(size_t index) {
+    if(index >= RULESET_GLOBAL_LENGTH) {
+        return NULL;
+    }
+
+    static rule_t ruleset_global[RULESET_GLOBAL_LENGTH] = {
+        {parse_require,             {KEYWORD, UNSET, "require"},  true },
+        {parse_function_dec,        {KEYWORD, UNSET, "global"},   true },
+        {parse_function_def,        {KEYWORD, UNSET, "function"}, true },
+        {parse_global_identifier,   {IDENTIFIER, UNSET, NULL},    false},
+        {EOF_global_rule,           {EOF_TYPE, UNSET, NULL},      false},
+    };
+
+    return &ruleset_global[index];
+}
+
+
+
+#define RULESET_INSIDE_LENGTH 8 /**< Number of rules that can be used for parsing rules in local scopes */
+
+/**
+ * @return Pointer to rule that corresponds to given index (or NULL if index is to high)
+ */
+rule_t * get_inside_rule(size_t index) {
+    if(index >= RULESET_INSIDE_LENGTH) {
+        return NULL;
+    }
+
+    static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
+        {parse_local_var,   {KEYWORD, UNSET, "local"},  true  },
+        {parse_if,          {KEYWORD, UNSET, "if"},     true  },
+        {parse_else,        {KEYWORD, UNSET, "else"},   true  },
+        {parse_while,       {KEYWORD, UNSET, "while"},  true  },
+        {parse_return,      {KEYWORD, UNSET, "return"}, true  },
+        {parse_end,         {KEYWORD, UNSET, "end"},    true  },
+        {parse_identifier,  {IDENTIFIER, UNSET, NULL},  false },
+        {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
+    };
+
+    return &ruleset_inside[index];
+}
 
 
 /**
@@ -200,13 +227,16 @@ int global_statement() {
     }
 
     //get the apropriate rule
-    rule_t rule_to_use = determine_rule(t, ruleset_global);
+    rule_t* rule_to_use = determine_rule(t, get_global_rule);
+    if(rule_to_use == NULL) {
+        return SYNTAX_ERROR;
+    }
     
     //call the right function
-    int res = rule_to_use.rule_function();
+    int res = rule_to_use->rule_function();
 
     //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
-    debug_print("global statement %s returned code %i\n", rule_to_use.rule_first.attr, res);
+    debug_print("global statement %s returned code %i\n", rule_to_use->rule_first.attr, res);
     // if(res == SYNTAX_ERROR)
     //     error_unexpected_token("This is global scope so keyword such as require or function definition or call expected",t);
     
@@ -222,13 +252,16 @@ int statement() {
     }
 
     //get the apropriate rule
-    rule_t rule_to_use = determine_rule(t, ruleset_inside);
+    rule_t* rule_to_use = determine_rule(t, get_inside_rule);
+    if(rule_to_use == NULL) {
+        return SYNTAX_ERROR;
+    }
     
     //call the right function
-    int res = rule_to_use.rule_function();
+    int res = rule_to_use->rule_function();
 
     //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
-    debug_print("statement %s returned code %i\n", rule_to_use.rule_first.attr, res);
+    debug_print("statement %s returned code %i\n", rule_to_use->rule_first.attr, res);
 
     return res;
 }
@@ -1603,29 +1636,30 @@ int parse_while() {
  * *MORE GENERAL RULE PARSING ATTEMPT
  * Determines next rule based on first lexeme
  */
-rule_t determine_rule(token_t t, rule_t ruleset[]) {
+rule_t *determine_rule(token_t t, rule_t *(*ruleset_function)(size_t)) {
     
     // size_t rules_n = sizeof(ruleset) / sizeof(rule_t);
-    for (size_t i = 0; i < RULESET_INSIDE_LENGTH; i++)
+    rule_t *rule = NULL;
+    for (size_t i = 0; (rule = ruleset_function(i)) != NULL; i++)
     {
-        token_t to_be_checked = ruleset[i].rule_first;
-        if(ruleset[i].attrib_relevant) {
+        token_t to_be_checked = rule->rule_first;
+        if(rule->attrib_relevant) {
             //the atribute is relevant (rules with same token types)
             /**< Here can be .attr because the value of token is certainly referenced by pointer */
             if(compare_token_attr(t, to_be_checked.token_type, to_be_checked.attr)) {
-                return ruleset[i];
+                return rule;
             }
         }
         else {
             //the atribute is irrelevant we check only for matching token type
             if(compare_token(t, to_be_checked.token_type)) {
-                return ruleset[i];
+                return rule;
             }
         }
     }
 
     error_unexpected_token("NO RULE can be used to parse this token! Other", t);
-    return (rule_t){error_rule, {-1, UNSET, NULL}};
+    return NULL;
 }
 
 
