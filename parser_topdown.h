@@ -1,3 +1,15 @@
+/******************************************************************************
+ *                                  IFJ21
+ *                             parser_topdown.h
+ * 
+ *          Authors: Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
+ *                  Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
+ * 
+ *              Purpose: Header file for recursive descent parser
+ * 
+ *                       Last change: 25. 11. 2021
+ *****************************************************************************/
+
 /**
  * @file parser-topdown.h
  * @brief Header file for recursive descent parser
@@ -31,7 +43,7 @@ typedef struct result{
 
 
 /**
- * @brief Return codes
+ * @brief Return codes of parser 
  */ 
 typedef enum return_codes {
     PARSE_SUCCESS = 0,
@@ -48,14 +60,11 @@ typedef enum return_codes {
 } return_codes_t;
 
 
-// typedef struct symbol_tables {
-//     symtabs_stack_t symtab_st; /**< Stack for saving symbol tables */
-//     symtab_t global; /**< Global symbol table for functions */
-//     symtab_t symtab; /**< Current symbol table*/
-// } symbol_tables_t;
+#define DECLARATION_COUNTER_MAX_LEN 32 /**< Number of digits that can the declaration counter reach */
 
-#define DECLARATION_COUNTER_MAX_LEN 32
-
+/**
+ * @brief Holds data that are needs to be propagate during parsing
+ */ 
 typedef struct parser {
     token_t * curr_func_id; /**< Pointer to token with identifier of function, that is currently parsed */
     size_t decl_cnt; /**< Declaration counter for making unique identifiers in target code */
@@ -72,13 +81,13 @@ typedef struct parser {
     symbol_tables_t sym;
 } parser_t;
 
-int error_rule();
-
 typedef struct rule {
     int (* rule_function)(parser_t *);
     token_t rule_first;
     bool attrib_relevant;
 } rule_t;
+
+int error_rule();
 
 /**
  * @return Pointer to rule that corresponds to given index (or NULL if index is to high)
@@ -173,15 +182,13 @@ bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type);
  * @param id_number Pointer to integer where will be written amount of identifiers on left side of assignment
  */ 
 int assignment_lside(parser_t *parser, token_t* start_id, 
-                     string_t *id_types, size_t *id_number, 
-                     tok_stack_t *var_names);
+                     string_t *id_types, tok_stack_t *var_names);
 
 
 /**
  * @brief Parses right side of assignment
  */ 
-int assignment_rside(parser_t *parser, token_t* start_id, 
-                     string_t *id_types, size_t *id_number);
+int assignment_rside(parser_t *parser, string_t *id_types);
 
 
 /**
@@ -275,7 +282,7 @@ int func_def_params_prolog(parser_t *parser, token_t *param_id);
 /**
  * @brief Parses parameters in function definition (and makes semantics checks)
  */ 
-int func_def_params(parser_t *parser, token_t *id_token, 
+int func_def_params(parser_t *p, token_t *id_token, 
                     bool was_decl, sym_data_t *f_data);
 
 
@@ -290,7 +297,7 @@ int check_function_signature(parser_t *parser, bool id, bool left_bracket);
 /**
  * @brief Parses function return values when function is defined
  */ 
-int func_def_returns(parser_t *parser, token_t *id_token, 
+int func_def_returns(parser_t *p, token_t *id_token, 
                      bool was_decl, sym_data_t *f_data);
 
 
@@ -436,7 +443,7 @@ bool lookahead_token(parser_t *parser, token_type_t expecting);
  * @brief Checks wheter the next token has the specified type and attribute
  * @return returns true if both expected type and attribute are equal to real ones
  **/
-bool lookahead_token_attr(parser_t *parser, token_type_t expecting, char * expecting_attr);
+bool lookahead_token_attr(parser_t *p, token_type_t exp_type, char * exp_attr);
 
 /**
  * @param expecting The token type to expect
@@ -451,7 +458,7 @@ bool check_next_token(parser_t *parser, token_type_t expecting);
  * @brief Shows error if there is an unexpected token type or attribute
  * @return returns true the expected token is there
  **/
-bool check_next_token_attr(parser_t *parser, token_type_t expecting_type, char * expecting_attr);
+bool check_next_token_attr(parser_t *p, token_type_t exp_type, char * exp_attr);
 
 /**
  * @param expecting The token type to expect
@@ -466,7 +473,8 @@ bool compare_token(token_t t, token_type_t expecting);
  * @brief Compares the expected token type & parameter to token 't'
  * @return returns true the token types & parameters are equal
  **/
-bool compare_token_attr(parser_t *parser, token_t t, token_type_t expecting_type, char * expecting_attr);
+bool compare_token_attr(parser_t *parser, token_t t, 
+                        token_type_t exp_type, char * exp_attr);
 
 /**
  * @return True if token is datatype
@@ -486,6 +494,13 @@ int parse_datatype(parser_t *parser);
  * @note checks only for INTEGER, NUMBER or STRING
  */ 
 bool is_expression(parser_t *parser, token_t t);
+
+
+/**
+ * @brief Returns first character of given string (primary returned type of function)
+ * @return Primary return type of function
+ */ 
+sym_dtype_t prim_dtype(string_t *type_string);
 
 
 /**
