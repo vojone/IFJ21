@@ -1,5 +1,6 @@
 require "ifj21"
 function main()
-	write(reads())
+	local a : string = "hello"
+	write(reads(),"\n")
 end
 main()

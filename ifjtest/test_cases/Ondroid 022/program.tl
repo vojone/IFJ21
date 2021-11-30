@@ -5,6 +5,7 @@ function main()
 	local b:string = "there!"
 
 	local x : integer 
+	-- error při strlen většího výrazu v závorce
 	x = #"help" * #a + #b + #a * #(a..b)
 	write(x, "\n")
 end

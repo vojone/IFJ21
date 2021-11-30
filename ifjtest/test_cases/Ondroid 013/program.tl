@@ -4,7 +4,7 @@ function main()
     local x:integer = 5
     local y:number = 4.9
     local z:string = "hello there"
-    local n:nil = nil
+    local n:nil
 
     if x == nil then
         write("yes\n")

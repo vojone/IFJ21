@@ -4,7 +4,7 @@ function main()
     local b : integer = 2
     write("A(1) před IF = ", a ,"\n")
     if b == 2 then
-        a = 3
+        local a : integer = 3
         write("A(3) v = ", a ,"\n")
     end
     write("A(1) za IF = ", a ,"\n")
