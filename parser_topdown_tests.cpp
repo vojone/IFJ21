@@ -2095,6 +2095,51 @@ TEST_F(function_inside_argument2, syntax){
 }
 
 
+
+class function_inside_return1 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+function fdoesntworko() : string, string, number, integer
+local b : string
+return fdoesntworko()
+end
+function print(a : integer, b:integer)
+write(a,b)
+end
+			)";
+		}
+};
+
+TEST_F(function_inside_return1, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
+
+
+class visibility1 : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+function g() 
+    local a : integer = 8 
+    if a == 8 then
+        local a : integer = a --[[ to vnitřní 'a' by mělo být taky 8]]
+        write(a)
+    end
+end
+			)";
+		}
+};
+
+TEST_F(visibility1, syntax){
+	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+}
+
+
 int main(int argc, char **argv) {
 	::testing::InitGoogleTest(&argc, argv);
 

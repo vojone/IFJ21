@@ -35,7 +35,7 @@ static rule_t ruleset_inside[RULESET_INSIDE_LENGTH] = {
     {EOF_fun_rule,      {EOF_TYPE, UNSET, NULL},    false },
 };
 
-#define DEBUG true
+#define DEBUG false
 
 #define PRINT_WARNINGS true
 
@@ -464,20 +464,52 @@ sym_dtype_t keyword_to_dtype(token_t * t, scanner_t *sc) {
 }
 
 
+/**
+ * @brief Inserts variable into current symbol table
+ */ 
+void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
+
+    //size_t id_len = strlen(get_attr(id_token, scanner));
+    size_t cur_f_len = strlen(get_attr(parser->curr_func_id, scanner));
+    string_t var_name;
+    str_init(&var_name);
+
+    str_cpy_tostring(&var_name, get_attr(parser->curr_func_id, scanner), cur_f_len); //'name_of_current_function'
+    app_char('$', &var_name); //'name_of_current_function'$
+    app_str(&var_name, get_attr(id_token, scanner)); //'name_of_current_function'$'name_of_variable_in_ifj21'
+    app_char('$', &var_name); //'name_of_current_function'$'name_of_variable_in_ifj21'$
+
+    char conv_buff[DECLARATION_COUNTER_MAX_LEN];
+    snprintf(conv_buff, DECLARATION_COUNTER_MAX_LEN, "%ld", parser->decl_cnt);
+
+    app_str(&var_name, conv_buff);
+    
+    sym_data_t symdata_var = {.name = var_name, .type = VAR, 
+                              .dtype = dtype, .status = status};
+
+    debug_print("Putting %s into symbol table... its name is %s and status is %d\n", get_attr(id_token, scanner), to_str(&var_name), status);
+
+    insert_sym(&sym.symtab, get_attr(id_token, scanner), symdata_var);
+}
+
+
 //<value-assignment>
 /**
  * @brief Parses assignment after declaration of variable in function
  * @warning This function expects that the current token was get by lookahead
  * @note If everything went well, changes variable status to defined
- */ 
-int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *var_id) {
-    if(lookahead_token_attr(OPERATOR, "=")) { 
+ */
+int local_var_assignment(sym_status_t *status, sym_dtype_t dtype, token_t *var_id) {
+
+    if(lookahead_token_attr(OPERATOR, "=")) {
+        //Delete it, because it is hiding same name variables in outer scope (they can be used in initialization)
+        delete_sym(&sym.symtab, get_attr(var_id, scanner));
+
         get_next_token(scanner);
         //if there is = we check the value assignment
         debug_print("Calling precedence parser...\n");
 
         char *id_char = get_attr(var_id, scanner);
-        tree_node_t *symbol = search_in_tables(&(sym.symtab_st), &(sym.symtab), id_char);
         
         string_t ret_types;
         str_init(&ret_types);
@@ -492,13 +524,15 @@ int local_var_assignment(token_t *current_token, sym_status_t *status, token_t *
             *status = DEFINED; //Ok
         }
 
-        if(!is_valid_assign(symbol->data.dtype, char_to_dtype(to_str(&ret_types)[0]))) {
+        if(!is_valid_assign(dtype, char_to_dtype(to_str(&ret_types)[0]))) {
             error_semantic("Incomatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
             str_dtor(&ret_types);
             return SEMANTIC_ERROR_ASSIGNMENT;
         }
 
         str_dtor(&ret_types);
+
+        ins_var(var_id, *status, dtype); //After initialization, it must be inserted to the symtable again
 
         //generate assigment code
         char * unique_name = get_unique_name(&sym.symtab_st, &sym.symtab, var_id, scanner).str;
@@ -537,35 +571,6 @@ int local_var_datatype(token_t *current_token, sym_dtype_t *var_type) {
     }
 
     return PARSE_SUCCESS;
-}
-
-
-/**
- * @brief Inserts variable into current symbol table
- */ 
-void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
-
-    //size_t id_len = strlen(get_attr(id_token, scanner));
-    size_t cur_f_len = strlen(get_attr(parser->curr_func_id, scanner));
-    string_t var_name;
-    str_init(&var_name);
-
-    str_cpy_tostring(&var_name, get_attr(parser->curr_func_id, scanner), cur_f_len); //'name_of_current_function'
-    app_char('$', &var_name); //'name_of_current_function'$
-    app_str(&var_name, get_attr(id_token, scanner)); //'name_of_current_function'$'name_of_variable_in_ifj21'
-    app_char('$', &var_name); //'name_of_current_function'$'name_of_variable_in_ifj21'$
-
-    char conv_buff[DECLARATION_COUNTER_MAX_LEN];
-    snprintf(conv_buff, DECLARATION_COUNTER_MAX_LEN, "%ld", parser->decl_cnt);
-
-    app_str(&var_name, conv_buff);
-    
-    sym_data_t symdata_var = {.name = var_name, .type = VAR, 
-                              .dtype = dtype, .status = status};
-
-    debug_print("Putting %s into symbol table... its name is %s and status is %d\n", get_attr(id_token, scanner), to_str(&var_name), status);
-
-    insert_sym(&sym.symtab, get_attr(id_token, scanner), symdata_var);
 }
 
 
@@ -610,20 +615,14 @@ int parse_local_var() {
     retval = local_var_datatype(&t, &var_type);
 
     //insert to symtab and generate code
-    //? we have to insert the function to symtable before calling local_var_assignment
     ins_var(&var_id, status, var_type);
-    parser->decl_cnt++;
     generate_declare_variable(&sym.symtab_st, &sym.symtab, &var_id,scanner);
 
     //There can be a value assignment
-    retval = (retval == PARSE_SUCCESS) ? local_var_assignment(&t, &status, &var_id) : retval;
+    retval = (retval == PARSE_SUCCESS) ? local_var_assignment(&status, var_type, &var_id) : retval;
     
-    
-    // Adding variable and its datatype into symtable
-    // if(retval == PARSE_SUCCESS) {
-        
-    // }
-    
+    parser->decl_cnt++;
+
     return retval;
 }
 
