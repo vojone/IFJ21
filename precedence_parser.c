@@ -346,6 +346,10 @@ int fcall_parser(tree_node_t *symbol,
                  tok_buffer_t *tok_b) {
 
     token_t func_id = tok_b->current;
+
+
+
+
     char *params_s = to_str(&symbol->data.params);
 
     token_aging(tok_b);
@@ -865,26 +869,24 @@ expr_el_t non_term(string_t *data_type, bool is_zero) {
  * @param ops Stack with operands
  * @param rule Rule containing information about result type and operand data types
  * @param err_m Pointer will be set to the string that explains semantic error in expression (if occured)
- */ 
-//TODO pushing i only works for static values
-//TODO we need to know wheter it is static value or a variable 
+ */  
 int reduce(pp_stack_t *st, pp_stack_t ops, 
            symbol_tables_t *syms,
            expr_rule_t *rule,
            string_t *result_type,
            bool will_be_zero,
            pp_stack_t *garbage) {
-    
+    //todo fix function calls being generated as variables
     if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
 
         if(element_terminal.is_fcall) {
             //Only function was called during reduction 
-            fprintf(stderr, "Only function was called!\n");
-        }
-
-        if(res == NULL) {
+            // fprintf(stderr, "Only function was called!\n");
+            //code for function
+            generate_call_function(element_terminal.value);
+        }else if(res == NULL) {
             sym_dtype_t dtype = char_to_dtype(to_str(&element_terminal.dtype)[0]);
             //We are pushing a static value
             generate_value_push(VAL, dtype, element_terminal.value);
@@ -1202,7 +1204,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *
     print_err_message(&retval, &tok_buff, &failed_op_msg);
     free_everything(&stack, &garbage);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
+    token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return retval;
 }
 

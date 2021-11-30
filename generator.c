@@ -17,6 +17,13 @@
 
 //?done:TODO work on function calling with arguments
 //TODO write tests (probably not in Google Tests)
+//TODO return null implicitly
+//?done:todo variables assigned nil implicitly
+//?done:todo checkzero for operations
+//?done:todo checknil for operation
+//todo builtin functions
+//todo cycle declaration
+//todo write "nil" when input nil
 
 #include "generator.h"
 
@@ -316,12 +323,25 @@ void print_program(prog_t *source) {
 
 
 void generate_init(){
+    
     code_print(".IFJcode21");
     code_print("CREATEFRAME");
+
+    //builtin
     generate_write_function();
     generate_reads_function();
-    generate_checkzero_function();
+    generate_readi_function();
+    generate_readn_function();
+    generate_tointeger_function();
+    
+    //operation functions
     generate_unaryminus_function();
+
+    //custom builtin
+    generate_checkzero_function_float();
+    generate_checkzero_function_int();
+    generate_checknil_function_single();
+    generate_checknil_function_double();
     generate_same_types();
     generate_force_floats();
 }
@@ -378,6 +398,16 @@ void generate_call_function(const char *name){
     code_print("POPFRAME");
 }
 
+void generate_additional_returns(size_t n){
+    for (size_t i = 0; i < n; i++)
+    {
+        code_print("PUSHS nil@nil");
+    }
+}
+
+void generate_return(){
+    code_print("RETURN");
+}
 
 /**
  * *---------VARIABLES---------
@@ -386,6 +416,7 @@ void generate_call_function(const char *name){
 void generate_declare_variable( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner){
     string_t name = get_unique_name(sym_stack,symtab,var_id,scanner);
     code_print("DEFVAR TF@&VAR&%s",name.str);
+    code_print("MOVE TF@&VAR&%s nil@nil",name.str);
 }
 
 
@@ -417,7 +448,7 @@ void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token
             string_t token_s;
             str_init(&token_s);
             to_ascii(token, &token_s);
-
+            code_print("#here");
             code_print("PUSHS %s@%s",convert_type(dtype), token_s.str);
             
             str_dtor(&token_s);
@@ -478,31 +509,38 @@ void generate_while_end(size_t n){
  * *---------OPERATIONS---------
  */ 
 void generate_operation_add(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("ADDS");
 }
 
 void generate_operation_sub(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("SUBS");
 }
 
 void generate_operation_mul(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("MULS");
 }
 
 void generate_operation_div(){
-    // generate_call_function("$OP$checkzero");
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$forcefloats");
+    generate_call_function("$OP$checkzero_float");
     code_print("DIVS");
 }
 
 void generate_operation_idiv(){
+    generate_call_function("$OP$checknil_double");
+    generate_call_function("$OP$checkzero_int");
     code_print("IDIVS");
 }
 
 void generate_operation_unary_minus(){
+    generate_call_function("$OP$checknil_single");
     generate_call_function("$OP$unaryminus");
 }
 
@@ -514,6 +552,7 @@ void generate_operation_eq(){
 }
 
 void generate_operation_gt(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A>B");
     code_print("GTS");
@@ -521,6 +560,7 @@ void generate_operation_gt(){
 }
 
 void generate_operation_lt(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A<B");
     code_print("LTS");
@@ -528,6 +568,7 @@ void generate_operation_lt(){
 }
 
 void generate_operation_gte(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A>=B");
     code_print("PUSHFRAME");
@@ -561,6 +602,7 @@ void generate_operation_gte(){
 }
 
 void generate_operation_lte(){
+    generate_call_function("$OP$checknil_double");
     generate_call_function("$BUILTIN$sametypes");
     code_print("# start operator A<=B");
     code_print("PUSHFRAME");
@@ -601,6 +643,8 @@ void generate_operation_strlen(){
     code_print("PUSHFRAME");
     code_print("CREATEFRAME");
 
+    generate_call_function("$OP$checknil_single");
+
     //define temp operands A
     code_print("DEFVAR TF@!TMP!A");
     code_print("DEFVAR TF@!TMP!RESULT");
@@ -619,6 +663,8 @@ void generate_operation_concat(){
     code_print("# start operator A..B");
     code_print("PUSHFRAME");
     code_print("CREATEFRAME");
+
+    generate_call_function("$OP$checknil_double");
 
     //define temp operands A & B
     code_print("DEFVAR TF@!TMP!A");
@@ -651,28 +697,137 @@ void generate_reads_function(){
     generate_start_function("reads");
     code_print("DEFVAR TF@$TEMP$");
     code_print("READ TF@$TEMP$ string");
+    code_print("PUSHS TF@$TEMP$");
     generate_end_function("reads");
 }
 
-void generate_checkzero_function(){
+void generate_readi_function(){
+    generate_start_function("readi");
+    code_print("DEFVAR TF@$TEMP$");
+    code_print("READ TF@$TEMP$ int");
+    code_print("PUSHS TF@$TEMP$");
+    generate_end_function("readi");
+}
+
+void generate_readn_function(){
+    generate_start_function("readn");
+    code_print("DEFVAR TF@$TEMP$");
+    code_print("READ TF@$TEMP$ float");
+    code_print("PUSHS TF@$TEMP$");
+    generate_end_function("readn");
+}
+
+void generate_tointeger_function(){
+    generate_start_function("tointeger");
+    //local a = a
+    code_print("DEFVAR TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("POPS TF@&VAR&$TEMP_CHECKNIL$");
+    //if(a != nil) 
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS nil@nil");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    
+    code_print("JUMPIFNEQS $TOINTCONV$");
+    code_print("JUMP $TOINTSKIP$");
+    
+    code_print("LABEL $TOINTCONV$");
+    //convert
+    code_print("FLOAT2INTS");
+
+    code_print("LABEL $TOINTSKIP$");
+    generate_end_function("tointeger");
+}
+
+void generate_checknil_function_single(){
     //->[b,a]
-    generate_start_function("$OP$checkzero");   //function write()
+    generate_start_function("$OP$checknil_single");   //function write()
+    generate_parameter("$TEMP_CHECKNIL$");
+
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS nil@nil");
+    code_print("JUMPIFNEQS $CHECKNIL_single$");
+    code_print("EXIT int@8");
+    code_print("LABEL $CHECKNIL_single$");
+
+    generate_end_function("$OP$checknil_single");         //end
+}
+
+void generate_checknil_function_double(){
+    //->[b,a]
+    generate_start_function("$OP$checknil_double");   //function write()
+
+    //get param B
+    generate_parameter("$TEMP$B");
+    
+    //get param A
+    generate_parameter("$TEMP$A");
+    
+    //check if A is NIL
+    code_print("PUSHS nil@nil");
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+
+    //check if B
+    code_print("PUSHS nil@nil");
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+    
+    //CHECK B
+    code_print("JUMPIFNEQS $SKIPEXIT1$");
+    code_print("EXIT int@8");
+    code_print("LABEL $SKIPEXIT1$");
+
+    //CHECK A
+    code_print("JUMPIFNEQS $SKIPEXIT2$");
+    code_print("EXIT int@8");
+    code_print("LABEL $SKIPEXIT2$");
+    
+    //end
+    code_print("LABEL $ENDCHECKNILDOUBLE$");
+    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS TF@&VAR&$TEMP$B");
+
+
+    generate_end_function("$OP$checknil_double");         //end
+}
+
+void generate_checkzero_function_int(){
+    //->[b,a]
+    generate_start_function("$OP$checkzero_int");   //function write()
     generate_parameter("$TEMP_CHECKZERO$");
 
-    code_print("PUSHS float@%a",0.0f);
     code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
-    code_print("JUMPIFNEQS $CHECKZERO$");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("PUSHS int@%i",0);
+    code_print("JUMPIFNEQS $CHECKZERO_int$");
     code_print("EXIT int@9");
-    code_print("LABEL $CHECKZERO$");
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("LABEL $CHECKZERO_int$");
 
-    generate_end_function("$OP$checkzero");         //end
+    generate_end_function("$OP$checkzero_int");         //end
+
+}
+
+void generate_checkzero_function_float(){
+    //->[b,a]
+    generate_start_function("$OP$checkzero_float");   //function write()
+    generate_parameter("$TEMP_CHECKZERO$");
+
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("PUSHS float@%a",0.0f);
+    code_print("JUMPIFNEQS $CHECKZERO_float$");
+    code_print("EXIT int@9");
+    code_print("LABEL $CHECKZERO_float$");
+
+    generate_end_function("$OP$checkzero_float");         //end
 
 }
 
 void generate_unaryminus_function(){
     //start
     generate_start_function("$OP$unaryminus");
+    
+    generate_call_function("$OP$checknil_single");
+
     generate_parameter("$TEMP$");
     //define string for type
     code_print("DEFVAR TF@$TEMP$type");

@@ -502,7 +502,7 @@ void ins_var(token_t *id_token, sym_status_t status, sym_dtype_t dtype) {
 int local_var_assignment(sym_status_t *status, sym_dtype_t dtype, token_t *var_id) {
 
     if(lookahead_token_attr(OPERATOR, "=")) {
-        //Delete it, because it is hiding same name variables in outer scope (they can be used in initialization)
+        //Delete it temporarly, because it is hiding same name variables in outer scope (they can be used in initialization)
         delete_sym(&sym.symtab, get_attr(var_id, scanner));
 
         get_next_token(scanner);
@@ -1459,8 +1459,9 @@ int parse_return() {
         else if(!is_expression(t)) {
             finished = true;
             if(len(&symbol->data.ret_types) > 0) {
-                //TODO
                 //Implicit nil return
+                size_t difference = len(&symbol->data.ret_types)  - returns_cnt;
+                generate_additional_returns(difference);
             }
 
             break;
@@ -1502,8 +1503,9 @@ int parse_return() {
         if(!comma) {
             finished = true;
             if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
-                //TODO
                 //Implicit nil return
+                size_t difference = (len(&symbol->data.ret_types) -1) - returns_cnt;
+                generate_additional_returns(difference);
             }
         }
         else {
@@ -1519,6 +1521,8 @@ int parse_return() {
     }
 
     parser->found_return = true;
+
+    generate_return();
     
     return PARSE_SUCCESS;
 }
@@ -1538,6 +1542,7 @@ int parse_while() {
 
     //save the counter to prevent overwriting in nested loops
     size_t current_cnt = parser->loop_cnt;
+    parser->loop_cnt++;
 
     //generate while beginning
     generate_while_condition_beginning(current_cnt);

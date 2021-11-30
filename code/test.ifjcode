@@ -23,6 +23,7 @@ LABEL $FUN$reads
 CREATEFRAME
 DEFVAR TF@$TEMP$
 READ TF@$TEMP$ string
+PUSHS TF@$TEMP$
 
 
 RETURN
@@ -30,23 +31,52 @@ LABEL $END_FUN$reads
 
 
 
-JUMP $END_FUN$$OP$checkzero
-#function $OP$checkzero ()
-LABEL $FUN$$OP$checkzero
+JUMP $END_FUN$readi
+#function readi ()
+LABEL $FUN$readi
 CREATEFRAME
-#define param $TEMP_CHECKZERO$
-DEFVAR TF@&VAR&$TEMP_CHECKZERO$
-POPS TF@&VAR&$TEMP_CHECKZERO$
-PUSHS float@0x0p+0
-PUSHS TF@&VAR&$TEMP_CHECKZERO$
-JUMPIFNEQS $CHECKZERO$
-EXIT int@9
-LABEL $CHECKZERO$
-PUSHS TF@&VAR&$TEMP_CHECKZERO$
+DEFVAR TF@$TEMP$
+READ TF@$TEMP$ int
+PUSHS TF@$TEMP$
 
 
 RETURN
-LABEL $END_FUN$$OP$checkzero
+LABEL $END_FUN$readi
+
+
+
+JUMP $END_FUN$readn
+#function readn ()
+LABEL $FUN$readn
+CREATEFRAME
+DEFVAR TF@$TEMP$
+READ TF@$TEMP$ float
+PUSHS TF@$TEMP$
+
+
+RETURN
+LABEL $END_FUN$readn
+
+
+
+JUMP $END_FUN$tointeger
+#function tointeger ()
+LABEL $FUN$tointeger
+CREATEFRAME
+DEFVAR TF@&VAR&$TEMP_CHECKNIL$
+POPS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+JUMPIFNEQS $TOINTCONV$
+JUMP $TOINTSKIP$
+LABEL $TOINTCONV$
+FLOAT2INTS
+LABEL $TOINTSKIP$
+
+
+RETURN
+LABEL $END_FUN$tointeger
 
 
 
@@ -54,6 +84,10 @@ JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
 CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
 #define param $TEMP$
 DEFVAR TF@&VAR&$TEMP$
 POPS TF@&VAR&$TEMP$
@@ -73,6 +107,96 @@ MULS
 
 RETURN
 LABEL $END_FUN$$OP$unaryminus
+
+
+
+JUMP $END_FUN$$OP$checkzero_float
+#function $OP$checkzero_float ()
+LABEL $FUN$$OP$checkzero_float
+CREATEFRAME
+#define param $TEMP_CHECKZERO$
+DEFVAR TF@&VAR&$TEMP_CHECKZERO$
+POPS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS float@0x0p+0
+JUMPIFNEQS $CHECKZERO_float$
+EXIT int@9
+LABEL $CHECKZERO_float$
+
+
+RETURN
+LABEL $END_FUN$$OP$checkzero_float
+
+
+
+JUMP $END_FUN$$OP$checkzero_int
+#function $OP$checkzero_int ()
+LABEL $FUN$$OP$checkzero_int
+CREATEFRAME
+#define param $TEMP_CHECKZERO$
+DEFVAR TF@&VAR&$TEMP_CHECKZERO$
+POPS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS TF@&VAR&$TEMP_CHECKZERO$
+PUSHS int@0
+JUMPIFNEQS $CHECKZERO_int$
+EXIT int@9
+LABEL $CHECKZERO_int$
+
+
+RETURN
+LABEL $END_FUN$$OP$checkzero_int
+
+
+
+JUMP $END_FUN$$OP$checknil_single
+#function $OP$checknil_single ()
+LABEL $FUN$$OP$checknil_single
+CREATEFRAME
+#define param $TEMP_CHECKNIL$
+DEFVAR TF@&VAR&$TEMP_CHECKNIL$
+POPS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS TF@&VAR&$TEMP_CHECKNIL$
+PUSHS nil@nil
+JUMPIFNEQS $CHECKNIL_single$
+EXIT int@8
+LABEL $CHECKNIL_single$
+
+
+RETURN
+LABEL $END_FUN$$OP$checknil_single
+
+
+
+JUMP $END_FUN$$OP$checknil_double
+#function $OP$checknil_double ()
+LABEL $FUN$$OP$checknil_double
+CREATEFRAME
+#define param $TEMP$B
+DEFVAR TF@&VAR&$TEMP$B
+POPS TF@&VAR&$TEMP$B
+#define param $TEMP$A
+DEFVAR TF@&VAR&$TEMP$A
+POPS TF@&VAR&$TEMP$A
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP$A
+PUSHS nil@nil
+PUSHS TF@&VAR&$TEMP$B
+JUMPIFNEQS $SKIPEXIT1$
+EXIT int@8
+LABEL $SKIPEXIT1$
+JUMPIFNEQS $SKIPEXIT2$
+EXIT int@8
+LABEL $SKIPEXIT2$
+LABEL $ENDCHECKNILDOUBLE$
+PUSHS TF@&VAR&$TEMP$A
+PUSHS TF@&VAR&$TEMP$B
+
+
+RETURN
+LABEL $END_FUN$$OP$checknil_double
 
 
 
@@ -149,14 +273,30 @@ PUSHS TF@&VAR&$TEMP$B
 RETURN
 LABEL $END_FUN$$BUILTIN$forcefloats
 
-PUSHS int@15
-PUSHS int@5
-# $BUILTIN$forcefloats()
+
+
+JUMP $END_FUN$g
+#function g ()
+LABEL $FUN$g
+CREATEFRAME
+# readn()
 PUSHFRAME
-CALL $FUN$$BUILTIN$forcefloats
+CALL $FUN$readn
 POPFRAME
-DIVS
+# tointeger()
+PUSHFRAME
+CALL $FUN$tointeger
+POPFRAME
 # write()
 PUSHFRAME
 CALL $FUN$write
+POPFRAME
+
+
+RETURN
+LABEL $END_FUN$g
+
+# g()
+PUSHFRAME
+CALL $FUN$g
 POPFRAME
