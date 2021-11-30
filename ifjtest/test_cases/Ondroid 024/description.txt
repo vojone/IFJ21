@@ -1,0 +1,1 @@
+Implicit return of a function (all values should be nil).

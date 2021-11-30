@@ -1,0 +1,1 @@
+Compare nil integer with nil number.

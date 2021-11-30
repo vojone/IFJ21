@@ -1,0 +1,1 @@
+Try to compare number with string. Compilation should exit with error.
