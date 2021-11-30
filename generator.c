@@ -689,7 +689,17 @@ void generate_operation_concat(){
 void generate_write_function(){
     generate_start_function("write");   //function write()
     generate_parameter("str");
+
+    code_print("PUSHS TF@&VAR&%s","str");
+    code_print("PUSHS nil@nil");
+    code_print("JUMPIFNEQS $CHECKNIL_WRITE$");
+    code_print("WRITE string@nil");
+
+    code_print("JUMP $WRITESKIP$");
+    code_print("LABEL $CHECKNIL_WRITE$");
     code_print("WRITE TF@&VAR&%s","str");  //writes it
+    
+    code_print("LABEL $WRITESKIP$");
     generate_end_function("write");         //end
 }
 
