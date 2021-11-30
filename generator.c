@@ -17,7 +17,7 @@
 
 //?done:TODO work on function calling with arguments
 //TODO write tests (probably not in Google Tests)
-//TODO return null implicitly
+//?done:TODO return null implicitly
 //?done:todo variables assigned nil implicitly
 //?done:todo checkzero for operations
 //?done:todo checknil for operation
@@ -26,6 +26,7 @@
 //todo write "nil" when input nil
 
 #include "generator.h"
+#define VAR_FORMAT "TF@&VAR&"
 
 
 /***                 Functions for internal represenation                  ***/
@@ -378,8 +379,8 @@ void generate_parameters( void *sym_stack,symtab_t *symtab , void *param_names, 
 
 void generate_parameter(const char * name){
     code_print("#define param %s",name);
-    code_print("DEFVAR TF@&VAR&%s",name); //creates temporary variable
-    code_print("POPS TF@&VAR&%s",name);   //assigns one argument from stack to temporary variable
+    code_print("DEFVAR %s%s",VAR_FORMAT,name); //creates temporary variable
+    code_print("POPS %s%s",VAR_FORMAT,name);   //assigns one argument from stack to temporary variable
 }
 
 
@@ -415,8 +416,8 @@ void generate_return(){
 
 void generate_declare_variable( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner){
     string_t name = get_unique_name(sym_stack,symtab,var_id,scanner);
-    code_print("DEFVAR TF@&VAR&%s",name.str);
-    code_print("MOVE TF@&VAR&%s nil@nil",name.str);
+    code_print("DEFVAR %s%s",VAR_FORMAT,name.str);
+    code_print("MOVE %s%s nil@nil",VAR_FORMAT,name.str);
 }
 
 
@@ -435,14 +436,14 @@ void generate_multiple_assignment( void *sym_stack,symtab_t *symtab , void *para
 
 void generate_assign_value(const char * name){
     code_print("#assign value to %s",name);
-    code_print("POPS TF@&VAR&%s",name);   //assigns one argument from stack to temporary variable
+    code_print("POPS %s%s",VAR_FORMAT,name);   //assigns one argument from stack to temporary variable
 }
 
 
 void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * token ){
     
     if(type == VAR){
-        code_print("PUSHS TF@&VAR&%s",token);
+        code_print("PUSHS %s%s",VAR_FORMAT,token);
     }else if(type == VAL){
         if(dtype == STR){
             string_t token_s;
@@ -549,6 +550,14 @@ void generate_operation_eq(){
     code_print("# start operator A==B");
     code_print("EQS");
     code_print("# end operator A==B");
+}
+
+void generate_operation_neq(){
+    generate_call_function("$BUILTIN$sametypes");
+    code_print("# start operator A~=B");
+    code_print("EQS");
+    code_print("NOTS");
+    code_print("# end operator A~=B");
 }
 
 void generate_operation_gt(){
@@ -690,14 +699,14 @@ void generate_write_function(){
     generate_start_function("write");   //function write()
     generate_parameter("str");
 
-    code_print("PUSHS TF@&VAR&%s","str");
+    code_print("PUSHS %s%s",VAR_FORMAT,"str");
     code_print("PUSHS nil@nil");
     code_print("JUMPIFNEQS $CHECKNIL_WRITE$");
     code_print("WRITE string@nil");
 
     code_print("JUMP $WRITESKIP$");
     code_print("LABEL $CHECKNIL_WRITE$");
-    code_print("WRITE TF@&VAR&%s","str");  //writes it
+    code_print("WRITE %s%s",VAR_FORMAT,"str");  //writes it
     
     code_print("LABEL $WRITESKIP$");
     generate_end_function("write");         //end
@@ -730,12 +739,12 @@ void generate_readn_function(){
 void generate_tointeger_function(){
     generate_start_function("tointeger");
     //local a = a
-    code_print("DEFVAR TF@&VAR&$TEMP_CHECKNIL$");
-    code_print("POPS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("DEFVAR %s$TEMP_CHECKNIL$",VAR_FORMAT);
+    code_print("POPS %s$TEMP_CHECKNIL$",VAR_FORMAT);
     //if(a != nil) 
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS %s$TEMP_CHECKNIL$",VAR_FORMAT);
     code_print("PUSHS nil@nil");
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS %s$TEMP_CHECKNIL$",VAR_FORMAT);
     
     code_print("JUMPIFNEQS $TOINTCONV$");
     code_print("JUMP $TOINTSKIP$");
@@ -753,8 +762,8 @@ void generate_checknil_function_single(){
     generate_start_function("$OP$checknil_single");   //function write()
     generate_parameter("$TEMP_CHECKNIL$");
 
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKNIL$");
+    code_print("PUSHS %s$TEMP_CHECKNIL$",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP_CHECKNIL$",VAR_FORMAT);
     code_print("PUSHS nil@nil");
     code_print("JUMPIFNEQS $CHECKNIL_single$");
     code_print("EXIT int@8");
@@ -775,11 +784,11 @@ void generate_checknil_function_double(){
     
     //check if A is NIL
     code_print("PUSHS nil@nil");
-    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
 
     //check if B
     code_print("PUSHS nil@nil");
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
     
     //CHECK B
     code_print("JUMPIFNEQS $SKIPEXIT1$");
@@ -793,8 +802,8 @@ void generate_checknil_function_double(){
     
     //end
     code_print("LABEL $ENDCHECKNILDOUBLE$");
-    code_print("PUSHS TF@&VAR&$TEMP$A");
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
 
 
     generate_end_function("$OP$checknil_double");         //end
@@ -805,8 +814,8 @@ void generate_checkzero_function_int(){
     generate_start_function("$OP$checkzero_int");   //function write()
     generate_parameter("$TEMP_CHECKZERO$");
 
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("PUSHS %s$TEMP_CHECKZERO$",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP_CHECKZERO$",VAR_FORMAT);
     code_print("PUSHS int@%i",0);
     code_print("JUMPIFNEQS $CHECKZERO_int$");
     code_print("EXIT int@9");
@@ -821,8 +830,8 @@ void generate_checkzero_function_float(){
     generate_start_function("$OP$checkzero_float");   //function write()
     generate_parameter("$TEMP_CHECKZERO$");
 
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
-    code_print("PUSHS TF@&VAR&$TEMP_CHECKZERO$");
+    code_print("PUSHS %s$TEMP_CHECKZERO$",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP_CHECKZERO$",VAR_FORMAT);
     code_print("PUSHS float@%a",0.0f);
     code_print("JUMPIFNEQS $CHECKZERO_float$");
     code_print("EXIT int@9");
@@ -841,7 +850,7 @@ void generate_unaryminus_function(){
     generate_parameter("$TEMP$");
     //define string for type
     code_print("DEFVAR TF@$TEMP$type");
-    code_print("TYPE TF@$TEMP$type TF@&VAR&$TEMP$");
+    code_print("TYPE TF@$TEMP$type %s$TEMP$",VAR_FORMAT);
     
     //generate 
     code_print("PUSHS TF@$TEMP$type");
@@ -852,7 +861,7 @@ void generate_unaryminus_function(){
     code_print("LABEL $UNARY$FLOAT$");
         code_print("PUSHS float@%a",-1.0f);
     code_print("LABEL $UNARY$END$");
-    code_print("PUSHS TF@&VAR&$TEMP$");
+    code_print("PUSHS %s$TEMP$",VAR_FORMAT);
     code_print("MULS");
     generate_end_function("$OP$unaryminus");
 }
@@ -863,12 +872,12 @@ void generate_same_types(){
     //get param B
     generate_parameter("$TEMP$B");
     code_print("DEFVAR TF@$TEMP$typeB");
-    code_print("TYPE TF@$TEMP$typeB TF@&VAR&$TEMP$B");
+    code_print("TYPE TF@$TEMP$typeB %s$TEMP$B",VAR_FORMAT);
     
     //get param A
     generate_parameter("$TEMP$A");
     code_print("DEFVAR TF@$TEMP$typeA");
-    code_print("TYPE TF@$TEMP$typeA TF@&VAR&$TEMP$A");
+    code_print("TYPE TF@$TEMP$typeA %s$TEMP$A",VAR_FORMAT);
     
 
     code_print("PUSHS TF@$TEMP$typeA");
@@ -879,21 +888,21 @@ void generate_same_types(){
     code_print("PUSHS TF@$TEMP$typeA");
     code_print("JUMPIFNEQS $BTOFLOAT$");
     //CONVERT A to FLOAT
-    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
     code_print("INT2FLOATS");
-    code_print("POPS TF@&VAR&$TEMP$A");
+    code_print("POPS %s$TEMP$A",VAR_FORMAT);
     
     code_print("JUMP $BUILTIN$sametypes$END");
     code_print("LABEL $BTOFLOAT$");
     //CONVERT B to FLOAT
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
     code_print("INT2FLOATS");
-    code_print("POPS TF@&VAR&$TEMP$B");
+    code_print("POPS %s$TEMP$B",VAR_FORMAT);
 
     //end
     code_print("LABEL $BUILTIN$sametypes$END");
-    code_print("PUSHS TF@&VAR&$TEMP$A");
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
     generate_end_function("$BUILTIN$sametypes");
 }
 
@@ -904,12 +913,12 @@ void generate_force_floats(){
     //get param B
     generate_parameter("$TEMP$B");
     code_print("DEFVAR TF@$TEMP$typeB");
-    code_print("TYPE TF@$TEMP$typeB TF@&VAR&$TEMP$B");
+    code_print("TYPE TF@$TEMP$typeB %s$TEMP$B",VAR_FORMAT);
     
     //get param A
     generate_parameter("$TEMP$A");
     code_print("DEFVAR TF@$TEMP$typeA");
-    code_print("TYPE TF@$TEMP$typeA TF@&VAR&$TEMP$A");
+    code_print("TYPE TF@$TEMP$typeA %s$TEMP$A",VAR_FORMAT);
     
     //check if A is INT
     code_print("PUSHS string@int");
@@ -917,9 +926,9 @@ void generate_force_floats(){
     code_print("JUMPIFNEQS $SKIPCONVA$");
     
     //CONVERT A to INT
-    code_print("PUSHS TF@&VAR&$TEMP$A");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
     code_print("INT2FLOATS");
-    code_print("POPS TF@&VAR&$TEMP$A");
+    code_print("POPS %s$TEMP$A",VAR_FORMAT);
     code_print("LABEL $SKIPCONVA$");
 
     //check if B is INT
@@ -928,14 +937,14 @@ void generate_force_floats(){
     code_print("JUMPIFNEQS $SKIPCONVB$");
     
     //CONVERT B to INT
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
     code_print("INT2FLOATS");
-    code_print("POPS TF@&VAR&$TEMP$B");
+    code_print("POPS %s$TEMP$B",VAR_FORMAT);
     code_print("LABEL $SKIPCONVB$");
 
     //end
-    code_print("PUSHS TF@&VAR&$TEMP$A");
-    code_print("PUSHS TF@&VAR&$TEMP$B");
+    code_print("PUSHS %s$TEMP$A",VAR_FORMAT);
+    code_print("PUSHS %s$TEMP$B",VAR_FORMAT);
     generate_end_function("$BUILTIN$forcefloats");
 }
 

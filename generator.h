@@ -277,6 +277,8 @@ void generate_operation_idiv();
 void generate_operation_unary_minus();
 
 void generate_operation_eq();
+void generate_operation_neq();
+
 void generate_operation_gt();
 void generate_operation_lt();
 void generate_operation_gte();
