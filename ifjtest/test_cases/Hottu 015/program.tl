@@ -1,5 +1,5 @@
 require "ifj21"
-function func(a : string, b : integer) : integer
+function func(a : integer, b : integer) : integer
     a = b
     return c
 end
