@@ -28,12 +28,14 @@
 int main() {
     scanner_t scanner;
     scanner_init(&scanner);
+
     parser_t parser;
     parser_setup(&parser, &scanner);
 
-    int return_value = parse_program();
+    int return_value = parse_program(&parser);
 
     scanner_dtor(&scanner);
+    
     return return_value;
 }
 

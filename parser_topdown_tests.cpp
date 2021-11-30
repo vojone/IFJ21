@@ -101,7 +101,7 @@ class test_fixture : public :: testing :: Test {
 };
 
 TEST_F(test_fixture, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -116,7 +116,7 @@ class an_error : public test_fixture {
 };
 
 TEST_F(an_error, only_parse) {
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 class basic : public test_fixture {
@@ -129,7 +129,7 @@ class basic : public test_fixture {
 };
 
 TEST_F(basic, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class if_parse : public test_fixture {
@@ -150,7 +150,7 @@ class if_parse : public test_fixture {
 };
 
 TEST_F(if_parse, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class if_parse_err1 : public test_fixture {
@@ -171,7 +171,7 @@ class if_parse_err1 : public test_fixture {
 };
 
 TEST_F(if_parse_err1, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class function_parse_err : public test_fixture {
@@ -192,7 +192,7 @@ class function_parse_err : public test_fixture {
 };
 
 TEST_F(function_parse_err, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -214,7 +214,7 @@ class if_parse_not_err : public test_fixture {
 };
 
 TEST_F(if_parse_not_err, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class while_parse : public test_fixture {
@@ -236,7 +236,7 @@ class while_parse : public test_fixture {
 };
 
 TEST_F(while_parse, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class parameters : public test_fixture {
@@ -252,7 +252,7 @@ class parameters : public test_fixture {
 };
 
 TEST_F(parameters, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class function_types : public test_fixture {
@@ -270,7 +270,7 @@ class function_types : public test_fixture {
 };
 
 TEST_F(function_types, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_PARAMETERS);
 }
 
 
@@ -292,7 +292,7 @@ class function_return : public test_fixture {
 };
 
 TEST_F(function_return, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -314,7 +314,7 @@ class function_return2 : public test_fixture {
 };
 
 TEST_F(function_return2, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -336,7 +336,7 @@ class function_return3 : public test_fixture {
 };
 
 TEST_F(function_return3, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -359,7 +359,7 @@ class function_return4 : public test_fixture {
 };
 
 TEST_F(function_return4, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -379,7 +379,7 @@ class missing_end : public test_fixture {
 };
 
 TEST_F(missing_end, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 
@@ -400,7 +400,7 @@ class multiple_assignment : public test_fixture {
 };
 
 TEST_F(multiple_assignment, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -417,7 +417,7 @@ class string_expect : public test_fixture {
 };
 
 TEST_F(string_expect, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class function_call : public test_fixture {
@@ -433,7 +433,7 @@ class function_call : public test_fixture {
 };
 
 TEST_F(function_call, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_PARAMETERS);
 }
 
 class double_assignment_function : public test_fixture {
@@ -454,7 +454,7 @@ class double_assignment_function : public test_fixture {
 };
 
 TEST_F(double_assignment_function, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -471,7 +471,7 @@ class wrong_declaration : public test_fixture {
 };
 
 TEST_F(wrong_declaration, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class expression_missing : public test_fixture {
@@ -487,7 +487,7 @@ class expression_missing : public test_fixture {
 };
 
 TEST_F(expression_missing, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 
@@ -504,7 +504,7 @@ class wrong_assignment : public test_fixture {
 };
 
 TEST_F(wrong_assignment, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 
@@ -522,7 +522,7 @@ class missing_comma : public test_fixture {
 };
 
 TEST_F(missing_comma, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class missing_bracket : public test_fixture {
@@ -537,7 +537,7 @@ class missing_bracket : public test_fixture {
 };
 
 TEST_F(missing_bracket, only_parse) {
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 
@@ -554,7 +554,7 @@ class function_declaration : public test_fixture {
 };
 
 TEST_F(function_declaration, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -588,7 +588,7 @@ class complexity_moderate : public test_fixture {
 };
 
 TEST_F(complexity_moderate, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -627,7 +627,7 @@ main()
 };
 
 TEST_F(complexity_factorial, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -662,7 +662,7 @@ main() -- prikaz hlavniho tela programu
 };
 
 TEST_F(complexity_factorial2, only_parse) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class function_check_global : public test_fixture {
@@ -677,7 +677,7 @@ class function_check_global : public test_fixture {
 };
 
 TEST_F(function_check_global, sema) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class function_check_inside : public test_fixture {
@@ -694,7 +694,7 @@ class function_check_inside : public test_fixture {
 };
 
 TEST_F(function_check_inside, only_parse) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class variable_check_local : public test_fixture {
@@ -710,7 +710,7 @@ class variable_check_local : public test_fixture {
 };
 
 TEST_F(variable_check_local, semantic) {
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_ASSIGNMENT);
 }
 
 class hash_check_1 : public test_fixture{
@@ -733,7 +733,7 @@ class hash_check_1 : public test_fixture{
 };
 
 TEST_F(hash_check_1, semantic){
-	ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt),PARSE_SUCCESS);
 }
 
 class hash_check_2 : public test_fixture{
@@ -755,7 +755,7 @@ class hash_check_2 : public test_fixture{
 };
 
 TEST_F(hash_check_2, semantic){
-	ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt),PARSE_SUCCESS);
 }
 
 class multiple_commands: public test_fixture{
@@ -775,7 +775,7 @@ class multiple_commands: public test_fixture{
 };
 
 TEST_F(multiple_commands, semantic){
-	ASSERT_EQ(parse_program(),PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt),PARSE_SUCCESS);
 }
 
 class mixing_data_types_1 : public test_fixture{
@@ -803,7 +803,7 @@ class mixing_data_types_1 : public test_fixture{
 };
 
 TEST_F(mixing_data_types_1, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_ASSIGNMENT);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_ASSIGNMENT);
 }
 
 class mixing_data_types_2 : public test_fixture{
@@ -828,7 +828,7 @@ class mixing_data_types_2 : public test_fixture{
 };
 
 TEST_F(mixing_data_types_2, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class same_variable_different_blocks : public test_fixture{
@@ -854,7 +854,7 @@ class same_variable_different_blocks : public test_fixture{
 };
 
 TEST_F(same_variable_different_blocks, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class variable_as_function : public test_fixture{
@@ -875,7 +875,7 @@ class variable_as_function : public test_fixture{
 };
 
 TEST_F(variable_as_function, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 
@@ -901,7 +901,7 @@ class variable_as_function2 : public test_fixture{
 };
 
 TEST_F(variable_as_function2, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class function_as_variable : public test_fixture{
@@ -928,7 +928,7 @@ class function_as_variable : public test_fixture{
 };
 
 TEST_F(function_as_variable, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class return_statement : public test_fixture{
@@ -954,7 +954,7 @@ class return_statement : public test_fixture{
 };
 
 TEST_F(return_statement, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class return_statement_2 : public test_fixture{
@@ -980,7 +980,7 @@ class return_statement_2 : public test_fixture{
 };
 
 TEST_F(return_statement_2, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_PARAMETERS);
 }
 
 class return_statement_3 : public test_fixture{
@@ -1006,7 +1006,7 @@ class return_statement_3 : public test_fixture{
 };
 
 TEST_F(return_statement_3, semanic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_PARAMETERS);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_PARAMETERS);
 }
 
 class return_statement_4 : public test_fixture{
@@ -1034,7 +1034,7 @@ class return_statement_4 : public test_fixture{
 };
 
 TEST_F(return_statement_4, semanic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class return_statement_5 : public test_fixture{
@@ -1062,7 +1062,7 @@ class return_statement_5 : public test_fixture{
 };
 
 TEST_F(return_statement_5, semanic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class return_to_var : public test_fixture{
@@ -1090,7 +1090,7 @@ class return_to_var : public test_fixture{
 };
 
 TEST_F(return_to_var, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_assignment : public test_fixture{
@@ -1114,7 +1114,7 @@ class nil_assignment : public test_fixture{
 };
 
 TEST_F(nil_assignment, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_in_function : public test_fixture{ //????
@@ -1145,7 +1145,7 @@ class nil_in_function : public test_fixture{ //????
 };
 
 TEST_F(nil_in_function, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class nil_in_relations_1 : public test_fixture{
@@ -1169,7 +1169,7 @@ class nil_in_relations_1 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_1, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_in_relations_2 : public test_fixture{
@@ -1193,7 +1193,7 @@ class nil_in_relations_2 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_2, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_in_relations_3 : public test_fixture{
@@ -1217,7 +1217,7 @@ class nil_in_relations_3 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_3, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_in_relations_4 : public test_fixture{
@@ -1241,7 +1241,7 @@ class nil_in_relations_4 : public test_fixture{
 };
 
 TEST_F(nil_in_relations_4, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_arithmetics : public test_fixture{
@@ -1265,7 +1265,7 @@ class nil_arithmetics : public test_fixture{
 };
 
 TEST_F(nil_arithmetics, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class nil_arithmetics_2 : public test_fixture{
@@ -1289,7 +1289,7 @@ class nil_arithmetics_2 : public test_fixture{
 };
 
 TEST_F(nil_arithmetics_2, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_EXPRESSION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_EXPRESSION);
 }
 
 class nil_arithmetics_3 : public test_fixture{
@@ -1313,7 +1313,7 @@ class nil_arithmetics_3 : public test_fixture{
 };
 
 TEST_F(nil_arithmetics_3, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class division_by_zero_1 : public test_fixture{
@@ -1334,7 +1334,7 @@ class division_by_zero_1 : public test_fixture{
 };
 
 TEST_F(division_by_zero_1, semantic){
-	ASSERT_EQ(parse_program(), DIVISION_BY_ZERO_ERROR);
+	ASSERT_EQ(parse_program(&pt), DIVISION_BY_ZERO_ERROR);
 }
 
 class division_by_zero_2 : public test_fixture{
@@ -1355,7 +1355,7 @@ class division_by_zero_2 : public test_fixture{
 };
 
 TEST_F(division_by_zero_2, semantic){
-	ASSERT_EQ(parse_program(), DIVISION_BY_ZERO_ERROR);
+	ASSERT_EQ(parse_program(&pt), DIVISION_BY_ZERO_ERROR);
 }
 
 class undeclared_function : public test_fixture{
@@ -1380,7 +1380,7 @@ class undeclared_function : public test_fixture{
 };
 
 TEST_F(undeclared_function, semantic){
-	ASSERT_EQ(parse_program(), SEMANTIC_ERROR_DEFINITION);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_DEFINITION);
 }
 
 class declared_function : public test_fixture{
@@ -1409,7 +1409,7 @@ class declared_function : public test_fixture{
 };
 
 TEST_F(declared_function, semantic){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class function_declaration_sx : public test_fixture{
@@ -1434,7 +1434,7 @@ class function_declaration_sx : public test_fixture{
 };
 
 TEST_F(function_declaration_sx, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class if_statement_syntax : public test_fixture{
@@ -1458,7 +1458,7 @@ class if_statement_syntax : public test_fixture{
 };
 
 TEST_F(if_statement_syntax, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class if_statement_syntax_2 : public test_fixture{
@@ -1482,7 +1482,7 @@ class if_statement_syntax_2 : public test_fixture{
 };
 
 TEST_F(if_statement_syntax_2, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class if_statement_syntax_3 : public test_fixture{
@@ -1506,7 +1506,7 @@ class if_statement_syntax_3 : public test_fixture{
 };
 
 TEST_F(if_statement_syntax_3, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class if_statement_syntax_4 : public test_fixture{
@@ -1530,7 +1530,7 @@ class if_statement_syntax_4 : public test_fixture{
 };
 
 TEST_F(if_statement_syntax_4, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class missing_end_2 : public test_fixture{
@@ -1553,7 +1553,7 @@ class missing_end_2 : public test_fixture{
 };
 
 TEST_F(missing_end_2, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class parentheses_function_def : public test_fixture{
@@ -1574,7 +1574,7 @@ class parentheses_function_def : public test_fixture{
 };
 
 TEST_F(parentheses_function_def, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class parentheses_function_call : public test_fixture{
@@ -1600,7 +1600,7 @@ class parentheses_function_call : public test_fixture{
 };
 
 TEST_F(parentheses_function_call, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class parentheses_too_many : public test_fixture{
@@ -1620,7 +1620,7 @@ class parentheses_too_many : public test_fixture{
 };
 
 TEST_F(parentheses_too_many, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 class unexpected_char : public test_fixture{
@@ -1641,7 +1641,7 @@ class unexpected_char : public test_fixture{
 };
 
 TEST_F(unexpected_char, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 class unexpected_char_2 : public test_fixture{
@@ -1662,7 +1662,7 @@ class unexpected_char_2 : public test_fixture{
 };
 
 TEST_F(unexpected_char_2, lexical){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_3 : public test_fixture{
@@ -1684,7 +1684,7 @@ class unexpected_char_3 : public test_fixture{
 };
 
 TEST_F(unexpected_char_3, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 class unexpected_char_4 : public test_fixture{
@@ -1705,7 +1705,7 @@ class unexpected_char_4 : public test_fixture{
 };
 
 TEST_F(unexpected_char_4, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 class unexpected_char_5 : public test_fixture{
@@ -1726,7 +1726,7 @@ class unexpected_char_5 : public test_fixture{
 };
 
 TEST_F(unexpected_char_5, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 class unexpected_char_6 : public test_fixture{
@@ -1748,7 +1748,7 @@ class unexpected_char_6 : public test_fixture{
 };
 
 TEST_F(unexpected_char_6, lexical){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_7 : public test_fixture{
@@ -1769,7 +1769,7 @@ class unexpected_char_7 : public test_fixture{
 };
 
 TEST_F(unexpected_char_7, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_8 : public test_fixture{
@@ -1792,7 +1792,7 @@ class unexpected_char_8 : public test_fixture{
 };
 
 TEST_F(unexpected_char_8, lexical){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_9 : public test_fixture{
@@ -1813,7 +1813,7 @@ class unexpected_char_9 : public test_fixture{
 };
 
 TEST_F(unexpected_char_9, lexical){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_10 : public test_fixture{
@@ -1834,7 +1834,7 @@ class unexpected_char_10 : public test_fixture{
 };
 
 TEST_F(unexpected_char_10, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class unexpected_char_11 : public test_fixture{
@@ -1875,11 +1875,11 @@ class unexpected_char_12 : public test_fixture{
 };
 
 TEST_F(unexpected_char_12, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 TEST_F(unexpected_char_11, syntax){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 
@@ -1899,7 +1899,7 @@ class unexpected_char_13 : public test_fixture{
 };
 
 TEST_F(unexpected_char_13, lexical){
-	ASSERT_EQ(parse_program(), LEXICAL_ERROR);
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 
@@ -1925,7 +1925,7 @@ class while_statement_syntax_1 : public test_fixture{
 };
 
 TEST_F(while_statement_syntax_1, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class while_statement_syntax_2 : public test_fixture{
@@ -1950,7 +1950,7 @@ class while_statement_syntax_2 : public test_fixture{
 };
 
 TEST_F(while_statement_syntax_2, syntax){
-	ASSERT_EQ(parse_program(), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 class while_statement_syntax_3 : public test_fixture{
@@ -1974,7 +1974,7 @@ class while_statement_syntax_3 : public test_fixture{
 };
 
 TEST_F(while_statement_syntax_3, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -1995,7 +1995,7 @@ class coment_test1 : public test_fixture{
 };
 
 TEST_F(coment_test1, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2016,7 +2016,7 @@ class coment_test2 : public test_fixture{
 };
 
 TEST_F(coment_test2, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2038,7 +2038,7 @@ class coment_test3 : public test_fixture{
 };
 
 TEST_F(coment_test3, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2059,7 +2059,7 @@ class coment_test4 : public test_fixture{
 };
 
 TEST_F(coment_test4, syntax) {
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2075,7 +2075,7 @@ class function_inside_argument1 : public test_fixture{
 };
 
 TEST_F(function_inside_argument1, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2091,7 +2091,7 @@ class function_inside_argument2 : public test_fixture{
 };
 
 TEST_F(function_inside_argument2, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2113,7 +2113,7 @@ end
 };
 
 TEST_F(function_inside_return1, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
@@ -2136,7 +2136,7 @@ end
 };
 
 TEST_F(visibility1, syntax){
-	ASSERT_EQ(parse_program(), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
 }
 
 
