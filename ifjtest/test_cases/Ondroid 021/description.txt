@@ -1,0 +1,1 @@
+The start of a block comment at the end should cause a lexical error.

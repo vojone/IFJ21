@@ -1,0 +1,1 @@
+Compare unassigned variables of all types to a variable of nil type, nil literal.

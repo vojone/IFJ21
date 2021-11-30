@@ -1,0 +1,12 @@
+# Where to execute make in order to build the project
+MAKE_DIR="../"
+
+# Path to the compiler executable
+COMPILER="../IFJ21"
+
+# You don't have to change these
+INTERPRETER="./ic21int"
+TEST_DIR="test_cases"
+TMP_DIR="tmp"
+
+
