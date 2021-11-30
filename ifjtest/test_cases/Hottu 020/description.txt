@@ -1,0 +1,1 @@
+Nil in function check_2
