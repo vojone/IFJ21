@@ -12,31 +12,37 @@
 
 DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type)) /**< Operations with stack, that saves elements from expr. */
 
-
+/**
+ * @brief Determines if is token separator, that can be used in expressions
+ */ 
 bool is_allowed_separator(scanner_t *sc, token_t *token) {
     return token->token_type == SEPARATOR && 
            (str_cmp(get_attr(token, sc), ")") == 0 || 
-           str_cmp(get_attr(token, sc), "(") == 0); //It must be left/right par
+           str_cmp(get_attr(token, sc), "(") == 0);
 }
 
-
+/**
+ * @brief Determines whether is token nil keyword or not
+ */ 
 bool is_nil(scanner_t *sc, token_t *token) {
     return token->token_type == KEYWORD && 
            (str_cmp(get_attr(token, sc), "nil") == 0);
 }
 
-
+/**
+ * @brief Determines if operand is zero
+ */ 
 bool is_zero(scanner_t *sc, token_t *token) {
     char *value = get_attr(token, sc);
     if(token->token_type == INTEGER || token->token_type == NUMBER) {
         for(int i = 0; i < strlen(value); i++) {
-            if(value[i] != '0' && value[i] != '.') { //It can be zero in number for
+            if(value[i] != '0' && value[i] != '.') {
                 return false;
             }
         }
     }
     else if(token->token_type == STRING) {
-        for(int i = 0; i < strlen(value); i++) { //Or empty string
+        for(int i = 0; i < strlen(value); i++) {
             if(value[i] != '"') {
                 return false;
             }
@@ -49,8 +55,9 @@ bool is_zero(scanner_t *sc, token_t *token) {
     return true;
 }
 
-
-//Is end of expression?
+/**
+ * @brief Resolves if token can be part of expression
+ */ 
 bool is_EOE(scanner_t *sc, token_t *token) {
     token_type_t type = token->token_type;
 
@@ -64,14 +71,19 @@ bool is_EOE(scanner_t *sc, token_t *token) {
     }
 }
 
-
+/**
+ * @brief Tries to determine if current token is unary or binary minus operator (due to last_token)
+ */ 
 bool is_unary_minus(tok_buffer_t *tok_b) {
-    return  tok_b->last.token_type == UNKNOWN || //When it is start of epxression it is unary
-            str_cmp(get_attr(&tok_b->last, tok_b->scanner), "(") == 0 || //After left par it is unary minus
-            tok_b->last.token_type == OPERATOR; //When last token was operator
+    return  tok_b->last.token_type == UNKNOWN || 
+            str_cmp(get_attr(&tok_b->last, tok_b->scanner), "(") == 0 ||
+            tok_b->last.token_type == OPERATOR;
 }
 
 
+/**
+ * @brief Resolves operator type
+ */ 
 grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
     switch (first_c)
     {
@@ -80,7 +92,7 @@ grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
         case '*':
             return MULT;
         case '-':
-            if(is_unary_minus(tok_b)) { //It can be unary or binary minus
+            if(is_unary_minus(tok_b)) {
                 return MINUS;
             }
             return SUB;
@@ -106,7 +118,7 @@ grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
                 return EQ;
             }
 
-            return UNDEFINED; //Assignment operator is not part of expression
+            return UNDEFINED;
         case '~':
             return NOTEQ;
         case '(':
@@ -120,29 +132,29 @@ grm_sym_type_t operator_type(char first_c, char sec_c, tok_buffer_t *tok_b) {
     }   //switch(first_ch)
 }
 
-
+/**
+ * @brief Transforms token to symbol used in precedence parser (see expr_el_t in .h)
+ */ 
 int tok_to_type(tok_buffer_t *tok_b, bool *was_only_f_call) {
     token_t token = tok_b->current;
 
     if(token.token_type == IDENTIFIER || token.token_type == NUMBER ||
        token.token_type == STRING || token.token_type == INTEGER || 
-       is_nil(tok_b->scanner, &tok_b->current)) { 
-        
-        //It is operand
+       is_nil(tok_b->scanner, &tok_b->current)) {
+
         if(token.token_type != IDENTIFIER) {
-            *was_only_f_call = false; //it can be still func call
+            *was_only_f_call = false;
         }
 
            return OPERAND;
     }
     else if(token.token_type == OPERATOR || token.token_type == SEPARATOR) {
-        //It is operator
+
         int char_num = 0;
         char first_ch = (get_attr(&token, tok_b->scanner))[char_num++],
         next_ch = (get_attr(&token, tok_b->scanner))[char_num];
 
-        if(token.token_type == OPERATOR) { 
-            //It can be function call in parenthesis
+        if(token.token_type == OPERATOR) {
             *was_only_f_call = false;
         }
 
@@ -153,12 +165,19 @@ int tok_to_type(tok_buffer_t *tok_b, bool *was_only_f_call) {
 }
 
 
+/**
+ * @brief Makes dynamic string from given character
+ */ 
 void make_type_str(string_t *dst, char type_c) {
-    str_clear(dst); //First clear desetination string
-    app_char(type_c, dst); //Then add type char
+    str_clear(dst);
+    app_char(type_c, dst);
 }
 
 
+/**
+ * @brief Returns primary type of return types (first return type)
+ * @note When we use function in expression we will work only with primary return type in the rest of expr.
+ */ 
 sym_dtype_t prim_type(string_t *type_string) {
     return char_to_dtype(to_str(type_string)[0]);
 }
@@ -168,12 +187,14 @@ void int2num() {
     code_print("INT2FLOATS");
 }
 
-
+/**
+ * @brief Checks copatibility of data type string (returned from function or expression) and arg. type
+ */ 
 bool is_compatible_in_arg(char arg_type, string_t *dtypes) {
     if(prim_type(dtypes) == char_to_dtype(arg_type)) {
         return true;
     }
-    else if(prim_type(dtypes) == NIL) { //If "rvalue" datatype is nil it is compatible with everything
+    else if(prim_type(dtypes) == NIL) {
         return true;
     }
     else if(prim_type(dtypes) == INT && char_to_dtype(arg_type) == NUM) {
@@ -185,18 +206,25 @@ bool is_compatible_in_arg(char arg_type, string_t *dtypes) {
     }
 }
 
-
+/**
+ * @brief Checks if expected token type end token type of fiven token are equal
+ */
 bool is_tok_type(token_type_t exp_type, token_t *t) {
     return t->token_type == exp_type;
 }
 
 
-
+/**
+ * @brief Checks whether expected token attribute end token attribute of fiven token are equal
+ */
 bool is_tok_attr(char *exp_attr, token_t *t, tok_buffer_t *tok_b) {
     return str_cmp(get_attr(t, tok_b->scanner), exp_attr) == 0;
 }
 
 
+/**
+ * @brief Prints error msg to stderr
+ */ 
 void fcall_sem_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
     fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", 
             tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
@@ -206,6 +234,9 @@ void fcall_sem_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
 }
 
 
+/**
+ * @brief Prints error msg to stderr
+ */ 
 void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
     fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", 
             tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
@@ -215,6 +246,9 @@ void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
 }
 
 
+/**
+ * @brief Parses arguments in function call in expression
+ */ 
 int argument_parser(token_t *func_id, char *params_s, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b) {
 
@@ -222,9 +256,7 @@ int argument_parser(token_t *func_id, char *params_s,
     bool closing_bracket = false;
     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
-        if(token_aging(tok_b) != EXPRESSION_SUCCESS) {
-            return LEXICAL_ERROR;
-        }
+        token_aging(tok_b);
 
         token_t t = lookahead(tok_b->scanner);
         if(t.token_type == ERROR_TYPE) {
@@ -243,7 +275,7 @@ int argument_parser(token_t *func_id, char *params_s,
             }
 
             if(!is_variadic) {
-                if(!is_compatible_in_arg(params_s[argument_cnt], &ret_type)) { //Type check of epxression and argument and declared type
+                if(!is_compatible_in_arg(params_s[argument_cnt], &ret_type)) {
                     fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
                     str_dtor(&ret_type);
                     return SEMANTIC_ERROR_PARAMETERS_EXPR;
@@ -257,7 +289,7 @@ int argument_parser(token_t *func_id, char *params_s,
 
             argument_cnt++;
         }
-        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) { //End of argument list
+        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
             closing_bracket = true;
             continue;
         }
@@ -301,6 +333,10 @@ int argument_parser(token_t *func_id, char *params_s,
 }
 
 
+/**
+ * @brief Parses function call inside expression
+ * @return EXPRESSION SUCCESS if wverything was ok
+ */ 
 int fcall_parser(tree_node_t *symbol, 
                  symbol_tables_t *syms, 
                  tok_buffer_t *tok_b) {
@@ -308,21 +344,19 @@ int fcall_parser(tree_node_t *symbol,
     token_t func_id = tok_b->current;
     char *params_s = to_str(&symbol->data.params); //Getting pointer to string with parameter types
 
-    if(token_aging(tok_b) != EXPRESSION_SUCCESS) {
-        return LEXICAL_ERROR;
-    }
+    token_aging(tok_b);
 
-    token_t t = lookahead(tok_b->scanner); //Finding argument list and '('
+    token_t t = lookahead(tok_b->scanner); //finding argument list and '('
     if(t.token_type == ERROR_TYPE) {
         return LEXICAL_ERROR;
     }
-    else if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) { //Checking if there is '(' before arguments
+    else if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) {
         tok_b->current = t;
         fcall_syn_error(tok_b, &func_id, "Missing '(' after function indentifier!\n");
         return SYNTAX_ERROR_IN_EXPR;
     }
     else {
-        int retval = argument_parser(&func_id, params_s, syms, tok_b); //Everything is ok, you can parse arguments
+        int retval = argument_parser(&func_id, params_s, syms, tok_b);
 
         if(retval != EXPRESSION_SUCCESS) {
             return retval;
@@ -379,6 +413,9 @@ int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff,
 }
 
 
+/**
+ * @brief Creates expression element from current and last token
+ */ 
 int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff, 
                      symbol_tables_t *syms, expr_el_t *result) {
 
@@ -406,7 +443,7 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
         case IDENTIFIER:
             if(!pparser->was_operand) {
                 retval = process_identifier(pparser, t_buff, syms, result);
-                if(retval != EXPRESSION_SUCCESS) { //Checking if processing identifier was succesfull or not
+                if(retval != EXPRESSION_SUCCESS) {
                     return retval;
                 }
                 else {
@@ -416,7 +453,7 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
 
             break;
         default:
-            if(is_nil(t_buff->scanner, &t_buff->current)) { //checking if it is nil type
+            if(is_nil(t_buff->scanner, &t_buff->current)) {
                 make_type_str(&result->dtype, 'z');
                 pparser->was_operand = true;
             }
@@ -442,8 +479,10 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
 }
 
 
+/**
+ * @brief Creates stop symbol and initializes it
+ */ 
 expr_el_t stop_symbol() {
-    //Initialization of new stop symbol
     expr_el_t stop_symbol = {
         .type = STOP_SYM, 
         .dtype = {
@@ -459,9 +498,10 @@ expr_el_t stop_symbol() {
     return stop_symbol;
 }
 
-
+/**
+ * @brief Creates precedence sign due to given parameter and initializes it
+ */ 
 expr_el_t prec_sign(char sign) {
-    //Initialization of precedence sign symbol (due to given character)
     expr_el_t precedence_sign = {
         .dtype = {
             .alloc_size = 0, 
@@ -492,7 +532,9 @@ expr_el_t prec_sign(char sign) {
     return precedence_sign;
 }
 
-
+/**
+ * @brief Contains precedence table of operators in IFJ21
+ */ 
 char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
     static char precedence_table[TERM_NUM][TERM_NUM] = {
     //   #    _   *   /   //  +   -  ..   <  <=  >  >=  ==  ~=   (   )   i   $
@@ -516,14 +558,16 @@ char get_precedence(expr_el_t on_stack_top, expr_el_t on_input) {
 /*$*/  {'<','<','<','<','<','<','<','<','<','<','<','<','<','<','<',' ','<',' '}
     };
 
-    if(on_stack_top.type >= TERM_NUM || on_input.type >= TERM_NUM) { //For safety
+    if(on_stack_top.type >= TERM_NUM || on_input.type >= TERM_NUM) {
         return ' ';
     }
 
     return precedence_table[on_stack_top.type][on_input.type];
 }
 
-
+/**
+ * @brief Additional function to get real expression element from enum type
+ */ 
 char *to_char_sequence(expr_el_t expression_element) {
     static char * cher_seq[] = {
         "#", "_", "*", "/", "//", "+", "-", "..", "<", "<=", 
@@ -534,8 +578,20 @@ char *to_char_sequence(expr_el_t expression_element) {
 }
 
 /**
- * @see presedence_parser.h (get_rule()) to learn meaning of rule parts and see the exmaples
- */
+ * @brief Contains rules of reduction on top of the pp_stack, operand possibilities and return data type of reduction
+ * @note For explaning possible operands is used specific string:
+ *       | separates possibilities for operands
+ *       * every data type
+ *       n number
+ *       i integer
+ *       s string
+ *       z nil
+ *       b bool
+ *       ! inicates that cannot be zero
+ *       ( types symbols after it defines type for resting operators (integer and number are compatible)
+ *       ) returns from "must_be" mode to normal mode 
+ *       Example: (nis|nis = First and sec operand can be number/integer/string and if it's e. g. string second must be string too
+ */ 
 expr_rule_t *get_rule(unsigned int index) {
     if(index >= REDUCTION_RULES_NUM) { //Safety check
         return NULL;
@@ -563,9 +619,10 @@ expr_rule_t *get_rule(unsigned int index) {
     return &(rules[index]);
 }
 
-
+/**
+ * @brief Pops operand stack if it is not empty
+ */ 
 expr_el_t safe_op_pop(bool *cur_ok, int *check_result, pp_stack_t *op_stack) {
-    //Perform check of stack emptyness before pop
     if(!pp_is_empty(op_stack)) {
         *cur_ok = false;
         return pp_pop(op_stack);
@@ -577,32 +634,37 @@ expr_el_t safe_op_pop(bool *cur_ok, int *check_result, pp_stack_t *op_stack) {
     }
 }
 
-
+/**
+ * @brief Returns true if two types are compatible
+ */ 
 bool is_compatible(string_t *dtypes1, string_t *dtypes2) {
-    return ((dstring_cmp(dtypes1, dtypes2) == 0) || //Types are same
-            (prim_type(dtypes1) == INT && prim_type(dtypes2) == NUM) || //Types are compatible (in expression)
+    return ((dstring_cmp(dtypes1, dtypes2) == 0) ||
+            (prim_type(dtypes1) == INT && prim_type(dtypes2) == NUM) ||
             (prim_type(dtypes2) == INT && prim_type(dtypes1) == NUM));
 }
 
-
+/**
+ * @brief Resolves which data type attribut should have newly created nonterminal on stack
+ */ 
 void resolve_res_type(string_t *res, expr_rule_t *rule, 
                       expr_el_t cur_op, bool cur_ok) {
 
-    if(prim_type(res) == UNDEFINED) { //If result type was not set yet set it current operand data type
+    if(prim_type(res) == UNDEFINED) {
         if(cur_ok) {
             cpy_strings(res, &cur_op.dtype, false);
         }
     }
     
-    if(rule->return_type != ORIGIN) { //Rule has no influence to result data type
+    if(rule->return_type != ORIGIN) {
         str_clear(res);
         app_char(dtype_to_char(rule->return_type), res);
     }
-    else if(prim_type(&(cur_op.dtype)) == NUM && prim_type(res) == INT) { //Implicit recasting of result type to number
+    else if(prim_type(&(cur_op.dtype)) == NUM && prim_type(res) == INT) {
         str_clear(res);
         app_char(dtype_to_char(NUM), res);
     }
 }
+
 
 
 int get_tcheck_ret(expr_el_t *current_operand) {
@@ -617,11 +679,14 @@ int get_tcheck_ret(expr_el_t *current_operand) {
     return result;
 }
 
-
+/**
+ * @brief Performs type checking when precedence parser reducing the top of the stack
+ * @note Type check is based on rules writen in get_rule() ( @see get_rule())
+ */ 
 int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
+    expr_el_t current = pp_pop(&op_stack);
     bool is_curr_ok = false, must_be_flag = false;
     int result = EXPRESSION_SUCCESS;
-    expr_el_t current = safe_op_pop(&is_curr_ok, &result, &op_stack); //Getting first operand from operand stack
 
     string_t tmp_res_type;
     str_init(&tmp_res_type);
@@ -688,17 +753,19 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
     return result;
 }
 
-
+/**
+ * @brief Gets from top of the stack sequence that will be reduced
+ */ 
 void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
     expr_el_t from_top;
     while((from_top = pp_top(s)).type != STOP_SYM) {
-        if(from_top.type == '<') { //If '<' is found, stop 
+        if(from_top.type == '<') {
             pp_pop(s);
             break;
         }
 
         if(from_top.type == NON_TERM || from_top.type == OPERAND) {
-            pp_push(op, from_top); //Filling operand stack (to determine result data type)
+            pp_push(op, from_top);
         }
 
         char *char_seq = to_char_sequence(from_top);
@@ -710,6 +777,23 @@ void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
 }
 
 
+void print_operands(pp_stack_t *ops, symtabs_stack_t *sym_stack, 
+                    symtab_t *symtab) {
+
+    while(!pp_is_empty(ops)) {
+        expr_el_t cur = pp_pop(ops);
+        //fprintf(stderr, "Operand: %s (is zero: %d, data_type: %s)\n", (char *)cur.value, cur.is_zero, to_str(&cur.dtype));
+
+        tree_node_t *symbol = search_in_tables(sym_stack, symtab, (char *)cur.value);
+        if(symbol) {
+            //fprintf(stderr, "Operand name: %s\n", to_str(&symbol->data.name));
+        }
+    }
+}
+
+/**
+ * @brief Determines if result of reduction will be zero value (in some cases it is possible to find out it if is)
+ */ 
 bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
     switch(rule->zero_prop)
     {
@@ -723,15 +807,15 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
         break;
     case SECOND:
         if(!pp_is_empty(&operands)) {
-            pp_pop(&operands); //Dont canre about first operand
-            if(!pp_is_empty(&operands) && pp_pop(&operands).is_zero) { //Second must be zero
+            pp_pop(&operands);
+            if(!pp_is_empty(&operands) && pp_pop(&operands).is_zero) {
                 return true;
             }
         }
         break;
     case ALL:
         while(!pp_is_empty(&operands)) {
-            if(!pp_pop(&operands).is_zero) { //All of operands must be zero
+            if(!pp_pop(&operands).is_zero) {
                 return false;
             }
         }
@@ -739,7 +823,7 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
         return true;
         break;
     case ONE:
-        while(!pp_is_empty(&operands)) { //If one operand is zero result is zero
+        while(!pp_is_empty(&operands)) {
             if(pp_pop(&operands).is_zero) {
                 return true;
             }
@@ -752,22 +836,28 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
     return false;
 }
 
-
+/**
+ * @brief Creates non-terminal (E) expression symbol (there is only one non-terminal in rules)
+ */ 
 expr_el_t non_term(string_t *data_type, bool is_zero) {
     expr_el_t non_terminal;
     non_terminal.type = NON_TERM;
 
     str_init(&(non_terminal.dtype));
-    cpy_strings(&(non_terminal.dtype), data_type, false); //Data type of non-terminal (important for propagating datatype through expression)
+    cpy_strings(&(non_terminal.dtype), data_type, false);
 
-    non_terminal.value = "NONTERM"; //Be carefull and DONT deallocate this value
+    non_terminal.value = "NONTERM";
     non_terminal.is_zero = is_zero;
     non_terminal.is_fcall = false;
 
     return non_terminal;
 }
 
-
+/**
+ * @brief Makes reduction of top of the main stack including type check and resolving errors
+ * @param ops Stack with operands
+ * @param rule Rule containing information about result type and operand data types
+ */  
 int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms, 
            expr_rule_t *rule, string_t *res_type) {
 
@@ -802,7 +892,9 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
     if(rule->generator_function != NULL)
         rule->generator_function();
 
-    bool will_be_zero = resolve_res_zero(ops, rule);
+    print_operands(&ops, &syms->symtab_st, &syms->symtab); /**< It will be probably substituted for code generating */
+
+    bool will_be_zero = resolve_res_zero(ops, rule); 
     if(!pp_push(&pparser->stack, non_term(res_type, will_be_zero))) { /**< Make non terminal at the top of main stack (with corresponding zero flag)*/
         return INTERNAL_ERROR;
     }
@@ -813,7 +905,9 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
     return EXPRESSION_SUCCESS;
 }
 
-
+/**
+ * @brief Tries to reduce top of stack to non_terminal due to rules in get_rule()
+ */ 
 int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
                char ** failed_op_msg, string_t *ret_types) {
 
@@ -852,6 +946,10 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
 }
 
 
+/**
+ * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
+ * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
+ */ 
 int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff, 
                      symbol_tables_t *symtabs, expr_el_t *on_input) {
 
@@ -867,7 +965,9 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
     return retval;
 }
 
-
+/**
+ * @brief Gets first nonterminal from top of the stack (There can't be sequence of them) 
+ */ 
 void get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
     expr_el_t on_top_tmp = pp_top(&(pparser->stack));
     expr_el_t tmp;
@@ -881,7 +981,9 @@ void get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
     *on_top = on_top_tmp;
 }
 
-
+/**
+ * @brief Frees all resources (expecially dynamic allocated memory) of PP
+ */ 
 void free_everything(p_parser_t *pparser) {
     while(!pp_is_empty(&(pparser->garbage)))
     {
@@ -898,23 +1000,17 @@ void free_everything(p_parser_t *pparser) {
 }
 
 
-int token_aging(tok_buffer_t *token_buffer) {
-    token_buffer->last = token_buffer->current; //Make current token older
+void token_aging(tok_buffer_t *token_buffer) {
+    token_buffer->last = token_buffer->current;
     token_buffer->current = get_next_token(token_buffer->scanner);
-    
-    if(is_tok_type(ERROR_TYPE , &token_buffer->current)) {
-        return LEXICAL_ERROR; //Check for lexical errors
-    }
-
-    return EXPRESSION_SUCCESS;
 }
 
-
+/**
+ * @brief Does necessary actions when stack top has lower precedence than input
+ */ 
 void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
-    //Just push '<' sign to stack and input symbol after it
     expr_el_t top = pp_top(stack);
     if(top.type == NON_TERM) {
-        //If there is nonterminal push '<' after it
         pp_pop(stack);
         pp_push(stack, prec_sign('<'));
         pp_push(stack, top);
@@ -927,6 +1023,10 @@ void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
 }
 
 
+/**
+ * @brief Prints error message due to return value
+ * @note Also can corrects return code to expected value
+ */ 
 void print_err_message(int *return_value, 
                        tok_buffer_t *token_buffer, 
                        char **err_m) {
@@ -986,13 +1086,18 @@ void print_err_message(int *return_value,
 }
 
 
+/**
+ * @brief Inits all parts of auxiliary structure tok_buffer_t
+ */ 
 void prepare_buffer(scanner_t *sc, tok_buffer_t *tok_b) {
     tok_b->scanner = sc;
     token_init(&(tok_b->current));
     token_init(&(tok_b->last));
 }
 
-
+/**
+ * @brief Prepare necessary stacks before their usage in precedence parser
+ */ 
 int prepare_pp(p_parser_t *pp) {
     if(!pp_stack_init(&pp->stack) || !pp_stack_init(&pp->garbage)) {
         return INTERNAL_ERROR;
@@ -1059,12 +1164,12 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s,
                 ret = INTERNAL_ERROR;
             }
 
-            ret = token_aging(&tok_buff); /**< Make last token from current token */
+            token_aging(&tok_buff); /**< Make last token from current token */
             pparser.empty_cycle = false;
         }
         else if(precedence == '<') {  /**< Put input symbol to the top of the stack*/
             has_lower_prec(&(pparser.stack), on_input);
-            ret = token_aging(&tok_buff);
+            token_aging(&tok_buff);
             pparser.empty_cycle = false;
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/

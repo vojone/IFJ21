@@ -874,6 +874,50 @@ TEST_F(f_call10, only_parse) {
 
 
 
+class lex_err1 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a() ~- 4
+            )";
+        }
+};
+
+TEST_F(lex_err1, only_parse) {
+    insert_sym(&syms.global, "a", {{0, 0, (char *)"a"}, FUNC, {2, 0, (char *)"ss"}, {0, 0, (char *)""}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type, &was_only_f_call), LEXICAL_ERROR);
+}
+
+
+class lex_err2 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(1 ; 4
+            )";
+        }
+};
+
+TEST_F(lex_err2, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type, &was_only_f_call), LEXICAL_ERROR);
+}
+
+
+class lex_err3 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(1231end + 123
+            )";
+        }
+};
+
+TEST_F(lex_err3, only_parse) {
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type, &was_only_f_call), LEXICAL_ERROR);
+}
+
+
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 

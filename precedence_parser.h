@@ -355,7 +355,7 @@ void free_everything(p_parser_t *pparser);
 /**
  * @brief Makes last token from current and gets new token from input (from scanner)
  */ 
-void token_aging(tok_buffer_t *token_buffer);
+int token_aging(tok_buffer_t *token_buffer);
 
 
 /**
