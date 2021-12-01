@@ -1,0 +1,1 @@
+Variable a in block cannot be used in the next one.
