@@ -1,7 +1,7 @@
 require "ifj21"
 function func(a : integer, b : integer) : integer
     a = b
-    return c
+    return 
 end
 
 function main()

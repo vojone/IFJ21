@@ -23,7 +23,7 @@
 #include "parser_topdown.h"
 
 
-#define DEBUG false
+#define DEBUG true
 
 #define PRINT_WARNINGS true
 
@@ -173,7 +173,6 @@ int parse_program(parser_t *parser) {
     if(parser->return_code != 0) {
         res = parser->return_code;
     }
-    
 
     //print generated code
     print_program(&parser->dst_code);
@@ -1273,7 +1272,7 @@ int parse_function_arguments(parser_t *parser, token_t *id_func) {
             }
             else {
                 //If variadic call for each argument
-                generate_call_function(&parser->dst_code,get_attr(id_func, parser->scanner));
+                generate_call_function(&parser->dst_code, get_attr(id_func, parser->scanner));
             }
 
             str_dtor(&ret_types);
