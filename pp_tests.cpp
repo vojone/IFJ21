@@ -873,6 +873,36 @@ TEST_F(f_call10, only_parse) {
 }
 
 
+class f_call11 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a()+1 local
+            )";
+        }
+};
+
+TEST_F(f_call11, only_parse) {
+    insert_sym(&syms.global, "a", {{0, 0, (char *)"a"}, FUNC, {7, 0, (char *)"iiiiiii"}, {0, 0, (char *)""}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type, &was_only_f_call), EXPRESSION_SUCCESS);
+    ASSERT_EQ(was_only_f_call, false);
+}
+
+
+class f_call12 : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input = 
+            R"(a(nil, nil, nil, nil, nil, nil) end
+            )";
+        }
+};
+
+TEST_F(f_call12, only_parse) {
+    insert_sym(&syms.global, "a", {{0, 0, (char *)"a"}, FUNC, {2, 0, (char *)"ss"}, {0, 0, (char *)"ssssii"}, INT, DECLARED});
+    ASSERT_EQ(parse_expression(&uut, &syms, &ret_type, &was_only_f_call), EXPRESSION_SUCCESS);
+}
+
 
 class lex_err1 : public test_fixture {
     protected:

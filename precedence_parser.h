@@ -86,7 +86,11 @@ typedef struct p_parser {
     bool empty_expr; /**< Flag that signalizes empty expression */
     bool empty_cycle; /**< Flag that determines whether was performed any action (push to main stack or reduction) during main cycle */
     bool was_operand;  /**< Flag that says if last symbol was operand or not (used for determining end of expression) */
+
+    bool was_f_call;
     bool only_f_was_called; /**< If there is any other operantion than calling function in epxression it is set to false */
+
+    size_t last_call_ret_num; /**< Number of return values of last called function */
 } p_parser_t;
 
 
@@ -405,11 +409,11 @@ int prepare_pp(p_parser_t *pp);
  * @brief Parses expression due to defined precedence table
  * @param dtypes Output parameter, p. parser will load it with string that 
  *               specifies return types of expression
- * @param was_smth_called Output parameter, will be set to true, if was ONLY 
- *                        function called inside expression (there aren't any other operations)
+ * @param is_only_f_call Output parameter, will be set to true, if was ONLY 
+ *                       function called inside expression (there aren't any other operations)
  */
 int parse_expression(scanner_t *sc, symbol_tables_t *s, 
-                     string_t *dtypes, bool *was_f_call);
+                     string_t *dtypes, bool *is_only_f_call);
 
 
 #endif

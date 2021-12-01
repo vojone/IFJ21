@@ -3,7 +3,7 @@
  *                            precedence_parser.c
  * 
  *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
- *              Purpose:  Implementation of precedence parsing (PP)
+ *              Purpose: Implementation of precedence parsing (PP)
  * 
  *                       Last change: 25. 11. 2021
  *****************************************************************************/
@@ -835,15 +835,19 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
            expr_rule_t *rule, string_t *res_type) {
 
     //Todo fix function calls being generated as variables
-    if(strcmp(rule->right_side, "i") == 0) {
+    if(str_cmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
 
         if(element_terminal.is_fcall) {
             //Only function was called during reduction 
+            res = search(&syms->global, element_terminal.value);
 
             //Code for function
             generate_call_function(element_terminal.value);
+
+            pparser->was_f_call = true;
+            pparser->last_call_ret_num = len(&(res->data.ret_types));
         }
         else if(res == NULL) {
             //We are pushing a static value
@@ -939,6 +943,14 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
             return INTERNAL_ERROR;
         }
     }
+
+    //If the last reduced symbol was function call and there is another expression elements we must clear stack
+    if(pparser->was_f_call && !pparser->only_f_was_called) {
+        //Clear stack to calculate only first return value
+        fprintf(stderr, "STACK POPPED %ld values!\n", (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num);
+    }
+
+    pparser->was_f_call = false; /**< New input symbol -> reset function call flag */
 
     return retval;
 }
@@ -1098,15 +1110,19 @@ int prepare_pp(p_parser_t *pp) {
     pp->empty_expr = true;
     pp->empty_cycle = false;
     pp->was_operand = false;
+    pp->was_f_call = false;
+
     //Presume that it is only function call (important for stack popping and return codes)
     pp->only_f_was_called = true;
+
+    pp->last_call_ret_num = 0;
 
     return EXPRESSION_SUCCESS;
 }
 
 
 int parse_expression(scanner_t *sc, symbol_tables_t *s, 
-                     string_t *dtypes, bool *was_f_call) {
+                     string_t *dtypes, bool *is_only_f_call) {
 
     int ret = EXPRESSION_SUCCESS; //Return value of precedence parsing
     char *failed_op_msg = NULL; //Pointer to error msg
@@ -1178,12 +1194,13 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s,
         pparser.empty_expr = false;
     }
 
-    *was_f_call = pparser.only_f_was_called;
+    *is_only_f_call = pparser.only_f_was_called;
+
     //Print error msg to terminal or adjust error code and free resources
     print_err_message(&ret, &tok_buff, &failed_op_msg);
     free_everything(&pparser);
 
-    token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
+    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return ret;
 }
 
