@@ -1,5 +1,5 @@
 require "ifj21"
 function main()
-	write(readi(),"\n")
+	write(reads(),"\n")
 end
 main()
