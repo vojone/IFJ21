@@ -296,12 +296,12 @@ sym_data_t* builtin_functions(unsigned int index) {
 
     static sym_data_t builtin_functions[BUILTIN_TABLE_SIZE] = {
     //Name                Return types   Parameters
-    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "i"}, UNSET, DEFINED, false},
-    {{0, 0, "ord"}, FUNC, {0, 0, "si"}, {0, 0, "i"}, UNSET, DEFINED, false},
+    {{0, 0, "chr"}, FUNC, {0, 0, "s"}, {0, 0, "%"}, UNSET, DEFINED, false},
+    {{0, 0, "ord"}, FUNC, {0, 0, "i"}, {0, 0, "si"}, UNSET, DEFINED, false},
     {{0, 0, "readi"}, FUNC, {0, 0, "i"}, {0, 0, ""}, UNSET, DEFINED, false},
     {{0, 0, "readn"}, FUNC, {0, 0, "n"}, {0, 0, ""}, UNSET, DEFINED, false},
     {{0, 0, "reads"}, FUNC, {0, 0, "s"}, {0, 0, ""}, UNSET, DEFINED, false},
-    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "sin"}, UNSET, DEFINED, false},
+    {{0, 0, "substr"}, FUNC, {0, 0, "s"}, {0, 0, "snn"}, UNSET, DEFINED, false},
     {{0, 0, "tointeger"}, FUNC, {0, 0, "i"}, {0, 0, "n"}, UNSET, DEFINED, false},
     {{0, 0, "write"}, FUNC, {0, 0, ""}, {0, 0, "%"}, UNSET, DEFINED, false}};
 

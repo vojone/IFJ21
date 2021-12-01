@@ -23,7 +23,6 @@
  * @brief Return codes
  */ 
 #define EXPRESSION_SUCCESS 0
-#define LEXICAL_ERROR 1
 #define EXPRESSION_FAILURE 2
 #define SYNTAX_ERROR_IN_EXPR 2
 #define MISSING_EXPRESSION 12
@@ -32,7 +31,6 @@
 #define SEM_ERROR_IN_EXPR 6
 #define NIL_ERROR 8
 #define DIV_BY_ZERO 9
-#define INTERNAL_ERROR 99
 
 
 #define PREVENT_ZERO_DIV true /**< If it is true it turns on semantic control of division by zero (there is also simple propagation of zero) */
@@ -91,6 +89,8 @@ typedef struct p_parser {
     bool only_f_was_called; /**< If there is any other operantion than calling function in epxression it is set to false */
 
     size_t last_call_ret_num; /**< Number of return values of last called function */
+
+    prog_t *dst_code; /**< Poiter to code where should be printed instructions */
 } p_parser_t;
 
 
@@ -172,7 +172,7 @@ sym_dtype_t prim_type(string_t *type_string);
 /**
  * @brief Checks copatibility of data type string (returned from function or expression) and arg. type
  */ 
-bool is_compatible_in_arg(char arg_type, string_t *dtypes);
+bool is_compatible_in_arg(prog_t *prog, char arg_type, string_t *dtypes);
 
 
 /**
@@ -202,14 +202,15 @@ void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg);
 /**
  * @brief Parses arguments in function call in expression
  */ 
-int argument_parser(token_t *func_id, char *params_s, 
+int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b);
 
 /**
  * @brief Parses function call inside expression
  * @return EXPRESSION SUCCESS if wverything was ok
  */ 
-int fcall_parser(tree_node_t *symbol, 
+int fcall_parser(prog_t *dst_prog,
+                 tree_node_t *symbol, 
                  symbol_tables_t *syms, 
                  tok_buffer_t *tok_b);
 
@@ -401,8 +402,9 @@ void prepare_buffer(scanner_t *sc, tok_buffer_t *tok_b);
 
 /**
  * @brief Prepare necessary stacks before their usage in precedence parser
+ * @param dst Pointer to program structure in which are instructions printed
  */ 
-int prepare_pp(p_parser_t *pp);
+int prepare_pp(prog_t *dst, p_parser_t *pp);
 
 
 /**
@@ -413,7 +415,7 @@ int prepare_pp(p_parser_t *pp);
  *                       function called inside expression (there aren't any other operations)
  */
 int parse_expression(scanner_t *sc, symbol_tables_t *s, 
-                     string_t *dtypes, bool *is_only_f_call);
+                     string_t *dtypes, bool *is_only_f_call, prog_t *dst_code);
 
 
 #endif

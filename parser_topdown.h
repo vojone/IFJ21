@@ -79,6 +79,7 @@ typedef struct parser {
 
     scanner_t * scanner;
     symbol_tables_t sym;
+    prog_t dst_code;
 } parser_t;
 
 typedef struct rule {
@@ -172,7 +173,7 @@ void num2int_conv();
 /**
  * @brief Resolves compatibility of data types in assignment
  */ 
-bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type);
+bool is_valid_assign(parser_t *parser, sym_dtype_t var_type, sym_dtype_t r_side_type);
 
 
 /**

@@ -114,6 +114,11 @@ void parser_setup(parser_t *parser, scanner_t *scanner) {
     parser->found_return = false;
 
     parser->return_code = 0;
+
+    //Initialization of internal reprezentation for code generator
+    prog_t dst_code;
+    init_new_prog(&dst_code);
+    parser->dst_code = dst_code;
 }
 
 
@@ -154,7 +159,7 @@ int check_if_defined(parser_t *parser) {
 //<program>               -> <global-statement-list>
 int parse_program(parser_t *parser) {
     //scanner_init(scanner); 
-    generate_init();   
+    generate_init(&parser->dst_code);   
     
     //run parsing
     int res = global_statement_list(parser);
@@ -169,6 +174,10 @@ int parse_program(parser_t *parser) {
         res = parser->return_code;
     }
     
+
+    //print generated code
+    print_program(&parser->dst_code);
+
     return res;
 
 }
@@ -262,22 +271,22 @@ int statement(parser_t *parser) {
 }
 
 
-void int2num_conv() {
-    code_print("INT2FLOATS");
-}
+// void int2num_conv() {
+//     code_print("INT2FLOATS");
+// }
 
 
-void num2int_conv() {
-    code_print("FLOAT2INTS");
-}
+// void num2int_conv() {
+//     code_print(&parser->dst_code,"FLOAT2INTS");
+// }
 
 
-bool is_valid_assign(sym_dtype_t var_type, sym_dtype_t r_side_type) {
+bool is_valid_assign(parser_t *parser, sym_dtype_t var_type, sym_dtype_t r_side_type) {
     if(var_type == r_side_type || r_side_type == NIL) { //Types are same or rvalue type is nil
         return true;
     }
     else if(var_type == NUM && r_side_type == INT) { //Types can be implicitly converted
-        int2num_conv();
+        generate_int2num(&parser->dst_code);
         return true;
     }
     else {
@@ -367,13 +376,13 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
         //check for valid expression
         debug_print("Calling precedence parser...\n");
     
-        int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+        int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
         if(expr_retval == EXPRESSION_SUCCESS) {
             size_t u = 0;
             for(; to_str(&ret_types)[u] != '\0'; u++) { //If there is only function, it can return more than one values
                 sym_dtype_t cur_dtype = char_to_dtype(to_str(&ret_types)[u]);
                 sym_dtype_t should_be = char_to_dtype(id_types->str[i + u]);
-                if(!is_valid_assign(should_be, cur_dtype)) { //Type checking in (multiple) assignment
+                if(!is_valid_assign(parser,should_be, cur_dtype)) { //Type checking in (multiple) assignment
                     str_dtor(&ret_types);
                     if(!was_f_called) {
                         error_semantic(parser, "Type of variable is not compatible with rvalue of assignment!");
@@ -442,7 +451,7 @@ int assignment(parser_t *parser, token_t t) {
     retval = (retval == PARSE_SUCCESS) ? assignment_rside(parser, &id_types) : retval;
     
     //Generate assignment of the values on stack
-    generate_multiple_assignment(&parser->sym.symtab_st, &parser->sym.symtab, &var_names, parser->scanner);
+    generate_multiple_assignment(&parser->dst_code,&parser->sym.symtab_st, &parser->sym.symtab, &var_names, parser->scanner);
 
     str_dtor(&id_types);
     tok_stack_dtor(&var_names);
@@ -520,7 +529,7 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
         string_t ret_types;
         str_init(&ret_types);
         bool was_f_called;
-        int return_val = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+        int return_val = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &parser->dst_code);
     
         if(return_val != EXPRESSION_SUCCESS) { //Check of return code of parsing expression
             str_dtor(&ret_types);
@@ -530,7 +539,7 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
             *status = DEFINED; //Ok
         }
 
-        if(!is_valid_assign(dtype, prim_dtype(&ret_types))) { //Check of data type compatibility in initialization
+        if(!is_valid_assign(parser, dtype, prim_dtype(&ret_types))) { //Check of data type compatibility in initialization
             error_semantic(parser, "Incomatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
             str_dtor(&ret_types);
             return SEMANTIC_ERROR_ASSIGNMENT;
@@ -542,7 +551,7 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
 
         //Generate assigment code
         char * unique_name = get_unique_name(&parser->sym.symtab_st, &parser->sym.symtab, var_id, parser->scanner).str;
-        generate_assign_value(unique_name);
+        generate_assign_value(&parser->dst_code,unique_name);
     }
 
     return PARSE_SUCCESS;
@@ -615,7 +624,7 @@ int parse_local_var(parser_t *parser) {
 
     //Insert to symtab and generate code
     ins_var(parser, &var_id, status, var_type);
-    generate_declare_variable(&parser->sym.symtab_st, &parser->sym.symtab, &var_id, parser->scanner);
+    generate_declare_variable(&parser->dst_code,&parser->sym.symtab_st, &parser->sym.symtab, &var_id, parser->scanner);
 
     //There can be a value assignment
     retval = (retval == PARSE_SUCCESS) ? local_var_assignment(parser, &status, var_type, &var_id) : retval;
@@ -981,7 +990,7 @@ int func_def_params(parser_t *p, token_t *id_token,
     }
 
     //generate code for parameters
-    generate_parameters(&(p->sym.symtab_st), &p->sym.symtab, &param_names, p->scanner);
+    generate_parameters(&p->dst_code,&(p->sym.symtab_st), &p->sym.symtab, &param_names, p->scanner);
 
     tok_stack_dtor(&param_names);
     return PARSE_SUCCESS;
@@ -1085,7 +1094,7 @@ int func_def_epilogue(parser_t *parser) {
     }
 
     //Generate function end
-    generate_end_function(get_attr(parser->curr_func_id, parser->scanner));
+    generate_end_function(&parser->dst_code,get_attr(parser->curr_func_id, parser->scanner));
 
     debug_print("parsing function finished! at: (%lu,%lu)\n", parser->scanner->cursor_pos[ROW], parser->scanner->cursor_pos[COL]); 
 
@@ -1135,7 +1144,7 @@ int parse_function_def(parser_t *parser) {
     }
 
     //Generate function start
-    generate_start_function(f_name);
+    generate_start_function(&parser->dst_code,f_name);
 
     parser->curr_func_id = &id_fc;
     parser->found_return = false;
@@ -1209,7 +1218,9 @@ int parse_function_call(parser_t *parser, token_t *id_func) {
         //Generate function call unless variadic
         if(!is_variadic) {
             debug_print("function %s is not variadic", id_func);
-            generate_call_function(get_attr(id_func, parser->scanner));
+            //!remove later
+            // fprintf(stderr,"CONTENT Ende: %s",parser->dst_code.first_instr->content.str);
+            generate_call_function(&parser->dst_code,get_attr(id_func, parser->scanner));
         }
 
         return retval;
@@ -1242,7 +1253,7 @@ int parse_function_arguments(parser_t *parser, token_t *id_func) {
             str_init(&ret_types);
             bool was_f_called;
             //There is expression in argument -> call precedence parser
-            int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+            int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_types);
                 return expr_retval;
@@ -1251,7 +1262,7 @@ int parse_function_arguments(parser_t *parser, token_t *id_func) {
             if(!is_variadic) {
                 sym_dtype_t d_type = char_to_dtype(params_str[argument_cnt]);
                 sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]); //Get primary returned type (first of them)
-                if(!is_valid_assign(d_type, prim_dtype)) { //Check data type of argument
+                if(!is_valid_assign(parser, d_type, prim_dtype)) { //Check data type of argument
                     error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", get_attr(id_func, parser->scanner));
                     str_dtor(&ret_types);
                     return SEMANTIC_ERROR_PARAMETERS;
@@ -1262,7 +1273,7 @@ int parse_function_arguments(parser_t *parser, token_t *id_func) {
             }
             else {
                 //If variadic call for each argument
-                generate_call_function(get_attr(id_func, parser->scanner));
+                generate_call_function(&parser->dst_code,get_attr(id_func, parser->scanner));
             }
 
             str_dtor(&ret_types);
@@ -1327,7 +1338,7 @@ int parse_if(parser_t *parser) {
     str_init(&ret_types);
     bool was_f_called;
     //Parse expression in "if" condition
-    int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+    int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
     str_dtor(&ret_types);
     if(expr_retval != EXPRESSION_SUCCESS) {
         return expr_retval;
@@ -1338,7 +1349,7 @@ int parse_if(parser_t *parser) {
         return SYNTAX_ERROR;
     }
     //Generate conditions and jumps 
-    generate_if_condition(current_cond_cnt);
+    generate_if_condition(&parser->dst_code,current_cond_cnt);
 
     to_inner_ctx(parser); //Switch the context
 
@@ -1358,11 +1369,11 @@ int parse_if(parser_t *parser) {
     }
     else if(compare_token(t, KEYWORD)) {
         //Generates end of if part statement
-        generate_if_end(current_cond_cnt);
+        generate_if_end(&parser->dst_code, current_cond_cnt);
         if(compare_token_attr(parser, t, KEYWORD, "end")) {
             debug_print("Ended if\n");
             //Generate end of the whole if - (else) statement
-            generate_else_end(current_cond_cnt);
+            generate_else_end(&parser->dst_code, current_cond_cnt);
             return PARSE_SUCCESS;
         }
         else if(compare_token_attr(parser, t, KEYWORD, "else")) {
@@ -1384,7 +1395,7 @@ int parse_if(parser_t *parser) {
 
             t = get_next_token(parser->scanner);
             //Generate end of the whole if - (else) statement
-            generate_else_end(current_cond_cnt);
+            generate_else_end(&parser->dst_code, current_cond_cnt);
             return PARSE_SUCCESS; //Back to higher level context
         }
 
@@ -1424,7 +1435,7 @@ int parse_return(parser_t *parser) {
             if(len(&symbol->data.ret_types) > 0) {
                 //Implicit nil return
                 size_t difference = len(&symbol->data.ret_types)  - returns_cnt;
-                generate_additional_returns(difference);
+                generate_additional_returns(&parser->dst_code, difference);
             }
 
             break;
@@ -1435,7 +1446,7 @@ int parse_return(parser_t *parser) {
             bool was_f_called;
             //There is expression in return statement -> call precedence parser
             debug_print("Calling precedence parser to parse return in %s...\n", get_attr(id_fc, parser->scanner));
-            int retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+            int retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
             if(retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_types);
                 return retval;
@@ -1443,7 +1454,7 @@ int parse_return(parser_t *parser) {
             else {
                 sym_dtype_t dec_type = char_to_dtype(returns_str[returns_cnt]);
                 sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]);
-                if(!is_valid_assign(dec_type, prim_dtype)) { //Check compatibility of declared return type and got return type
+                if(!is_valid_assign(parser, dec_type, prim_dtype)) { //Check compatibility of declared return type and got return type
                     str_dtor(&ret_types);
 
                     if(was_f_called) { //There was only function call in return statement 
@@ -1470,7 +1481,7 @@ int parse_return(parser_t *parser) {
             if(len(&symbol->data.ret_types) - 1 > returns_cnt) {
                 //Implicit nil return
                 size_t difference = (len(&symbol->data.ret_types) - 1) - returns_cnt;
-                generate_additional_returns(difference);
+                generate_additional_returns(&parser->dst_code, difference);
                 warn(parser, "Function '\033[1;33m%s\033[0m' returns %ld values but %ld specified were found. The rest of them is implicitly nil.", get_attr(id_fc, parser->scanner), len(&symbol->data.ret_types), returns_cnt);
             }
         }
@@ -1488,7 +1499,7 @@ int parse_return(parser_t *parser) {
 
     parser->found_return = true;
 
-    generate_return();
+    generate_return(&parser->dst_code);
     
     return PARSE_SUCCESS;
 }
@@ -1508,14 +1519,14 @@ int parse_while(parser_t *parser) {
     parser->loop_cnt++;
 
     //Generate while beginning
-    generate_while_condition_beginning(current_cnt);
+    generate_while_condition_beginning(&parser->dst_code, current_cnt);
     
     debug_print("Calling precedence parser...\n");
 
     string_t ret_types;
     str_init(&ret_types);
     bool was_f_called;
-    int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called);
+    int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
     str_dtor(&ret_types);
     if(expr_retval != EXPRESSION_SUCCESS) { //Check the result of expression parsing
         return expr_retval;
@@ -1527,7 +1538,7 @@ int parse_while(parser_t *parser) {
     }
 
     //Generate additional condition check
-    generate_while_condition_evaluate(current_cnt);
+    generate_while_condition_evaluate(&parser->dst_code, current_cnt);
 
     to_inner_ctx(parser); //Switch context
 
@@ -1546,7 +1557,7 @@ int parse_while(parser_t *parser) {
         if(compare_token_attr(parser, t, KEYWORD, "end")) {
 
             //Generate end of while
-            generate_while_end(current_cnt);
+            generate_while_end(&parser->dst_code, current_cnt);
 
             debug_print("Ended while\n");
             return PARSE_SUCCESS;

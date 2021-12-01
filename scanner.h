@@ -26,6 +26,9 @@
 
 #define UNSET -1
 
+#define INTERNAL_ERROR 99
+#define LEXICAL_ERROR 1
+
 /**
  * @brief All possible token types
  */

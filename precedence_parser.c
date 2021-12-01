@@ -169,12 +169,12 @@ sym_dtype_t prim_type(string_t *type_string) {
 }
 
 
-void int2num() {
-    code_print("INT2FLOATS");
+void int2num(prog_t *dst) {
+    code_print(dst, "INT2FLOATS");
 }
 
 
-bool is_compatible_in_arg(char arg_type, string_t *dtypes) {
+bool is_compatible_in_arg(prog_t *dst, char arg_type, string_t *dtypes) {
     if(prim_type(dtypes) == char_to_dtype(arg_type)) {
         return true;
     }
@@ -182,7 +182,7 @@ bool is_compatible_in_arg(char arg_type, string_t *dtypes) {
         return true;
     }
     else if(prim_type(dtypes) == INT && char_to_dtype(arg_type) == NUM) {
-        int2num();
+        int2num(dst);
         return true;
     }
     else {
@@ -220,10 +220,10 @@ void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
 }
 
 
-int argument_parser(token_t *func_id, char *params_s, 
+int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b) {
 
-    size_t argument_cnt = 0;             
+    size_t cnt = 0;             
     bool closing_bracket = false;
     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
@@ -243,14 +243,14 @@ int argument_parser(token_t *func_id, char *params_s,
             }
         
             bool is_func_in_arg;
-            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg);
+            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg, dst_code);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_type);
                 return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
             }
 
             if(!is_variadic) {
-                if(!is_compatible_in_arg(params_s[argument_cnt], &ret_type)) { //Type check of epxression and argument and declared type
+                if(!is_compatible_in_arg(dst_code, params_s[cnt], &ret_type)) { //Type check of epxression and argument and declared type
                     fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
                     str_dtor(&ret_type);
                     return SEMANTIC_ERROR_PARAMETERS_EXPR;
@@ -262,7 +262,7 @@ int argument_parser(token_t *func_id, char *params_s,
 
             str_dtor(&ret_type);
 
-            argument_cnt++;
+            cnt++;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) { //End of argument list
             closing_bracket = true;
@@ -279,7 +279,7 @@ int argument_parser(token_t *func_id, char *params_s,
             return LEXICAL_ERROR;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
-            if(argument_cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
+            if(cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
                 fcall_sem_error(tok_b, func_id, "Too many arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
@@ -289,7 +289,7 @@ int argument_parser(token_t *func_id, char *params_s,
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
             closing_bracket = true;
-            if((argument_cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
+            if((cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
                 fcall_sem_error(tok_b, func_id, "Missing arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
@@ -299,7 +299,7 @@ int argument_parser(token_t *func_id, char *params_s,
             return SYNTAX_ERROR_IN_EXPR;
         }
     }
-    if(argument_cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
+    if(cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
         fcall_sem_error(tok_b, func_id, "Missing arguments!");
         return SEMANTIC_ERROR_PARAMETERS_EXPR;
     }
@@ -308,7 +308,8 @@ int argument_parser(token_t *func_id, char *params_s,
 }
 
 
-int fcall_parser(tree_node_t *symbol, 
+int fcall_parser(prog_t *dst_prog,
+                 tree_node_t *symbol, 
                  symbol_tables_t *syms, 
                  tok_buffer_t *tok_b) {
 
@@ -329,7 +330,7 @@ int fcall_parser(tree_node_t *symbol,
         return SYNTAX_ERROR_IN_EXPR;
     }
     else {
-        int retval = argument_parser(&func_id, params_s, syms, tok_b); //Everything is ok, you can parse arguments
+        int retval = argument_parser(dst_prog, &func_id, params_s, syms, tok_b); //Everything is ok, you can parse arguments
 
         if(retval != EXPRESSION_SUCCESS) {
             return retval;
@@ -362,7 +363,7 @@ int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff,
         else {
             str_cpy((char **)&result->value, id_name, strlen(id_name));
             //Process function call and arguments
-            int retval = fcall_parser(symbol, syms, t_buff);
+            int retval = fcall_parser(pparser->dst_code, symbol, syms, t_buff);
             if(retval != EXPRESSION_SUCCESS) {
                 return retval;
             }
@@ -831,43 +832,43 @@ int non_term(expr_el_t *non_terminal, string_t *data_type, bool is_zero) {
 }
 
 
-int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms, 
+int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
            expr_rule_t *rule, string_t *res_type) {
 
     //Todo fix function calls being generated as variables
+    prog_t *dst = pparser->dst_code;
     if(str_cmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
-        tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
 
+        tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
         if(element_terminal.is_fcall) {
             //Only function was called during reduction 
             res = search(&syms->global, element_terminal.value);
 
-            //Code for function
-            generate_call_function(element_terminal.value);
-
             pparser->was_f_call = true;
             pparser->last_call_ret_num = len(&(res->data.ret_types));
+
+            generate_call_function(dst, element_terminal.value);
         }
         else if(res == NULL) {
             //We are pushing a static value
 
             char prim_dtype_c = to_str(&element_terminal.dtype)[0];
             sym_dtype_t dtype = char_to_dtype(prim_dtype_c);
-
-            generate_value_push(VAL, dtype, element_terminal.value);
+            
+            //We are pushing a static value
+            generate_value_push(dst, VAL, dtype, element_terminal.value);
         }
         else{
             //We are pushing variable
-
-            //fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
-            generate_value_push(VAR, res->data.dtype , res->data.name.str);
+            // fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
+            generate_value_push(dst, VAR, res->data.dtype , res->data.name.str);
         }
     }
 
     //Generate operation code
     if(rule->generator_function != NULL)
-        rule->generator_function();
+        rule->generator_function(dst);
 
     bool will_be_zero = resolve_res_zero(ops, rule);
     expr_el_t non_terminal;
@@ -1096,7 +1097,7 @@ void prepare_buffer(scanner_t *sc, tok_buffer_t *tok_b) {
 }
 
 
-int prepare_pp(p_parser_t *pp) {
+int prepare_pp(prog_t *dst, p_parser_t *pp) {
     if(!pp_stack_init(&pp->stack) || !pp_stack_init(&pp->garbage)) {
         return INTERNAL_ERROR;
     }
@@ -1116,22 +1117,23 @@ int prepare_pp(p_parser_t *pp) {
     pp->only_f_was_called = true;
 
     pp->last_call_ret_num = 0;
+    pp->dst_code = dst;
 
     return EXPRESSION_SUCCESS;
 }
 
 
-int parse_expression(scanner_t *sc, symbol_tables_t *s, 
-                     string_t *dtypes, bool *is_only_f_call) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, 
+                     bool *is_only_f_call, prog_t *dst) {
 
-    int ret = EXPRESSION_SUCCESS; //Return value of precedence parsing
-    char *failed_op_msg = NULL; //Pointer to error msg
+    int ret = EXPRESSION_SUCCESS;
+    char *failed_op_msg = NULL;
     
     tok_buffer_t tok_buff;
     prepare_buffer(sc, &tok_buff);
 
     p_parser_t pparser;
-    ret = prepare_pp(&pparser);
+    ret = prepare_pp(dst, &pparser);
     if(ret != EXPRESSION_SUCCESS) {
         return ret;
     }
