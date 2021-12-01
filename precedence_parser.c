@@ -153,9 +153,14 @@ int tok_to_type(tok_buffer_t *tok_b, bool *was_only_f_call) {
 }
 
 
-void make_type_str(string_t *dst, char type_c) {
+int make_type_str(string_t *dst, char type_c) {
     str_clear(dst); //First clear desetination string
-    app_char(type_c, dst); //Then add type char
+
+    if(app_char(type_c, dst) != STR_SUCCESS) { //Then add type char
+        return INTERNAL_ERROR;
+    }
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -233,7 +238,9 @@ int argument_parser(token_t *func_id, char *params_s,
         else if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
             
             string_t ret_type;
-            str_init(&ret_type);
+            if(str_init(&ret_type) != STR_SUCCESS) {
+                return INTERNAL_ERROR;
+            }
         
             bool is_func_in_arg;
             int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg);
@@ -386,21 +393,25 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
     result->value = NULL;
     result->is_zero = false;
     result->is_fcall = false;
-    str_init(&result->dtype);
+
+    if(str_init(&result->dtype) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+
     int retval = EXPRESSION_SUCCESS;
     //Resolving data type of symbol on input
     switch (t_buff->current.token_type)
     {
         case INTEGER:
-            make_type_str(&result->dtype, 'i');
+            retval = make_type_str(&result->dtype, 'i');
             pparser->was_operand = true;
             break;
         case NUMBER:
-            make_type_str(&result->dtype, 'n');
+            retval = make_type_str(&result->dtype, 'n');
             pparser->was_operand = true;
             break;
         case STRING:
-            make_type_str(&result->dtype, 's');
+            retval = make_type_str(&result->dtype, 's');
             pparser->was_operand = true;
             break;
         case IDENTIFIER:
@@ -417,25 +428,34 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
             break;
         default:
             if(is_nil(t_buff->scanner, &t_buff->current)) { //checking if it is nil type
-                make_type_str(&result->dtype, 'z');
+                retval = make_type_str(&result->dtype, 'z');
                 pparser->was_operand = true;
             }
             else {
-                make_type_str(&result->dtype, ' ');
+                retval = make_type_str(&result->dtype, ' ');
                 pparser->was_operand = false;
             }
 
             break;
     }
 
+    if(retval == STR_FAILURE) {
+        return INTERNAL_ERROR;
+    }
+
     //Resolving zero flag (to prevent division by zero)
     if(is_zero(t_buff->scanner, &t_buff->current) && PREVENT_ZERO_DIV) {
         result->is_zero = true;
     }
+
     //Making hard copy of token attribute
     if(result->value == NULL) {
         char * curr_val = get_attr(&(t_buff->current), t_buff->scanner);
-        str_cpy((char **)&result->value, curr_val, strlen(curr_val));
+
+        retval = str_cpy((char **)&result->value, curr_val, strlen(curr_val));
+        if(retval != STR_SUCCESS) {
+            return INTERNAL_ERROR;
+        }
     }
 
     return EXPRESSION_SUCCESS;
@@ -585,23 +605,31 @@ bool is_compatible(string_t *dtypes1, string_t *dtypes2) {
 }
 
 
-void resolve_res_type(string_t *res, expr_rule_t *rule, 
+int resolve_res_type(string_t *res, expr_rule_t *rule, 
                       expr_el_t cur_op, bool cur_ok) {
 
     if(prim_type(res) == UNDEFINED) { //If result type was not set yet set it current operand data type
         if(cur_ok) {
-            cpy_strings(res, &cur_op.dtype, false);
+            if(cpy_strings(res, &cur_op.dtype, false) != STR_SUCCESS) {
+                return INTERNAL_ERROR;
+            }
         }
     }
     
     if(rule->return_type != ORIGIN) { //Rule has no influence to result data type
         str_clear(res);
-        app_char(dtype_to_char(rule->return_type), res);
+        if(app_char(dtype_to_char(rule->return_type), res) != STR_SUCCESS) {
+            return INTERNAL_ERROR;
+        }
     }
     else if(prim_type(&(cur_op.dtype)) == NUM && prim_type(res) == INT) { //Implicit recasting of result type to number
         str_clear(res);
-        app_char(dtype_to_char(NUM), res);
+        if(app_char(dtype_to_char(NUM), res) != STR_SUCCESS) {
+            return INTERNAL_ERROR;
+        }
     }
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -618,28 +646,61 @@ int get_tcheck_ret(expr_el_t *current_operand) {
 }
 
 
+int op_type_ch(char c, bool must_be_flag, bool *is_curr_ok, 
+                   string_t *must_be, expr_el_t *current) {
+
+    if(must_be_flag) { /**< "Must_be mode" is set on */
+        if(prim_type(must_be) == UNDEFINED && 
+            prim_type(&(current->dtype)) == char_to_dtype(c)) {
+
+            if(cpy_strings(must_be, &(current->dtype), false) != STR_SUCCESS) {
+                return INTERNAL_ERROR;
+            }
+        }
+
+        if(is_compatible(&(current->dtype), must_be)) {
+            *is_curr_ok = true; /**< Type of current operator is compatible with type of earlier operator */
+        }
+    }
+    else { /**< Normal mode */
+        if(c == '*' || prim_type(&(current->dtype)) == char_to_dtype(c)) {
+            *is_curr_ok = true; //Operand type corresponds with operator specifier
+        }
+    }
+
+    return EXPRESSION_SUCCESS;
+}
+
+
+//Presumes that macro EXPRESSION_SUCCESS is 0 !!!
 int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
     bool is_curr_ok = false, must_be_flag = false;
-    int result = EXPRESSION_SUCCESS;
-    expr_el_t current = safe_op_pop(&is_curr_ok, &result, &op_stack); //Getting first operand from operand stack
+    int ret = EXPRESSION_SUCCESS;
+    expr_el_t current = safe_op_pop(&is_curr_ok, &ret, &op_stack); //Getting first operand from operand stack
 
+    //Initialization of strings with safety checks (there can be allocation error)
     string_t tmp_res_type;
-    str_init(&tmp_res_type);
-    app_char(dtype_to_char(rule->return_type), &tmp_res_type);
+    char rule_dtype_c = dtype_to_char(rule->return_type);
+    if((str_init(&tmp_res_type) != STR_SUCCESS || 
+       app_char(rule_dtype_c, &tmp_res_type) != STR_SUCCESS) && !ret) {
+        ret = INTERNAL_ERROR;
+    }
 
     string_t must_be;
-    str_init(&must_be);
-    app_char(' ', &must_be);
+    if((str_init(&must_be) != STR_SUCCESS || 
+       app_char(' ', &must_be) != STR_SUCCESS) && !ret) {
+        ret = INTERNAL_ERROR;
+    }
 
     char c;
-    for(int i = 0; (c = rule->operator_types[i]) != '\0' && !result; i++) {
+    for(int i = 0; (c = rule->operator_types[i]) != '\0' && !ret; i++) {
         if(c == '|') { /**< Next operator symbol */
             if(!is_curr_ok) { /**< Specifier for current operator was not found -> error */
-                result = get_tcheck_ret(&current);
+                ret = get_tcheck_ret(&current);
                 break;
             }
             else { /**< Specifier was found -> next check operator*/
-                current = safe_op_pop(&is_curr_ok, &result, &op_stack);
+                current = safe_op_pop(&is_curr_ok, &ret, &op_stack);
             }
         }
         else if(c == '(') { /**< Sets type checcker to must_be mode */
@@ -652,61 +713,58 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
         }
         else if(c == '!') {
             if(current.is_zero) {
-                result = DIV_BY_ZERO;
+                ret = DIV_BY_ZERO;
                 break;
             }
         }
-        else { /**< Current char is type specifier */
-            if(must_be_flag) { /**< Must_be mode is set */
-                if(prim_type(&must_be) == UNDEFINED && 
-                   prim_type(&(current.dtype)) == char_to_dtype(c)) {
-
-                    cpy_strings(&must_be, &(current.dtype), false);
-                }
-
-                if(is_compatible(&(current.dtype), &must_be)) { /**< Type of current operator is compatible with type of earlier operator */
-                    is_curr_ok = true;
-                }
-            }
-            else { /**< Normal mode */
-                if(c == '*' || prim_type(&(current.dtype)) == char_to_dtype(c)) {
-                    is_curr_ok = true; //Operand type corresponds with operator specifier
-                }
-            }
+        else { /**< Current char is type specifier -> check operand type */
+            ret = op_type_ch(c, must_be_flag, &is_curr_ok, &must_be, &current);
         }
 
-        resolve_res_type(&tmp_res_type, rule, current, is_curr_ok);
+        if(!ret) {
+            ret = resolve_res_type(&tmp_res_type, rule, current, is_curr_ok);
+        }
     }
 
     // Specifier string ended -> if specifier for last operator was not found -> error
-    result = (!is_curr_ok && c == '\0') ?  get_tcheck_ret(&current) : result;
+    ret = (!is_curr_ok && c == '\0' && !ret) ?  get_tcheck_ret(&current) : ret;
 
     str_dtor(&must_be);
-    cpy_strings(res_type, &tmp_res_type, false);
+    if(cpy_strings(res_type, &tmp_res_type, false) != STR_SUCCESS && !ret) {
+        ret = INTERNAL_ERROR;
+    }
+
     str_dtor(&tmp_res_type);
 
-    return result;
+    return ret;
 }
 
 
-void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
+int get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
     expr_el_t from_top;
-    while((from_top = pp_top(s)).type != STOP_SYM) {
+    while(!pp_is_empty(s) && (from_top = pp_top(s)).type != STOP_SYM) {
         if(from_top.type == '<') { //If '<' is found, stop 
             pp_pop(s);
             break;
         }
 
         if(from_top.type == NON_TERM || from_top.type == OPERAND) {
-            pp_push(op, from_top); //Filling operand stack (to determine result data type)
+            if(!pp_push(op, from_top)) { //Filling operand stack (to determine result data type)
+                return INTERNAL_ERROR;
+            }
         }
 
         char *char_seq = to_char_sequence(from_top);
-        prep_str(to_be_red, char_seq);
+        if(prep_str(to_be_red, char_seq) != STR_SUCCESS) {
+            return INTERNAL_ERROR;
+        }
+
         pp_pop(s);
     }
 
     // fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -753,18 +811,23 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
 }
 
 
-expr_el_t non_term(string_t *data_type, bool is_zero) {
-    expr_el_t non_terminal;
-    non_terminal.type = NON_TERM;
+int non_term(expr_el_t *non_terminal, string_t *data_type, bool is_zero) {
+    non_terminal->type = NON_TERM;
 
-    str_init(&(non_terminal.dtype));
-    cpy_strings(&(non_terminal.dtype), data_type, false); //Data type of non-terminal (important for propagating datatype through expression)
+    if(str_init(&(non_terminal->dtype)) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
-    non_terminal.value = "NONTERM"; //Be carefull and DONT deallocate this value
-    non_terminal.is_zero = is_zero;
-    non_terminal.is_fcall = false;
+    //Data type of non-terminal (important for propagating datatype through expression)
+    if(cpy_strings(&(non_terminal->dtype), data_type, false) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
-    return non_terminal;
+    non_terminal->value = "NONTERM"; //Be carefull and DONT deallocate this value
+    non_terminal->is_zero = is_zero;
+    non_terminal->is_fcall = false;
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -803,7 +866,11 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
         rule->generator_function();
 
     bool will_be_zero = resolve_res_zero(ops, rule);
-    if(!pp_push(&pparser->stack, non_term(res_type, will_be_zero))) { /**< Make non terminal at the top of main stack (with corresponding zero flag)*/
+    expr_el_t non_terminal;
+    if(non_term(&non_terminal, res_type, will_be_zero) != EXPRESSION_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+    if(!pp_push(&pparser->stack, non_terminal)) { /**< Make non terminal at the top of main stack (with corresponding zero flag)*/
         return INTERNAL_ERROR;
     }
     if(!pp_push(&pparser->garbage, pp_top(&pparser->stack))) { /**< Add nonterminal to garbage collector stack */
@@ -818,37 +885,44 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
                char ** failed_op_msg, string_t *ret_types) {
 
     string_t to_be_reduced;
-    str_init(&to_be_reduced);
+    if(str_init(&to_be_reduced) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
     pp_stack_t operands; //Initialization of auxiliary stack with operands
     if(!pp_stack_init(&operands)) {
         return INTERNAL_ERROR;
     }
 
-    get_str_to_reduction(&(pparser->stack), &operands, &to_be_reduced); /**< Takes top of the stack and creates substitutable string from it*/
+    int ret;
+    ret = get_str_to_reduction(&(pparser->stack), &operands, &to_be_reduced);
 
     //fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
     expr_rule_t *rule;
-    int retval = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
-    for(int i = 0; (rule = get_rule(i)); i++) {
-        if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
-            int t_check_res = type_check(operands, rule, ret_types); /**<Checking type compatibility and getting result data type */
+    if(ret == EXPRESSION_SUCCESS) {
+        ret = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
+        for(int i = 0; (rule = get_rule(i)); i++) {
 
-            if(t_check_res != EXPRESSION_SUCCESS) { /**< Type check was not succesfull */
-                *failed_op_msg = rule->error_message;
-                retval = t_check_res;
-            }
-            else {
-                retval = reduce(pparser, operands, syms, rule, ret_types);
-            }
+            if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
+                int t_check_res = type_check(operands, rule, ret_types); /**<Checking type compatibility and getting result data type */
 
+                if(t_check_res != EXPRESSION_SUCCESS) {
+                    *failed_op_msg = rule->error_message;
+                    ret = t_check_res;
+                }
+                else {
+                    ret = reduce(pparser, operands, syms, rule, ret_types);
+                }
+
+                break;
+            }
         }
     }
 
     pp_stack_dtor(&operands);
     str_dtor(&to_be_reduced);
 
-    return retval;
+    return ret;
 }
 
 
@@ -861,24 +935,30 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
     }
     else {
         retval = from_input_token(pparser, t_buff, symtabs, on_input);
-        pp_push(&(pparser->garbage), *on_input);
+        if(!pp_push(&(pparser->garbage), *on_input)) {
+            return INTERNAL_ERROR;
+        }
     }
 
     return retval;
 }
 
 
-void get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
+int get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
     expr_el_t on_top_tmp = pp_top(&(pparser->stack));
     expr_el_t tmp;
 
     if(on_top_tmp.type == NON_TERM) { //Ignore nonterminal if there is 
         tmp = pp_pop(&(pparser->stack));
         on_top_tmp = pp_top(&(pparser->stack));
-        pp_push(&(pparser->stack), tmp);
+        if(!pp_push(&(pparser->stack), tmp)) {
+            return INTERNAL_ERROR;
+        }
     }
 
     *on_top = on_top_tmp;
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -901,7 +981,7 @@ void free_everything(p_parser_t *pparser) {
 int token_aging(tok_buffer_t *token_buffer) {
     token_buffer->last = token_buffer->current; //Make current token older
     token_buffer->current = get_next_token(token_buffer->scanner);
-    
+
     if(is_tok_type(ERROR_TYPE , &token_buffer->current)) {
         return LEXICAL_ERROR; //Check for lexical errors
     }
@@ -910,20 +990,31 @@ int token_aging(tok_buffer_t *token_buffer) {
 }
 
 
-void has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
+int has_lower_prec(pp_stack_t *stack, expr_el_t on_input) {
     //Just push '<' sign to stack and input symbol after it
     expr_el_t top = pp_top(stack);
     if(top.type == NON_TERM) {
         //If there is nonterminal push '<' after it
         pp_pop(stack);
-        pp_push(stack, prec_sign('<'));
-        pp_push(stack, top);
+        if(!pp_push(stack, prec_sign('<'))) {
+            return INTERNAL_ERROR;
+        }
+
+        if(!pp_push(stack, top)) {
+            return INTERNAL_ERROR;
+        }
     }
     else {
-        pp_push(stack, prec_sign('<'));
+        if(!pp_push(stack, prec_sign('<'))) {
+            return INTERNAL_ERROR;
+        }
     }
 
-    pp_push(stack, on_input);
+    if(!pp_push(stack, on_input)) {
+        return INTERNAL_ERROR;
+    }
+
+    return EXPRESSION_SUCCESS;
 }
 
 
@@ -1039,12 +1130,14 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s,
 
         expr_el_t on_input, on_top;
         ret = get_input_symbol(&pparser, &tok_buff, s, &on_input);
-    
         if(ret != EXPRESSION_SUCCESS) {
             break;
         }
 
-        get_top_symbol(&on_top, &pparser);
+        ret = get_top_symbol(&on_top, &pparser);
+        if(ret != EXPRESSION_SUCCESS) {
+            break;
+        }
 
         /*** There is end of the expression on input and stop symbol at the top of the stack*/
         if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {

@@ -155,7 +155,7 @@ int tok_to_type(tok_buffer_t *tok_b, bool *was_only_f_call);
 /**
  * @brief Makes dynamic string from given character
  */ 
-void make_type_str(string_t *dst, char type_c);
+int make_type_str(string_t *dst, char type_c);
 
 
 /**
@@ -274,9 +274,25 @@ bool is_compatible(string_t *dtypes1, string_t *dtypes2);
 
 /**
  * @brief Resolves which data type attribut should have newly created nonterminal on stack
+ * @return INTERNAL_ERROR if an error occurs otherwise EXPRESSION SUCCESS
  */ 
-void resolve_res_type(string_t *res, expr_rule_t *rule, 
+int resolve_res_type(string_t *res, expr_rule_t *rule, 
                       expr_el_t cur_op, bool cur_ok);
+
+
+/**
+ * @brief Resolve return code returned by type_check() function
+ * @return SEM_ERROR_IN_EXPR or NIL_ERROR (if PREVENT_NIL is set to true and there is nil incompatibility)
+ */ 
+int get_tcheck_ret(expr_el_t *current_operand);
+
+
+/**
+ * @brief Checks current operand if it corresponds to expected data type (used in type_check function)
+ * @return EXPRESSION_SUCCESS or INTERNAL_ERROR if there was an error in string operations
+ */ 
+int op_type_ch(char c, bool must_be_flag, bool *is_curr_ok, 
+                   string_t *must_be, expr_el_t *current);
 
 
 /**
@@ -288,8 +304,9 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type);
 
 /**
  * @brief Gets from top of the stack sequence that will be reduced
+ * @return Function can return INTERNAL_ERROR, so it should be checked
  */ 
-void get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red);
+int get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red);
 
 
 /**
@@ -305,9 +322,9 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule);
 
 
 /**
- * @brief Creates non-terminal (E) expression symbol (there is only one non-terminal in rules)
+ * @brief Initializes given expression element as non-terminal (E) expression symbol (there is only one non-terminal in rules)
  */ 
-expr_el_t non_term(string_t *data_type, bool is_zero);
+int non_term(expr_el_t *non_terminal, string_t *data_type, bool is_zero);
 
 
 /**
@@ -344,7 +361,7 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
 /**
  * @brief Gets first nonterminal from top of the stack (There can't be more of them due to operator grammar) 
  */ 
-void get_top_symbol(expr_el_t *on_top, p_parser_t *pparser);
+int get_top_symbol(expr_el_t *on_top, p_parser_t *pparser);
 
 
 /**
@@ -361,7 +378,7 @@ int token_aging(tok_buffer_t *token_buffer);
 /**
  * @brief Does necessary actions when stack top has lower precedence than input
  */ 
-void has_lower_prec(pp_stack_t *stack, expr_el_t on_input);
+int has_lower_prec(pp_stack_t *stack, expr_el_t on_input);
 
 
 /**
