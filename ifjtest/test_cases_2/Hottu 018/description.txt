@@ -1,0 +1,1 @@
+Return from function with multiple return parameters
