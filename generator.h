@@ -167,7 +167,7 @@ typedef struct char_mapping{
 /**
  * @brief inicializes the code
  */ 
-void generate_init();
+void generate_init(prog_t *dst);
 
 /**
  * *---------FUNCTIONS---------
@@ -177,41 +177,41 @@ void generate_init();
  * @brief generates the start of function definition
  * @name function name
  */ 
-void generate_start_function(const char * name);
+void generate_start_function(prog_t *dst,const char * name);
 
 /**
  * @brief generates parameters of a function
  * @note they are declared reversely because they're popped from stack
  * @param param_names TYPE: tok_stack_t - the stack of tokens with parameter names
  */ 
-void generate_parameters( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
+void generate_parameters(prog_t *dst, void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
 
 /**
  * @brief generates one parameter
  * @param name of the parameter
  */ 
-void generate_parameter(const char * name);
+void generate_parameter(prog_t *dst,const char * name);
 
 /**
  * @brief generates the code needed to end a function definition
  */ 
-void generate_end_function(const char * name);
+void generate_end_function(prog_t *dst,const char * name);
 
 /**
  * 
  */ 
-void generate_call_function(const char * name);
+void generate_call_function(prog_t *dst,const char * name);
 
 /**
  * @brief pushes NILs to stack
  * @param n how many NIL returns to push
  */
-void generate_additional_returns(size_t n); 
+void generate_additional_returns(prog_t *dst,size_t n); 
 
 /**
  * @brief generates return statement
  */ 
-void generate_return();
+void generate_return(prog_t *dst);
 
 /**
  * *---------VARIABLES---------
@@ -222,19 +222,19 @@ void generate_return();
  * @param var_id identifier of the variable
  * @note we will search the actual unique identifier in the symtab
  */ 
-void generate_declare_variable( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner);
+void generate_declare_variable( prog_t *dst,void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner);
 
 /**
  * @brief assigns variables from stack to variables
  * @param param_names TYPE: tok_stack_t - the stack of tokens with variable names
  */ 
-void generate_multiple_assignment( void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
+void generate_multiple_assignment(prog_t *dst, void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner);
 
 /**
  * @brief pops the value from top of stack into variable
  * @param name name of the variable
  */ 
-void generate_assign_value(const char * name); 
+void generate_assign_value(prog_t *dst,const char * name); 
 
 
 /**
@@ -242,51 +242,51 @@ void generate_assign_value(const char * name);
  * @param name identifier or the actual value to push
  * @note used in expression parsing
  */ 
-void generate_value_push( sym_type_t type, sym_dtype_t dtype, const char * name );
+void generate_value_push( prog_t *dst,sym_type_t type, sym_dtype_t dtype, const char * name );
 
 
 /**
  * *--------CONDIONS--------
  */ 
-void generate_if_condition(size_t n);
+void generate_if_condition(prog_t *dst,size_t n);
 
-void generate_if_end(size_t n);
+void generate_if_end(prog_t *dst,size_t n);
 
-void generate_else_end(size_t n);
+void generate_else_end(prog_t *dst, size_t n);
 
 
 /**
  * *--------LOOPS--------
  */ 
-void generate_while_condition_beginning(size_t n);
+void generate_while_condition_beginning(prog_t *dst,size_t n);
 
-void generate_while_condition_evaluate(size_t n);
+void generate_while_condition_evaluate(prog_t *dst,size_t n);
 
-void generate_while_end(size_t n);
+void generate_while_end(prog_t *dst,size_t n);
 
 
 /**
  * *---------OPERATIONS---------
  */ 
-void generate_operation_add();
-void generate_operation_sub();
-void generate_operation_mul();
-void generate_operation_div();
-void generate_operation_div();
-void generate_operation_idiv();
-void generate_operation_unary_minus();
+void generate_operation_add(prog_t *dst);
+void generate_operation_sub(prog_t *dst);
+void generate_operation_mul(prog_t *dst);
+void generate_operation_div(prog_t *dst);
+void generate_operation_div(prog_t *dst);
+void generate_operation_idiv(prog_t *dst);
+void generate_operation_unary_minus(prog_t *dst);
 
-void generate_operation_eq();
-void generate_operation_neq();
+void generate_operation_eq(prog_t *dst);
+void generate_operation_neq(prog_t *dst);
 
-void generate_operation_gt();
-void generate_operation_lt();
-void generate_operation_gte();
-void generate_operation_lte();
+void generate_operation_gt(prog_t *dst);
+void generate_operation_lt(prog_t *dst);
+void generate_operation_gte(prog_t *dst);
+void generate_operation_lte(prog_t *dst);
 
-void generate_operation_concat();
-void generate_operation_strlen();
-void generate_chr_function();
+void generate_operation_concat(prog_t *dst);
+void generate_operation_strlen(prog_t *dst);
+void generate_chr_function(prog_t *dst);
 
 
 /**
@@ -296,29 +296,37 @@ void generate_chr_function();
  * @brief generates prebuilt write function
  * @note supports exactly one argument
  */ 
-void generate_write_function();
+void generate_write_function(prog_t *dst);
 
-void generate_reads_function();
+void generate_reads_function(prog_t *dst);
 
-void generate_readi_function();
+void generate_readi_function(prog_t *dst);
 
-void generate_readn_function();
+void generate_readn_function(prog_t *dst);
 
-void generate_tointeger_function();
+void generate_tointeger_function(prog_t *dst);
 
-void generate_checkzero_function_int();
+void generate_checkzero_function_int(prog_t *dst);
 
-void generate_checkzero_function_float();
+void generate_checkzero_function_float(prog_t *dst);
 
-void generate_checknil_function_single();
+void generate_checknil_function_single(prog_t *dst);
 
-void generate_checknil_function_double();
+void generate_checknil_function_double(prog_t *dst);
 
-void generate_unaryminus_function();
+void generate_unaryminus_function(prog_t *dst);
 
-void generate_same_types();
+void generate_same_types(prog_t *dst);
 
-void generate_force_floats();
+void generate_force_floats(prog_t *dst);
+
+
+/**
+ * *---------VARIOUS---------
+ */ 
+
+void generate_int2num(prog_t *dst_code);
+
 
 
 /**
@@ -335,7 +343,7 @@ string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, sc
  * @brief printf the code
  * @note ends each call witn \n
  */ 
-void code_print(const char *const _Format, ...);
+void code_print(prog_t *dst, const char *const _Format, ...);
 
 /**
  * @brief converts dtype into format used in ifjcode21

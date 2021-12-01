@@ -109,7 +109,7 @@ typedef struct expr_rule {
  *                        function called inside expression (there aren't any other operations)
  */
 int parse_expression(scanner_t *sc, symbol_tables_t *s, 
-                     string_t *dtypes, bool *was_only_f_call);
+                     string_t *dtypes, bool *was_only_f_call, void *dst_code);
 
 
 #endif

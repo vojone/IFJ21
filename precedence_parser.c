@@ -12,6 +12,8 @@
 
 DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type)) /**< Operations with stack, that saves elements from expr. */
 
+prog_t *dst_code;
+
 /**
  * @brief Determines if is token separator, that can be used in expressions
  */ 
@@ -272,7 +274,7 @@ int argument_parser(token_t *func_id, char *params_s,
             str_init(&ret_type);
         
             bool is_func_in_arg;
-            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg);
+            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg,dst_code);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_type);
                 return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
@@ -886,24 +888,24 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
             //Only function was called during reduction 
             //fprintf(stderr, "Only function was called!\n");
             //Code for function
-            generate_call_function(element_terminal.value);
+            generate_call_function(dst_code,element_terminal.value);
         }
         else if(res == NULL) {
             char prim_dtype_c = to_str(&element_terminal.dtype)[0];
             sym_dtype_t dtype = char_to_dtype(prim_dtype_c);
             //We are pushing a static value
-            generate_value_push(VAL, dtype, element_terminal.value);
+            generate_value_push(dst_code,VAL, dtype, element_terminal.value);
         }
         else{
             //We are pushing variable
             // fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
-            generate_value_push(VAR, res->data.dtype , res->data.name.str);
+            generate_value_push(dst_code,VAR, res->data.dtype , res->data.name.str);
         }
     }
 
     //Generate operation code
     if(rule->generator_function != NULL)
-        rule->generator_function();
+        rule->generator_function(dst_code);
 
     print_operands(&ops, &syms->symtab_st, &syms->symtab); /**< It will be probably substituted for code generating */
 
@@ -1130,7 +1132,12 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *was_only_f_call) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *was_only_f_call, prog_t *dst) {
+    //im not sure wheter to put dst in the params, because it might get refactorized 
+    //!i just temporarily put the internal representation into global var
+    //hope i'm not gonna break anything
+    dst_code = dst;
+
     int retval = EXPRESSION_SUCCESS;
     char *failed_op_msg = NULL;
     *was_only_f_call = true;

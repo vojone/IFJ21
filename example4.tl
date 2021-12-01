@@ -1,6 +1,6 @@
 function main()
     local a : string = chr( 97 )
-    write( a )
+    write( a,4,reads() )
 end
 main()
 
