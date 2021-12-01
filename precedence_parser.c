@@ -1132,7 +1132,7 @@ int prepare_stacks(pp_stack_t *main_stack, pp_stack_t *garbage_stack) {
 }
 
 
-int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *was_only_f_call, prog_t *dst) {
+int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes, bool *was_only_f_call, void *dst) {
     //im not sure wheter to put dst in the params, because it might get refactorized 
     //!i just temporarily put the internal representation into global var
     //hope i'm not gonna break anything

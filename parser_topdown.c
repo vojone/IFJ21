@@ -174,6 +174,10 @@ int parse_program(parser_t *parser) {
         res = parser->return_code;
     }
     
+
+    //print generated code
+    print_program(&parser->dst_code);
+
     return res;
 
 }
