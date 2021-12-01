@@ -90,6 +90,8 @@ void instr_dtor(instr_t *instr) {
 void init_new_prog(prog_t *program) {
     program->first_instr = NULL;
     program->last_instr = NULL;
+    program->while_nest_lvl=0;
+    program->while_topmost=NULL;
 }
 
 
@@ -355,7 +357,6 @@ void generate_init(prog_t *dst){
 void generate_start_function(prog_t *dst, const char * name){
     app_instr(dst,"\n");
     app_instr(dst,"JUMP $END_FUN$%s",name);
-    app_instr(dst,"JUMP $END_FUN$%s",name);
     app_instr(dst,"#function %s ()",name);
     app_instr(dst,"LABEL $FUN$%s", name);
     app_instr(dst,"CREATEFRAME");
@@ -418,8 +419,18 @@ void generate_return(prog_t *dst){
 
 void generate_declare_variable(prog_t *dst,  void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner){
     string_t name = get_unique_name(sym_stack,symtab,var_id,scanner);
-    app_instr(dst,"DEFVAR %s%s",VAR_FORMAT,name.str);
-    app_instr(dst,"MOVE %s%s nil@nil",VAR_FORMAT,name.str);
+    if(dst->while_nest_lvl == 0){
+        //we are not in a while loop, we append it
+        app_instr(dst,"DEFVAR %s%s",VAR_FORMAT,name.str);
+        app_instr(dst,"MOVE %s%s nil@nil",VAR_FORMAT,name.str);
+    }else{ 
+        //if we are in a while loop we insert it before the while loops start
+        fprintf(stderr,"declaring var nest level: %li\n",dst->while_nest_lvl);
+        ins_before(dst,dst->while_topmost,"DEFVAR %s%s",VAR_FORMAT,name.str);
+        ins_before(dst,dst->while_topmost,"MOVE %s%s nil@nil",VAR_FORMAT,name.str);
+        //will actually print them in reverse order because we are using ins_before
+        //BUT it will keep MOVE after DEFVAR
+    }
 }
 
 
@@ -492,8 +503,14 @@ void generate_else_end(prog_t *dst, size_t n){
  */ 
 
 void generate_while_condition_beginning(prog_t *dst, size_t n){
-    app_instr(dst,"#while %i",n);
+    app_instr(dst,"#while %i, nest level %i",n,dst->while_nest_lvl);
     app_instr(dst,"LABEL $WHILE$COND$%i",n);
+    //todo not generating other while structures
+    if(dst->while_nest_lvl == 0){
+        dst->while_topmost = malloc(sizeof( instr_t * ));
+        dst->while_topmost = dst->last_instr;
+    }
+    dst->while_nest_lvl++;
 }
 
 void generate_while_condition_evaluate(prog_t *dst, size_t n){
@@ -505,6 +522,10 @@ void generate_while_end(prog_t *dst, size_t n){
     app_instr(dst,"#end of while %i loop",n);
     app_instr(dst,"JUMP $WHILE$COND$%i",n);
     app_instr(dst,"LABEL $WHILE$END$%i",n);
+    dst->while_nest_lvl--;
+    if(dst->while_nest_lvl == 0){
+        dst->while_topmost = NULL;
+    }
 }
 
 

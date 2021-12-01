@@ -49,6 +49,8 @@ DSTACK_DECL(instr_t *, instr)
 typedef struct program {
     instr_t *first_instr; /**< First instruction of program (DLL) */
     instr_t *last_instr;  /**< Last instruction of program (DLL) */
+    size_t while_nest_lvl;   //number of whiles we are currently in
+    instr_t *while_topmost; //pointer to the while which is first in the current scope
 } prog_t;
 
 

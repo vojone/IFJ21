@@ -3,7 +3,6 @@ CREATEFRAME
 
 
 JUMP $END_FUN$write
-JUMP $END_FUN$write
 #function write ()
 LABEL $FUN$write
 CREATEFRAME
@@ -26,7 +25,6 @@ LABEL $END_FUN$write
 
 
 JUMP $END_FUN$reads
-JUMP $END_FUN$reads
 #function reads ()
 LABEL $FUN$reads
 CREATEFRAME
@@ -40,7 +38,6 @@ LABEL $END_FUN$reads
 
 
 
-JUMP $END_FUN$readi
 JUMP $END_FUN$readi
 #function readi ()
 LABEL $FUN$readi
@@ -56,7 +53,6 @@ LABEL $END_FUN$readi
 
 
 JUMP $END_FUN$readn
-JUMP $END_FUN$readn
 #function readn ()
 LABEL $FUN$readn
 CREATEFRAME
@@ -70,7 +66,6 @@ LABEL $END_FUN$readn
 
 
 
-JUMP $END_FUN$tointeger
 JUMP $END_FUN$tointeger
 #function tointeger ()
 LABEL $FUN$tointeger
@@ -92,7 +87,6 @@ LABEL $END_FUN$tointeger
 
 
 
-JUMP $END_FUN$chr
 JUMP $END_FUN$chr
 #function chr ()
 LABEL $FUN$chr
@@ -178,7 +172,6 @@ LABEL $END_FUN$chr
 
 
 JUMP $END_FUN$$OP$unaryminus
-JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
 CREATEFRAME
@@ -209,7 +202,6 @@ LABEL $END_FUN$$OP$unaryminus
 
 
 JUMP $END_FUN$$OP$checkzero_float
-JUMP $END_FUN$$OP$checkzero_float
 #function $OP$checkzero_float ()
 LABEL $FUN$$OP$checkzero_float
 CREATEFRAME
@@ -229,7 +221,6 @@ LABEL $END_FUN$$OP$checkzero_float
 
 
 
-JUMP $END_FUN$$OP$checkzero_int
 JUMP $END_FUN$$OP$checkzero_int
 #function $OP$checkzero_int ()
 LABEL $FUN$$OP$checkzero_int
@@ -251,7 +242,6 @@ LABEL $END_FUN$$OP$checkzero_int
 
 
 JUMP $END_FUN$$OP$checknil_single
-JUMP $END_FUN$$OP$checknil_single
 #function $OP$checknil_single ()
 LABEL $FUN$$OP$checknil_single
 CREATEFRAME
@@ -271,7 +261,6 @@ LABEL $END_FUN$$OP$checknil_single
 
 
 
-JUMP $END_FUN$$OP$checknil_double
 JUMP $END_FUN$$OP$checknil_double
 #function $OP$checknil_double ()
 LABEL $FUN$$OP$checknil_double
@@ -302,7 +291,6 @@ LABEL $END_FUN$$OP$checknil_double
 
 
 
-JUMP $END_FUN$$BUILTIN$sametypes
 JUMP $END_FUN$$BUILTIN$sametypes
 #function $BUILTIN$sametypes ()
 LABEL $FUN$$BUILTIN$sametypes
@@ -342,7 +330,6 @@ LABEL $END_FUN$$BUILTIN$sametypes
 
 
 JUMP $END_FUN$$BUILTIN$forcefloats
-JUMP $END_FUN$$BUILTIN$forcefloats
 #function $BUILTIN$forcefloats ()
 LABEL $FUN$$BUILTIN$forcefloats
 CREATEFRAME
@@ -380,37 +367,52 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 JUMP $END_FUN$main
-JUMP $END_FUN$main
 #function main ()
 LABEL $FUN$main
 CREATEFRAME
 DEFVAR TF@&VAR&main$a$0
 MOVE TF@&VAR&main$a$0 nil@nil
-#here
-PUSHS string@World\032Hello?
+PUSHS int@0
 #assign value to main$a$0
 POPS TF@&VAR&main$a$0
+#while 0, nest level 0
 DEFVAR TF@&VAR&main$b$1
 MOVE TF@&VAR&main$b$1 nil@nil
+DEFVAR TF@&VAR&main$c$2
+MOVE TF@&VAR&main$c$2 nil@nil
+LABEL $WHILE$COND$0
 PUSHS TF@&VAR&main$a$0
-# start operator #A
+PUSHS int@10
+# $OP$checknil_double()
 PUSHFRAME
-CREATEFRAME
-# $OP$checknil_single()
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
 PUSHFRAME
-CALL $FUN$$OP$checknil_single
+CALL $FUN$$BUILTIN$sametypes
 POPFRAME
-DEFVAR TF@!TMP!A
-DEFVAR TF@!TMP!RESULT
-POPS TF@!TMP!A
-STRLEN TF@!TMP!RESULT TF@!TMP!A
-PUSHS TF@!TMP!RESULT
-POPFRAME
-# end operator #A
+# start operator A<B
+LTS
+# end operator A<B
+PUSHS bool@true
+JUMPIFNEQS $WHILE$END$0
+PUSHS int@0
 #assign value to main$b$1
 POPS TF@&VAR&main$b$1
-#here
-PUSHS string@Délka\032řetězce\032a\032je\032
+PUSHS TF@&VAR&main$a$0
+PUSHS int@1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+#assign value to main$a$0
+POPS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$a$0
 # write()
 PUSHFRAME
 CALL $FUN$write
@@ -426,6 +428,74 @@ PUSHS string@\010
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
+#while 1, nest level 1
+LABEL $WHILE$COND$1
+PUSHS TF@&VAR&main$b$1
+PUSHS int@10
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<B
+LTS
+# end operator A<B
+PUSHS bool@true
+JUMPIFNEQS $WHILE$END$1
+PUSHS int@99
+#assign value to main$c$2
+POPS TF@&VAR&main$c$2
+PUSHS TF@&VAR&main$a$0
+PUSHS int@1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+#assign value to main$a$0
+POPS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$a$0
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&main$c$2
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+#here
+PUSHS string@\010
+# write()
+PUSHFRAME
+CALL $FUN$write
+POPFRAME
+PUSHS TF@&VAR&main$b$1
+PUSHS int@1
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+ADDS
+#assign value to main$b$1
+POPS TF@&VAR&main$b$1
+#end of while 1 loop
+JUMP $WHILE$COND$1
+LABEL $WHILE$END$1
+#end of while 0 loop
+JUMP $WHILE$COND$0
+LABEL $WHILE$END$0
 
 
 RETURN

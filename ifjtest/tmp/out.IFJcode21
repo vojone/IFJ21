@@ -3,7 +3,6 @@ CREATEFRAME
 
 
 JUMP $END_FUN$write
-JUMP $END_FUN$write
 #function write ()
 LABEL $FUN$write
 CREATEFRAME
@@ -26,7 +25,6 @@ LABEL $END_FUN$write
 
 
 JUMP $END_FUN$reads
-JUMP $END_FUN$reads
 #function reads ()
 LABEL $FUN$reads
 CREATEFRAME
@@ -40,7 +38,6 @@ LABEL $END_FUN$reads
 
 
 
-JUMP $END_FUN$readi
 JUMP $END_FUN$readi
 #function readi ()
 LABEL $FUN$readi
@@ -56,7 +53,6 @@ LABEL $END_FUN$readi
 
 
 JUMP $END_FUN$readn
-JUMP $END_FUN$readn
 #function readn ()
 LABEL $FUN$readn
 CREATEFRAME
@@ -70,7 +66,6 @@ LABEL $END_FUN$readn
 
 
 
-JUMP $END_FUN$tointeger
 JUMP $END_FUN$tointeger
 #function tointeger ()
 LABEL $FUN$tointeger
@@ -92,7 +87,6 @@ LABEL $END_FUN$tointeger
 
 
 
-JUMP $END_FUN$chr
 JUMP $END_FUN$chr
 #function chr ()
 LABEL $FUN$chr
@@ -178,7 +172,6 @@ LABEL $END_FUN$chr
 
 
 JUMP $END_FUN$$OP$unaryminus
-JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
 CREATEFRAME
@@ -209,7 +202,6 @@ LABEL $END_FUN$$OP$unaryminus
 
 
 JUMP $END_FUN$$OP$checkzero_float
-JUMP $END_FUN$$OP$checkzero_float
 #function $OP$checkzero_float ()
 LABEL $FUN$$OP$checkzero_float
 CREATEFRAME
@@ -229,7 +221,6 @@ LABEL $END_FUN$$OP$checkzero_float
 
 
 
-JUMP $END_FUN$$OP$checkzero_int
 JUMP $END_FUN$$OP$checkzero_int
 #function $OP$checkzero_int ()
 LABEL $FUN$$OP$checkzero_int
@@ -251,7 +242,6 @@ LABEL $END_FUN$$OP$checkzero_int
 
 
 JUMP $END_FUN$$OP$checknil_single
-JUMP $END_FUN$$OP$checknil_single
 #function $OP$checknil_single ()
 LABEL $FUN$$OP$checknil_single
 CREATEFRAME
@@ -271,7 +261,6 @@ LABEL $END_FUN$$OP$checknil_single
 
 
 
-JUMP $END_FUN$$OP$checknil_double
 JUMP $END_FUN$$OP$checknil_double
 #function $OP$checknil_double ()
 LABEL $FUN$$OP$checknil_double
@@ -302,7 +291,6 @@ LABEL $END_FUN$$OP$checknil_double
 
 
 
-JUMP $END_FUN$$BUILTIN$sametypes
 JUMP $END_FUN$$BUILTIN$sametypes
 #function $BUILTIN$sametypes ()
 LABEL $FUN$$BUILTIN$sametypes
@@ -342,7 +330,6 @@ LABEL $END_FUN$$BUILTIN$sametypes
 
 
 JUMP $END_FUN$$BUILTIN$forcefloats
-JUMP $END_FUN$$BUILTIN$forcefloats
 #function $BUILTIN$forcefloats ()
 LABEL $FUN$$BUILTIN$forcefloats
 CREATEFRAME
@@ -380,7 +367,6 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 JUMP $END_FUN$foo
-JUMP $END_FUN$foo
 #function foo ()
 LABEL $FUN$foo
 CREATEFRAME
@@ -392,7 +378,6 @@ LABEL $END_FUN$foo
 
 
 
-JUMP $END_FUN$main
 JUMP $END_FUN$main
 #function main ()
 LABEL $FUN$main

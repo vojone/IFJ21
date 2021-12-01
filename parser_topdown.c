@@ -1218,6 +1218,8 @@ int parse_function_call(parser_t *parser, token_t *id_func) {
         //Generate function call unless variadic
         if(!is_variadic) {
             debug_print("function %s is not variadic", id_func);
+            //!remove later
+            // fprintf(stderr,"CONTENT Ende: %s",parser->dst_code.first_instr->content.str);
             generate_call_function(&parser->dst_code,get_attr(id_func, parser->scanner));
         }
 
