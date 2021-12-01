@@ -288,7 +288,6 @@ void generate_operation_lte(prog_t *dst);
 
 void generate_operation_concat(prog_t *dst);
 void generate_operation_strlen(prog_t *dst);
-void generate_chr_function(prog_t *dst);
 
 
 /**
@@ -307,6 +306,12 @@ void generate_readi_function(prog_t *dst);
 void generate_readn_function(prog_t *dst);
 
 void generate_tointeger_function(prog_t *dst);
+
+void generate_chr_function(prog_t *dst);
+
+void generate_ord_function(prog_t *dst);
+
+void generate_substr_function(prog_t *dst);
 
 void generate_checkzero_function_int(prog_t *dst);
 

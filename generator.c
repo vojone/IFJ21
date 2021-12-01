@@ -22,8 +22,8 @@
 //?done:todo checkzero for operations
 //?done:todo checknil for operation
 //todo builtin functions
-//todo cycle declaration
-//todo write "nil" when input nil
+//?done//todo cycle declaration
+//?done//todo write "nil" when input nil
 
 #include "generator.h"
 #define VAR_FORMAT "TF@&VAR&"
@@ -337,6 +337,8 @@ void generate_init(prog_t *dst){
     generate_readn_function(dst);
     generate_tointeger_function(dst);
     generate_chr_function(dst);
+    generate_ord_function(dst);
+    generate_substr_function(dst);
     
     //operation functions
     generate_unaryminus_function(dst);
@@ -808,40 +810,79 @@ void generate_chr_function(prog_t *dst){
     app_instr(dst,"LABEL $CHARSEND$");
     generate_end_function(dst,"chr");
 }
-//todo finish this function
+
 void generate_ord_function(prog_t *dst){
     generate_start_function(dst,"ord");
     
     generate_call_function(dst,"$OP$checknil_double");
 
-    //local a = a
-    app_instr(dst,"DEFVAR %s$TEMP_ordPOS$",VAR_FORMAT);
-    app_instr(dst,"POPS %s$TEMP_ordPOS$",VAR_FORMAT);
-    
-    app_instr(dst,"DEFVAR %s$TEMP_ordSTR$",VAR_FORMAT);
-    app_instr(dst,"POPS %s$TEMP_ordSTR$",VAR_FORMAT);
-    
-    app_instr(dst,"PUSHS %s$TEMP_ordPOS$",VAR_FORMAT);
+    generate_parameter(dst, "POS");
+    generate_parameter(dst, "STR");    
 
-    //if(a != nil) 
-    app_instr(dst,"PUSHS %s$TEMP_ord$",VAR_FORMAT);
-    app_instr(dst,"PUSHS int@0");
-    generate_operation_gte(dst);
 
-    app_instr(dst,"PUSHS %s$TEMP_ord$",VAR_FORMAT);
-    app_instr(dst,"PUSHS int@255",VAR_FORMAT);
+
+//     var cond1 = 1 <= pos;
+//     var cond2 = pos <= str.length;
+
+    app_instr(dst, "PUSHS int@1");
+    app_instr(dst, "PUSHS %s%s",VAR_FORMAT,"POS");
+    //1 <= pos
     generate_operation_lte(dst);
 
-    app_instr(dst,"JUMPIFNEQS $SKIPCONVER$");
-    app_instr(dst,"PUSHS %s$TEMP_ord$",VAR_FORMAT);
-    app_instr(dst,"INT2CHARS");
-    app_instr(dst,"JUMP $CHARSEND$");
-    app_instr(dst,"LABEL $SKIPCONVER$");
-    
-    app_instr(dst,"PUSHS nil@nil");
+    app_instr(dst, "PUSHS %s%s",VAR_FORMAT,"POS");
+    app_instr(dst, "PUSHS %s%s",VAR_FORMAT,"STR");
+    generate_operation_strlen(dst);
+    //pos <= strlen(str)
+    generate_operation_lte(dst);
 
-    app_instr(dst,"LABEL $CHARSEND$");
+    app_instr(dst, "JUMPIFNEQS $ORDNIL$");
+    app_instr(dst, "PUSHS %s%s",VAR_FORMAT,"STR");
+    app_instr(dst, "PUSHS %s%s",VAR_FORMAT,"POS");
+    app_instr(dst, "PUSHS int@1");
+    app_instr(dst, "SUBS");
+    app_instr(dst, "STRI2INTS");
+
+    app_instr(dst, "JUMP $ORDEND$");
+    app_instr(dst, "LABEL $ORDNIL$");
+    app_instr(dst, "PUSHS nil@nil");
+
+    app_instr(dst, "LABEL $ORDEND$");
+    
     generate_end_function(dst,"ord");
+}
+
+void generate_substr_function(prog_t *dst){
+    generate_start_function(dst,"substr");   //function write()
+    
+    generate_parameter(dst,"finish");
+    generate_parameter(dst,"start");
+    generate_parameter(dst,"string");
+
+    app_instr(dst,"DEFVAR TF@result");
+    app_instr(dst,"MOVE TF@result string@");
+
+    app_instr(dst,"DEFVAR TF@char");
+    
+    app_instr(dst, "FLOAT2INT %sstart %sstart",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst, "FLOAT2INT %sfinish %sfinish",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst, "SUB %sstart %sstart int@1",VAR_FORMAT,VAR_FORMAT);
+
+    //cycle start
+    app_instr(dst, "LABEL $SUBSTR_CYCLE$");
+    app_instr(dst, "JUMPIFEQ $SUBSTR_CYCLE_END$ %sstart %sfinish",VAR_FORMAT,VAR_FORMAT);
+
+    //cycle body
+    app_instr(dst, "GETCHAR TF@char %sstring %sstart",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst, "CONCAT TF@result TF@result TF@char");
+
+    //cycle end
+    app_instr(dst, "ADD %sstart %sstart int@1",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst, "JUMP $SUBSTR_CYCLE$");
+    app_instr(dst, "LABEL $SUBSTR_CYCLE_END$");
+
+    app_instr(dst, "PUSHS TF@result");
+    
+    generate_end_function(dst,"substr");
 }
 
 void generate_checknil_function_single(prog_t *dst){

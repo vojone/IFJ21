@@ -171,6 +171,147 @@ LABEL $END_FUN$chr
 
 
 
+JUMP $END_FUN$ord
+#function ord ()
+LABEL $FUN$ord
+CREATEFRAME
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+#define param POS
+DEFVAR TF@&VAR&POS
+POPS TF@&VAR&POS
+#define param STR
+DEFVAR TF@&VAR&STR
+POPS TF@&VAR&STR
+PUSHS int@1
+PUSHS TF@&VAR&POS
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+PUSHS TF@&VAR&POS
+PUSHS TF@&VAR&STR
+# start operator #A
+PUSHFRAME
+CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!RESULT
+POPS TF@!TMP!A
+STRLEN TF@!TMP!RESULT TF@!TMP!A
+PUSHS TF@!TMP!RESULT
+POPFRAME
+# end operator #A
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+JUMPIFNEQS $ORDNIL$
+PUSHS TF@&VAR&STR
+PUSHS TF@&VAR&POS
+PUSHS int@1
+SUBS
+STRI2INTS
+JUMP $ORDEND$
+LABEL $ORDNIL$
+PUSHS nil@nil
+LABEL $ORDEND$
+
+
+RETURN
+LABEL $END_FUN$ord
+
+
+
+JUMP $END_FUN$substr
+#function substr ()
+LABEL $FUN$substr
+CREATEFRAME
+#define param finish
+DEFVAR TF@&VAR&finish
+POPS TF@&VAR&finish
+#define param start
+DEFVAR TF@&VAR&start
+POPS TF@&VAR&start
+#define param string
+DEFVAR TF@&VAR&string
+POPS TF@&VAR&string
+DEFVAR TF@result
+MOVE TF@result string@
+DEFVAR TF@char
+FLOAT2INT TF@&VAR&start TF@&VAR&start
+FLOAT2INT TF@&VAR&finish TF@&VAR&finish
+SUB TF@&VAR&start TF@&VAR&start int@1
+LABEL $SUBSTR_CYCLE$
+JUMPIFEQ $SUBSTR_CYCLE_END$ TF@&VAR&start TF@&VAR&finish
+GETCHAR TF@char TF@&VAR&string TF@&VAR&start
+CONCAT TF@result TF@result TF@char
+ADD TF@&VAR&start TF@&VAR&start int@1
+JUMP $SUBSTR_CYCLE$
+LABEL $SUBSTR_CYCLE_END$
+PUSHS TF@result
+
+
+RETURN
+LABEL $END_FUN$substr
+
+
+
 JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
@@ -364,144 +505,23 @@ PUSHS TF@&VAR&$TEMP$B
 RETURN
 LABEL $END_FUN$$BUILTIN$forcefloats
 
-
-
-JUMP $END_FUN$main
-#function main ()
-LABEL $FUN$main
-CREATEFRAME
-DEFVAR TF@&VAR&main$a$0
-MOVE TF@&VAR&main$a$0 nil@nil
-PUSHS int@0
-#assign value to main$a$0
-POPS TF@&VAR&main$a$0
-#while 0, nest level 0
-DEFVAR TF@&VAR&main$b$1
-MOVE TF@&VAR&main$b$1 nil@nil
-DEFVAR TF@&VAR&main$c$2
-MOVE TF@&VAR&main$c$2 nil@nil
-LABEL $WHILE$COND$0
-PUSHS TF@&VAR&main$a$0
-PUSHS int@10
-# $OP$checknil_double()
+# reads()
 PUSHFRAME
-CALL $FUN$$OP$checknil_double
+CALL $FUN$reads
 POPFRAME
-# $BUILTIN$sametypes()
+# readn()
 PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
+CALL $FUN$readn
 POPFRAME
-# start operator A<B
-LTS
-# end operator A<B
-PUSHS bool@true
-JUMPIFNEQS $WHILE$END$0
-PUSHS int@0
-#assign value to main$b$1
-POPS TF@&VAR&main$b$1
-PUSHS TF@&VAR&main$a$0
-PUSHS int@1
-# $OP$checknil_double()
+# readn()
 PUSHFRAME
-CALL $FUN$$OP$checknil_double
+CALL $FUN$readn
 POPFRAME
-# $BUILTIN$sametypes()
+# substr()
 PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
+CALL $FUN$substr
 POPFRAME
-ADDS
-#assign value to main$a$0
-POPS TF@&VAR&main$a$0
-PUSHS TF@&VAR&main$a$0
 # write()
 PUSHFRAME
 CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&main$b$1
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#here
-PUSHS string@\010
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#while 1, nest level 1
-LABEL $WHILE$COND$1
-PUSHS TF@&VAR&main$b$1
-PUSHS int@10
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-# start operator A<B
-LTS
-# end operator A<B
-PUSHS bool@true
-JUMPIFNEQS $WHILE$END$1
-PUSHS int@99
-#assign value to main$c$2
-POPS TF@&VAR&main$c$2
-PUSHS TF@&VAR&main$a$0
-PUSHS int@1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-ADDS
-#assign value to main$a$0
-POPS TF@&VAR&main$a$0
-PUSHS TF@&VAR&main$a$0
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&main$c$2
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#here
-PUSHS string@\010
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&main$b$1
-PUSHS int@1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-ADDS
-#assign value to main$b$1
-POPS TF@&VAR&main$b$1
-#end of while 1 loop
-JUMP $WHILE$COND$1
-LABEL $WHILE$END$1
-#end of while 0 loop
-JUMP $WHILE$COND$0
-LABEL $WHILE$END$0
-
-
-RETURN
-LABEL $END_FUN$main
-
-# main()
-PUSHFRAME
-CALL $FUN$main
 POPFRAME
