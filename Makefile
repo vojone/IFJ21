@@ -63,6 +63,7 @@ generator: generator_wrapper.o generator.o dstring.o dstack.o $(SYMTAB).o $(SCAN
 
 clean:
 	rm -f *.o $(EXES) $(ZIPNAME).zip
+	rm ifjtest/tmp/*
 
 zip: clean
 	zip $(ZIPNAME).zip $(INZIP)
