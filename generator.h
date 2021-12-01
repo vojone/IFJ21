@@ -286,6 +286,7 @@ void generate_operation_lte();
 
 void generate_operation_concat();
 void generate_operation_strlen();
+void generate_chr_function();
 
 
 /**

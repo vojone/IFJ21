@@ -87,6 +87,90 @@ LABEL $END_FUN$tointeger
 
 
 
+JUMP $END_FUN$chr
+#function chr ()
+LABEL $FUN$chr
+CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
+DEFVAR TF@&VAR&$TEMP_chr$
+POPS TF@&VAR&$TEMP_chr$
+PUSHS TF@&VAR&$TEMP_chr$
+PUSHS int@0
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A>=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+GTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A>=B
+PUSHS TF@&VAR&$TEMP_chr$
+PUSHS int@255
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+JUMPIFNEQS $SKIPCONVER$
+PUSHS TF@&VAR&$TEMP_chr$
+INT2CHARS
+JUMP $CHARSEND$
+LABEL $SKIPCONVER$
+PUSHS nil@nil
+LABEL $CHARSEND$
+
+
+RETURN
+LABEL $END_FUN$chr
+
+
+
 JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
@@ -282,180 +366,24 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$factorial
-#function factorial ()
-LABEL $FUN$factorial
-CREATEFRAME
-#define param factorial$n$0
-DEFVAR TF@&VAR&factorial$n$0
-POPS TF@&VAR&factorial$n$0
-DEFVAR TF@&VAR&factorial$n1$1
-MOVE TF@&VAR&factorial$n1$1 nil@nil
-PUSHS TF@&VAR&factorial$n$0
-PUSHS int@1
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-SUBS
-#assign value to factorial$n1$1
-POPS TF@&VAR&factorial$n1$1
-PUSHS TF@&VAR&factorial$n$0
-PUSHS int@2
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-# start operator A<B
-LTS
-# end operator A<B
-#if 0
-PUSHS bool@true
-JUMPIFNEQS $ELSE$START$0
-PUSHS int@1
-RETURN
-#end of if 0
-JUMP $ELSE$END$0
-LABEL $ELSE$START$0
-DEFVAR TF@&VAR&factorial$tmp$2
-MOVE TF@&VAR&factorial$tmp$2 nil@nil
-PUSHS TF@&VAR&factorial$n1$1
-# factorial()
-PUSHFRAME
-CALL $FUN$factorial
-POPFRAME
-#assign value to factorial$tmp$2
-POPS TF@&VAR&factorial$tmp$2
-PUSHS TF@&VAR&factorial$n$0
-PUSHS TF@&VAR&factorial$tmp$2
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-MULS
-RETURN
-#end of else and the whole if 0 statement
-LABEL $ELSE$END$0
-
-
-RETURN
-LABEL $END_FUN$factorial
-
-
-
 JUMP $END_FUN$main
 #function main ()
 LABEL $FUN$main
 CREATEFRAME
-#here
-PUSHS string@Zadejte\032cislo\032pro\032vypocet\032faktorialu:\032
+DEFVAR TF@&VAR&main$a$0
+MOVE TF@&VAR&main$a$0 nil@nil
+PUSHS int@97
+# chr()
+PUSHFRAME
+CALL $FUN$chr
+POPFRAME
+#assign value to main$a$0
+POPS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$a$0
 # write()
 PUSHFRAME
 CALL $FUN$write
 POPFRAME
-DEFVAR TF@&VAR&main$a$3
-MOVE TF@&VAR&main$a$3 nil@nil
-# readi()
-PUSHFRAME
-CALL $FUN$readi
-POPFRAME
-#assign value to main$a$3
-POPS TF@&VAR&main$a$3
-PUSHS TF@&VAR&main$a$3
-PUSHS nil@nil
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-# start operator A~=B
-EQS
-NOTS
-# end operator A~=B
-#if 1
-PUSHS bool@true
-JUMPIFNEQS $ELSE$START$1
-PUSHS TF@&VAR&main$a$3
-PUSHS int@0
-# $OP$checknil_double()
-PUSHFRAME
-CALL $FUN$$OP$checknil_double
-POPFRAME
-# $BUILTIN$sametypes()
-PUSHFRAME
-CALL $FUN$$BUILTIN$sametypes
-POPFRAME
-# start operator A<B
-LTS
-# end operator A<B
-#if 2
-PUSHS bool@true
-JUMPIFNEQS $ELSE$START$2
-#here
-PUSHS string@Faktorial\032nejde\032spocitat!
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#here
-PUSHS string@\010
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#end of if 2
-JUMP $ELSE$END$2
-LABEL $ELSE$START$2
-DEFVAR TF@&VAR&main$vysl$4
-MOVE TF@&VAR&main$vysl$4 nil@nil
-PUSHS TF@&VAR&main$a$3
-# factorial()
-PUSHFRAME
-CALL $FUN$factorial
-POPFRAME
-#assign value to main$vysl$4
-POPS TF@&VAR&main$vysl$4
-#here
-PUSHS string@Vysledek\032je\032
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-PUSHS TF@&VAR&main$vysl$4
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#here
-PUSHS string@\010
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#end of else and the whole if 2 statement
-LABEL $ELSE$END$2
-#end of if 1
-JUMP $ELSE$END$1
-LABEL $ELSE$START$1
-#here
-PUSHS string@Chyba\032pri\032nacitani\032celeho\032cisla!\010
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
-#end of else and the whole if 1 statement
-LABEL $ELSE$END$1
 
 
 RETURN

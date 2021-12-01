@@ -1,48 +1,12 @@
-
--- function foo()
---     local a: integer = 10
---     local b: integer = nil
---     write(b)
--- end
--- foo()
-
--- local b : integer = val()
-
--- function add(a:integer, b:integer) : integer, integer
---     return 2, 3
--- end
-
-require "ifj21"
-
-function factorial(n : integer) : integer
-    local n1 : integer = n - 1
-
-    if n < 2 then
-        return 1
-    else
-        local tmp : integer = factorial(n1)
-        return n * tmp
-    end
-end
-
 function main()
-    write("Zadejte cislo pro vypocet faktorialu: ")
-    local a : integer = readi()
-
-    if a ~= nil then
-        if a < 0 then
-            write("Faktorial nejde spocitat!", "\n")
-        else
-            local vysl : integer = factorial(a)
-            write("Vysledek je ", vysl, "\n")
-        end
-    else
-        write("Chyba pri nacitani celeho cisla!\n")
-    end
+    local a : string = chr( 97 )
+    write( a )
 end
-
 main()
 
+-- [6]
+
+--[3451]
 
 
 -- function main()

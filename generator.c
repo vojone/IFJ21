@@ -334,6 +334,7 @@ void generate_init(){
     generate_readi_function();
     generate_readn_function();
     generate_tointeger_function();
+    generate_chr_function();
     
     //operation functions
     generate_unaryminus_function();
@@ -755,6 +756,70 @@ void generate_tointeger_function(){
 
     code_print("LABEL $TOINTSKIP$");
     generate_end_function("tointeger");
+}
+
+void generate_chr_function(){
+    generate_start_function("chr");
+    
+    generate_call_function("$OP$checknil_single");
+
+    //local a = a
+    code_print("DEFVAR %s$TEMP_chr$",VAR_FORMAT);
+    code_print("POPS %s$TEMP_chr$",VAR_FORMAT);
+    //if(a != nil) 
+    code_print("PUSHS %s$TEMP_chr$",VAR_FORMAT);
+    code_print("PUSHS int@0");
+    generate_operation_gte();
+
+    code_print("PUSHS %s$TEMP_chr$",VAR_FORMAT);
+    code_print("PUSHS int@255",VAR_FORMAT);
+    generate_operation_lte();
+
+    code_print("JUMPIFNEQS $SKIPCONVER$");
+    code_print("PUSHS %s$TEMP_chr$",VAR_FORMAT);
+    code_print("INT2CHARS");
+    code_print("JUMP $CHARSEND$");
+    code_print("LABEL $SKIPCONVER$");
+    
+    code_print("PUSHS nil@nil");
+
+    code_print("LABEL $CHARSEND$");
+    generate_end_function("chr");
+}
+//todo finish this function
+void generate_ord_function(){
+    generate_start_function("ord");
+    
+    generate_call_function("$OP$checknil_double");
+
+    //local a = a
+    code_print("DEFVAR %s$TEMP_ordPOS$",VAR_FORMAT);
+    code_print("POPS %s$TEMP_ordPOS$",VAR_FORMAT);
+    
+    code_print("DEFVAR %s$TEMP_ordSTR$",VAR_FORMAT);
+    code_print("POPS %s$TEMP_ordSTR$",VAR_FORMAT);
+    
+    code_print("PUSHS %s$TEMP_ordPOS$",VAR_FORMAT);
+
+    //if(a != nil) 
+    code_print("PUSHS %s$TEMP_ord$",VAR_FORMAT);
+    code_print("PUSHS int@0");
+    generate_operation_gte();
+
+    code_print("PUSHS %s$TEMP_ord$",VAR_FORMAT);
+    code_print("PUSHS int@255",VAR_FORMAT);
+    generate_operation_lte();
+
+    code_print("JUMPIFNEQS $SKIPCONVER$");
+    code_print("PUSHS %s$TEMP_ord$",VAR_FORMAT);
+    code_print("INT2CHARS");
+    code_print("JUMP $CHARSEND$");
+    code_print("LABEL $SKIPCONVER$");
+    
+    code_print("PUSHS nil@nil");
+
+    code_print("LABEL $CHARSEND$");
+    generate_end_function("ord");
 }
 
 void generate_checknil_function_single(){
