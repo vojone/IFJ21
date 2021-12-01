@@ -1,17 +1,20 @@
-
-function foo()
-    local a: integer = 10
-    local b: integer = nil
-    write(b)
+function main()
+    local a : string = chr( 97 )
+    write( a )
 end
-foo()
+main()
 
--- local b : integer = val()
+-- [6]
 
-function add(a:integer, b:integer) : integer, integer, integer, integer
-    return
-end
+--[3451]
 
+
+-- function main()
+--     write(3.3//3)
+-- end
+-- main()
+
+-- main()
 -- function g()
 --     local a : integer = 8 
 --     if a == 8 then

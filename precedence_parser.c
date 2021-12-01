@@ -622,7 +622,7 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E<=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \"<=\"", generate_operation_lte},
         {"E>=E", "(nis|nis", BOOL, NONE, "Incompatible operands of \">=\"", generate_operation_gte},
         {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"", generate_operation_eq},
-        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"", generate_operation_eq},
+        {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"", generate_operation_neq},
         {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands", generate_operation_concat},
     };
 
@@ -876,18 +876,21 @@ int reduce(pp_stack_t *st, pp_stack_t ops,
            string_t *result_type,
            bool will_be_zero,
            pp_stack_t *garbage) {
-    //todo fix function calls being generated as variables
+
+    //Todo fix function calls being generated as variables
     if(strcmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
         tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
 
         if(element_terminal.is_fcall) {
             //Only function was called during reduction 
-            // fprintf(stderr, "Only function was called!\n");
-            //code for function
+            //fprintf(stderr, "Only function was called!\n");
+            //Code for function
             generate_call_function(element_terminal.value);
-        }else if(res == NULL) {
-            sym_dtype_t dtype = char_to_dtype(to_str(&element_terminal.dtype)[0]);
+        }
+        else if(res == NULL) {
+            char prim_dtype_c = to_str(&element_terminal.dtype)[0];
+            sym_dtype_t dtype = char_to_dtype(prim_dtype_c);
             //We are pushing a static value
             generate_value_push(VAL, dtype, element_terminal.value);
         }

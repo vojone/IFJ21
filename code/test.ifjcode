@@ -87,6 +87,90 @@ LABEL $END_FUN$tointeger
 
 
 
+JUMP $END_FUN$chr
+#function chr ()
+LABEL $FUN$chr
+CREATEFRAME
+# $OP$checknil_single()
+PUSHFRAME
+CALL $FUN$$OP$checknil_single
+POPFRAME
+DEFVAR TF@&VAR&$TEMP_chr$
+POPS TF@&VAR&$TEMP_chr$
+PUSHS TF@&VAR&$TEMP_chr$
+PUSHS int@0
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A>=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+GTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A>=B
+PUSHS TF@&VAR&$TEMP_chr$
+PUSHS int@255
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<=B
+PUSHFRAME
+CREATEFRAME
+DEFVAR TF@!TMP!A
+DEFVAR TF@!TMP!B
+POPS TF@!TMP!B
+POPS TF@!TMP!A
+DEFVAR TF@!TYPE!A
+TYPE TF@!TYPE!A TF@!TMP!A
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+PUSHS TF@!TMP!A
+PUSHS TF@!TMP!B
+DEFVAR TF@!TMP!LTRES
+LTS
+POPS TF@!TMP!LTRES
+EQS
+PUSHS TF@!TMP!LTRES
+ORS
+POPFRAME
+# end operator A<=B
+JUMPIFNEQS $SKIPCONVER$
+PUSHS TF@&VAR&$TEMP_chr$
+INT2CHARS
+JUMP $CHARSEND$
+LABEL $SKIPCONVER$
+PUSHS nil@nil
+LABEL $CHARSEND$
+
+
+RETURN
+LABEL $END_FUN$chr
+
+
+
 JUMP $END_FUN$$OP$unaryminus
 #function $OP$unaryminus ()
 LABEL $FUN$$OP$unaryminus
@@ -282,21 +366,20 @@ LABEL $END_FUN$$BUILTIN$forcefloats
 
 
 
-JUMP $END_FUN$foo
-#function foo ()
-LABEL $FUN$foo
+JUMP $END_FUN$main
+#function main ()
+LABEL $FUN$main
 CREATEFRAME
-DEFVAR TF@&VAR&foo$a$0
-MOVE TF@&VAR&foo$a$0 nil@nil
-PUSHS int@10
-#assign value to foo$a$0
-POPS TF@&VAR&foo$a$0
-DEFVAR TF@&VAR&foo$b$1
-MOVE TF@&VAR&foo$b$1 nil@nil
-PUSHS nil@nil
-#assign value to foo$b$1
-POPS TF@&VAR&foo$b$1
-PUSHS TF@&VAR&foo$b$1
+DEFVAR TF@&VAR&main$a$0
+MOVE TF@&VAR&main$a$0 nil@nil
+PUSHS int@97
+# chr()
+PUSHFRAME
+CALL $FUN$chr
+POPFRAME
+#assign value to main$a$0
+POPS TF@&VAR&main$a$0
+PUSHS TF@&VAR&main$a$0
 # write()
 PUSHFRAME
 CALL $FUN$write
@@ -304,31 +387,9 @@ POPFRAME
 
 
 RETURN
-LABEL $END_FUN$foo
+LABEL $END_FUN$main
 
-# foo()
+# main()
 PUSHFRAME
-CALL $FUN$foo
+CALL $FUN$main
 POPFRAME
-
-
-JUMP $END_FUN$add
-#function add ()
-LABEL $FUN$add
-CREATEFRAME
-#define param add$b$3
-DEFVAR TF@&VAR&add$b$3
-POPS TF@&VAR&add$b$3
-#define param add$a$2
-DEFVAR TF@&VAR&add$a$2
-POPS TF@&VAR&add$a$2
-PUSHS nil@nil
-PUSHS nil@nil
-PUSHS nil@nil
-PUSHS nil@nil
-RETURN
-
-
-RETURN
-LABEL $END_FUN$add
-
