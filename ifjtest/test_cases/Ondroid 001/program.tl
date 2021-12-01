@@ -15,7 +15,7 @@ function main()
     write("Zadejte cislo pro vypocet faktorialu: ")
     local a : integer = readi()
 
-    if a == nil then
+    if a ~= nil then
         if a < 0 then
             write("Faktorial nejde spocitat!", "\n")
         else
