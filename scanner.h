@@ -64,7 +64,7 @@ typedef enum fsm_state {
     INIT,
     ID_F,
     INT_F,
-    NUM_1, NUM_2, NUM_3, NUM_F,
+    NUM_1, NUM_2, NUM_3, NUM_F1, NUM_F2,
     COM_1, COM_2, COM_3, COM_F1, COM_F2, COM_F3,
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
