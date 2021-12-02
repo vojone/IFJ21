@@ -161,9 +161,7 @@ int parse_program(parser_t *parser) {
     generate_init(&parser->dst_code);   
     
     int res = PARSE_SUCCESS;
-    if(lookahead_token_attr(parser, KEYWORD, "require")) { //Check if there is prolog and parse it, if there is
-        res = parse_require(parser);
-    }
+    res = parse_require(parser); //Check prolog (there MUST be require "ifj21")
     
     //Run parsing
     res = (res == PARSE_SUCCESS) ?  global_statement_list(parser) : res;
@@ -640,20 +638,30 @@ int parse_local_var(parser_t *parser) {
 }
 
 
-//require [string]
+//<prolog>                -> require "ifj21"
 int parse_require(parser_t *parser) {
     //Go one token forward
-    get_next_token(parser->scanner);
-
     token_t t = get_next_token(parser->scanner);
     if(compare_token(t, ERROR_TYPE)) {
         return LEXICAL_ERROR;
     }
-    else if(compare_token(t, STRING)) {
-        return PARSE_SUCCESS;
+    else if(compare_token_attr(parser, t, KEYWORD, "require")) {
+        
+        //require is Ok, check string after
+        t = get_next_token(parser->scanner);
+        if(compare_token(t, ERROR_TYPE)) {
+            return LEXICAL_ERROR;
+        }
+        else if(compare_token_attr(parser, t, STRING, "\"ifj21\"")) {
+            return PARSE_SUCCESS;
+        }
+        else {
+            error_unexpected_token(parser, "'ifj21'", t);
+        }
+
     }
     else {
-        error_unexpected_token(parser, "STRING", t);
+        error_unexpected_token(parser, "'require'", t);
     }
 
     return SYNTAX_ERROR;

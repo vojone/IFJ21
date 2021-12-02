@@ -446,7 +446,7 @@ class code_sample4 : public test_fixture {
                 STRING, SEPARATOR, IDENTIFIER, OPERATOR, INTEGER,
                 OPERATOR, INTEGER, IDENTIFIER, SEPARATOR, IDENTIFIER,
                 SEPARATOR, KEYWORD, IDENTIFIER, SEPARATOR, SEPARATOR,
-                EOF_TYPE
+                ERROR_TYPE, EOF_TYPE
             };
         }
 };

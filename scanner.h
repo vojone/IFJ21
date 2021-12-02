@@ -25,9 +25,9 @@
 #include "tables.h"
 
 #define UNSET -1
-
-#define INTERNAL_ERROR 99
-#define LEXICAL_ERROR 1
+ 
+#define INTERNAL_ERROR 99 /**< Means e.g. allocation error */
+#define LEXICAL_ERROR 1 
 
 /**
  * @brief All possible token types
@@ -43,6 +43,7 @@ typedef enum token_type {
     SEPARATOR,
     EOF_TYPE,
     ERROR_TYPE,
+    INT_ERR_TYPE,
     TOK_TYPE_NUM
 } token_type_t;
 
@@ -64,7 +65,7 @@ typedef enum fsm_state {
     ID_F,
     INT_F,
     NUM_1, NUM_2, NUM_3, NUM_F,
-    COM_F1, COM_F2, COM_F3, COM_F4, COM_F5,
+    COM_1, COM_2, COM_3, COM_F1, COM_F2, COM_F3,
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
     OP_1, OP_2, OP_F1, OP_F2, OP_F3, OP_F4,
@@ -144,8 +145,9 @@ char *tok_type_to_str(token_type_t tok_type);
 
 /**
  * @brief Inits scanner structure
+ * @return If it returns INTERNAL_ERROR error ocurred during initialization
  */ 
-void scanner_init(scanner_t *scanner);
+int scanner_init(scanner_t *scanner);
 
 /**
  * @brief Destroys scanner structure

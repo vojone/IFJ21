@@ -17,8 +17,7 @@
 
 <program>               -> <prolog> <global-statement-list>  <!--Only require and functions basically-->
 
-<prolog>                -> require [string] 
-<prolog>                -> [eps]
+<prolog>                -> require "ifj21"
 
 <statement-list>        -> <statement> <statement-list>
 <statement-list>        -> [eps]

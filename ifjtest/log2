@@ -1,0 +1,340 @@
+make: Entering directory '/mnt/c/Users/vojon/Documents/Škola/3_sem/IFJ/projekt/IFJ21'
+gcc -Werror -Wall -pedantic -std=c99 -o IFJ21 parser_topdown.o precedence_parser.o scanner.o symtable.o main.o dstring.o tables.o dstack.o generator.o
+make: Leaving directory '/mnt/c/Users/vojon/Documents/Škola/3_sem/IFJ/projekt/IFJ21'
+[0;32m✓ Hottu 000 template[0m
+[0;32m✓ Hottu 001[0m
+[0;32m✓ Hottu 002[0m
+[0;32m✓ Hottu 003[0m
+[0;32m✓ Hottu 004[0m
+[0;32m✓ Hottu 005[0m
+[0;32m✓ Hottu 006[0m
+[0;32m✓ Hottu 007[0m
+[0;32m✓ Hottu 008[0m
+[0;32m✓ Hottu 009[0m
+[0;32m✓ Hottu 010[0m
+[0;32m✓ Hottu 011[0m
+[0;32m✓ Hottu 012[0m
+[0;32m✓ Hottu 013[0m
+[0;32m✓ Hottu 014[0m
+[0;32m✓ Hottu 015[0m
+[0;32m✓ Hottu 016[0m
+[0;32m✓ Hottu 017[0m
+[0;32m✓ Hottu 018[0m
+[0;32m✓ Hottu 019[0m
+[0;32m✓ Hottu 020[0m
+[0;32m✓ Hottu 021[0m
+[0;32m✓ Hottu 022[0m
+[0;32m✓ Hottu 023[0m
+[0;32m✓ Hottu 024[0m
+[0;32m✓ Hottu 025[0m
+[0;32m✓ Hottu 026[0m
+[0;32m✓ Hottu 027[0m
+[0;32m✓ Hottu 028[0m
+[0;32m✓ Hottu 029[0m
+[0;32m✓ Hottu 030[0m
+[0;32m✓ Hottu 031[0m
+[0;32m✓ Hottu 032[0m
+[0;32m✓ Hottu 033[0m
+[0;32m✓ Hottu 034[0m
+[0;32m✓ Hottu 035[0m
+[0;32m✓ Hottu 036[0m
+[0;32m✓ Hottu 037[0m
+[0;32m✓ Hottu 038[0m
+[0;32m✓ Hottu 039[0m
+[0;32m✓ Hottu 040[0m
+[0;32m✓ Hottu 041[0m
+[0;32m✓ Hottu 042[0m
+[0;32m✓ Hottu 043[0m
+[0;32m✓ Hottu 044[0m
+[0;32m✓ Hottu 045[0m
+[0;32m✓ Hottu 046[0m
+[0;32m✓ Hottu 047[0m
+[0;32m✓ Hottu 048[0m
+[0;32m✓ Hottu 049[0m
+[0;32m✓ Hottu 050[0m
+[0;32m✓ Hottu 051[0m
+[0;32m✓ Hottu 052[0m
+[0;32m✓ Hottu 053[0m
+[0;32m✓ Hottu 054[0m
+[0;32m✓ Hottu 055[0m
+[0;32m✓ Hottu 056[0m
+[0;32m✓ Hottu 057[0m
+[0;32m✓ Hottu 058[0m
+[0;32m✓ Hottu 059[0m
+[0;32m✓ Hottu 060[0m
+[0;32m✓ Hottu 061[0m
+[0;32m✓ Hottu 062[0m
+[0;32m✓ Hottu 063[0m
+[0;32m✓ Hottu 064[0m
+[0;31m✗ Hottu 066[2m[0m
+Function substr test_1$
+Expected output:
+World
+Output:
+ World
+[0m[0;31m✗ Hottu 067[2m[0m
+Function substr test_2$
+Program was supposed to fail, but with different exit code
+Expected return: 8
+Compiler return: 0
+Interpreter return: 53
+[0m[0;32m✓ Hottu 068[0m
+[0;32m✓ Hottu 069[0m
+[0;32m✓ Hottu 070[0m
+[0;32m✓ Hottu 071[0m
+[0;32m✓ Hottu 072[0m
+[0;32m✓ Hottu 073[0m
+[0;32m✓ Ondroid 001[0m
+[0;32m✓ Ondroid 002[0m
+[0;32m✓ Ondroid 003[0m
+[0;32m✓ Ondroid 004[0m
+[0;32m✓ Ondroid 005[0m
+[0;32m✓ Ondroid 006[0m
+[0;32m✓ Ondroid 007[0m
+[0;32m✓ Ondroid 008[0m
+[0;32m✓ Ondroid 009[0m
+[0;32m✓ Ondroid 010[0m
+[0;32m✓ Ondroid 011[0m
+[0;32m✓ Ondroid 012[0m
+[0;31m✗ Ondroid 013[2m[0m
+Compare variables of all types to nil literal.$
+Interpreter exited with error 53:
+Error at line: 461
+Wrong operand type!
+[0m[0;31m✗ Ondroid 014[2m[0m
+Compare variables of all types to a variable of nil type.$
+Interpreter exited with error 53:
+Error at line: 461
+Wrong operand type!
+[0m[0;32m✓ Ondroid 015[0m
+[0;32m✓ Ondroid 016[0m
+[0;32m✓ Ondroid 017[0m
+[0;32m✓ Ondroid 018[0m
+[0;32m✓ Ondroid 019[0m
+[0;32m✓ Ondroid 020[0m
+[0;32m✓ Ondroid 021[0m
+[0;32m✓ Ondroid 022[0m
+[0;31m✗ Ondroid 023[2m[0m
+Calculating sqrt using Newton's method.$
+Interpreter exited with error 53:
+Error at line: 461
+Wrong operand type!
+[0m[0;31m✗ Ondroid 024[2m[0m
+Implicit return of a function (all values should be nil).$
+Interpreter exited with error 56:
+Error at line: 547
+Operand stack is empty
+[0m[0;32m✓ Rostik 001[0m
+[0;32m✓ Rostik 002[0m
+[0;32m✓ Rostik 003[0m
+[0;32m✓ Rostik 004[0m
+[0;32m✓ Rostik 005[0m
+[0;32m✓ Rostik 006[0m
+[0;32m✓ Rostik 007[0m
+[0;32m✓ Rostik 008[0m
+[0;32m✓ Rostik 009[0m
+[0;31m✗ Rostik 010[2m[0m
+Calling a function with returns outside of main$
+Program was supposed to fail, but with different exit code
+Expected return: 5
+Compiler return: 0
+Interpreter return: 0
+[0m[0;31m✗ Rostik 011[2m[0m
+Usage of strings and builtin functions. Modified from presentation.$
+Interpreter exited with error 53:
+Error at line: 297
+Wrong operand type!
+[0m[0;32m✓ Rostik 012[0m
+[0;32m✓ Rostik 013[0m
+[0;32m✓ Rostik 014[0m
+[0;32m✓ Rostik 015[0m
+[0;31m✗ Rostik 016[2m[0m
+Wrong header IFJ2021.$
+Program was supposed to fail, but with different exit code
+Expected return: 7
+Compiler return: 2
+[0m[0;31m✗ Rostik 017[2m[0m
+Wrong header ifj2020.$
+Program was supposed to fail, but with different exit code
+Expected return: 7
+Compiler return: 2
+[0m[0;32m✓ Rostik 018[0m
+[0;32m✓ Rostik 019[0m
+[0;32m✓ Rostik 020[0m
+[0;32m✓ Rostik 021[0m
+[0;32m✓ Rostik 022[0m
+[0;32m✓ Rostik 023[0m
+[0;31m✗ Rostik 024[2m[0m
+Type number given as base and an exponent.$
+Compiler exited with error 2:
+parsing next global statement...
+Putting main into symbol table... its name is main and (status: 1, ret_types: , params: )
+parsing inside function...
+parsing next statement...
+Putting a into symbol table... its name is main$a$0 and status is 0
+Calling precedence parser...
+REST: e
+Putting a into symbol table... its name is main$a$0 and status is 1
+statement local returned code 0
+parsing next statement...
+got identifier
+([1;37m4:18[0m)	|[0;31m Syntax error:[0m Wrong token! 'After IDENTIFIER a function call or an assignment' expected, but token is: [1;33m+[0m type: [0;33m6[0m!
+statement (null) returned code 2
+parsing function finished! return code: 2, at: (4,18)
+global statement function returned code 2
+Finished! return code: 2, at: (4, 18)
+[0m[0;32m✓ Rostik 025[0m
+[0;32m✓ Rostik 026[0m
+[0;32m✓ Rostik 027[0m
+[0;32m✓ Rostik 028[0m
+[0;31m✗ Rostik 029[2m[0m
+Number with all the compatible formats.$
+Compiler exited with error 2:
+parsing next global statement...
+Putting main into symbol table... its name is main and (status: 1, ret_types: , params: )
+parsing inside function...
+parsing next statement...
+Putting a into symbol table... its name is main$a$0 and status is 0
+Calling precedence parser...
+REST: e2
+Putting a into symbol table... its name is main$a$0 and status is 1
+statement local returned code 0
+parsing next statement...
+got identifier
+([1;37m5:9[0m)	|[0;31m Syntax error:[0m Wrong token! 'After IDENTIFIER a function call or an assignment' expected, but token is: [1;33mlocal[0m type: [0;33m2[0m!
+statement (null) returned code 2
+parsing function finished! return code: 2, at: (5,9)
+global statement function returned code 2
+Finished! return code: 2, at: (5, 9)
+[0m[0;32m✓ Rostik 034[0m
+[0;32m✓ Rostik 035[0m
+[0;31m✗ Rostik 036[2m[0m
+Variable a in block cannot be used in the next one.$
+Interpreter exited with error 53:
+Error at line: 548
+Wrong operand type!
+[0m[0;32m✓ Rostik 037[0m
+[0;32m✓ Rostik 038[0m
+[0;32m✓ Rostik 039[0m
+[0;32m✓ Rostik 040[0m
+[0;31m✗ Rostik 041[2m[0m
+Testing all possible value assignments to all the types.$
+Compiler exited with error 2:
+parsing next global statement...
+Putting main into symbol table... its name is main and (status: 1, ret_types: , params: )
+parsing inside function...
+parsing next statement...
+Putting a into symbol table... its name is main$a$0 and status is 0
+Calling precedence parser...
+REST: local
+Putting a into symbol table... its name is main$a$0 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting b into symbol table... its name is main$b$1 and status is 0
+Calling precedence parser...
+REST: local
+Putting b into symbol table... its name is main$b$1 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting c into symbol table... its name is main$c$2 and status is 0
+Calling precedence parser...
+REST: local
+Putting c into symbol table... its name is main$c$2 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting d into symbol table... its name is main$d$3 and status is 0
+Calling precedence parser...
+REST: local
+Putting d into symbol table... its name is main$d$3 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting e into symbol table... its name is main$e$4 and status is 0
+Calling precedence parser...
+REST: local
+Putting e into symbol table... its name is main$e$4 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting f into symbol table... its name is main$f$5 and status is 0
+Calling precedence parser...
+REST: local
+Putting f into symbol table... its name is main$f$5 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting g into symbol table... its name is main$g$6 and status is 0
+Calling precedence parser...
+REST: local
+Putting g into symbol table... its name is main$g$6 and status is 1
+statement local returned code 0
+parsing next statement...
+Putting h into symbol table... its name is main$h$7 and status is 0
+Calling precedence parser...
+REST: e1
+Putting h into symbol table... its name is main$h$7 and status is 1
+statement local returned code 0
+parsing next statement...
+got identifier
+([1;37m12:6[0m)	|[0;31m Syntax error:[0m Wrong token! 'After IDENTIFIER a function call or an assignment' expected, but token is: [1;33mlocal[0m type: [0;33m2[0m!
+statement (null) returned code 2
+parsing function finished! return code: 2, at: (12,6)
+global statement function returned code 2
+Finished! return code: 2, at: (12, 6)
+[0m[0;31m✗ Rostik 042[2m[0m
+Assignment of all possible types from functions.$
+Compiler exited with error 3:
+parsing next global statement...
+parsing function types...
+Putting strfn into symbol table... its name is strfn and (status: 1, ret_types: sss, params: )
+parsing inside function...
+parsing next statement...
+Calling precedence parser to parse return in strfn...
+REST: ,
+Calling precedence parser to parse return in strfn...
+REST: ,
+Calling precedence parser to parse return in strfn...
+REST: end
+statement return returned code 0
+got end
+parsing function finished! return code: 0, at: (6,0)
+parsing function finished! at: (6,0)
+Successfully ended function definition!
+global statement function returned code 0
+parsing next global statement...
+parsing function types...
+Putting intfn into symbol table... its name is intfn and (status: 1, ret_types: ii, params: )
+parsing inside function...
+parsing next statement...
+Calling precedence parser to parse return in intfn...
+REST: ,
+Calling precedence parser to parse return in intfn...
+REST: end
+statement return returned code 0
+got end
+parsing function finished! return code: 0, at: (10,0)
+parsing function finished! at: (10,0)
+Successfully ended function definition!
+global statement function returned code 0
+parsing next global statement...
+parsing function types...
+Putting numfn into symbol table... its name is numfn and (status: 1, ret_types: nnnnnnnn, params: )
+parsing inside function...
+parsing next statement...
+Calling precedence parser to parse return in numfn...
+REST: ,
+Calling precedence parser to parse return in numfn...
+REST: ,
+Calling precedence parser to parse return in numfn...
+REST: e1
+([1;37m12:18[0m)	|[1;33m Warning: [0mFunction '[1;33mnumfn[0m' returns 8 values but 2 specified were found. The rest of them is implicitly nil.
+statement return returned code 0
+parsing next statement...
+got identifier
+parsing assignment...
+var id: e1
+([1;37m12:18[0m)	|[0;31m Semantic error: [0mUndeclared variable [1;33me1[0m!
+found 0 assignment with types  ...
+statement (null) returned code 3
+parsing function finished! return code: 3, at: (12,18)
+global statement function returned code 3
+Finished! return code: 3, at: (12, 18)
+[0m
+[0;31m✗ SOME TESTS FAILED (120/135 passed)[0m
