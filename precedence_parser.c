@@ -223,17 +223,21 @@ void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
 int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b) {
 
+    int ret = EXPRESSION_SUCCESS;
     size_t cnt = 0;             
     bool closing_bracket = false;
     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
-        if(token_aging(tok_b) != EXPRESSION_SUCCESS) {
-            return LEXICAL_ERROR;
+        if((ret = token_aging(tok_b)) != EXPRESSION_SUCCESS) {
+            return ret;
         }
 
         token_t t = lookahead(tok_b->scanner);
-        if(t.token_type == ERROR_TYPE) {
+        if(is_tok_type(ERROR_TYPE, &t)) {
             return LEXICAL_ERROR;
+        }
+        else if(is_tok_type(INT_ERR_TYPE, &t)) {
+            return INTERNAL_ERROR;
         }
         else if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
             
@@ -275,8 +279,11 @@ int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s,
 
         //Check if there will be next argument
         t = lookahead(tok_b->scanner);
-        if(t.token_type == ERROR_TYPE) {
+        if(is_tok_type(ERROR_TYPE, &t)) {
             return LEXICAL_ERROR;
+        }
+        else if(is_tok_type(INT_ERR_TYPE, &t)) {
+            return INTERNAL_ERROR;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
             if(cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
@@ -313,16 +320,20 @@ int fcall_parser(prog_t *dst_prog,
                  symbol_tables_t *syms, 
                  tok_buffer_t *tok_b) {
 
+    int ret = EXPRESSION_SUCCESS;
     token_t func_id = tok_b->current;
     char *params_s = to_str(&symbol->data.params); //Getting pointer to string with parameter types
 
-    if(token_aging(tok_b) != EXPRESSION_SUCCESS) {
-        return LEXICAL_ERROR;
+    if((ret = token_aging(tok_b)) != EXPRESSION_SUCCESS) {
+        return ret;
     }
 
     token_t t = lookahead(tok_b->scanner); //Finding argument list and '('
-    if(t.token_type == ERROR_TYPE) {
+    if(is_tok_type(ERROR_TYPE, &t)) {
         return LEXICAL_ERROR;
+    }
+    else if(is_tok_type(INT_ERR_TYPE, &t)) {
+        return INTERNAL_ERROR;
     }
     else if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) { //Checking if there is '(' before arguments
         tok_b->current = t;
@@ -997,8 +1008,11 @@ int token_aging(tok_buffer_t *token_buffer) {
     token_buffer->last = token_buffer->current; //Make current token older
     token_buffer->current = get_next_token(token_buffer->scanner);
 
-    if(is_tok_type(ERROR_TYPE , &token_buffer->current)) {
+    if(is_tok_type(ERROR_TYPE, &token_buffer->current)) {
         return LEXICAL_ERROR; //Check for lexical errors
+    }
+    else if(is_tok_type(INT_ERR_TYPE, &token_buffer->current)) {
+        return INTERNAL_ERROR; //Check for lexical errors
     }
 
     return EXPRESSION_SUCCESS;
@@ -1045,6 +1059,11 @@ void print_err_message(int *return_value,
     switch(*return_value)
     {
     case LEXICAL_ERROR:
+        break;
+
+    case INTERNAL_ERROR:
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[1;31mInternal error:\033[0m ", r, c);
+        fprintf(stderr, "An error ocurred during precedence parsing!\n");
         break;
 
     case SEM_ERROR_IN_EXPR:

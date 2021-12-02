@@ -323,9 +323,10 @@ int parse_function_def(parser_t *parser);
 
 /**
  * @brief Parses function arguments when function is called
+ * @param func_sym Pointer to smbol table where is the function (it cannot be NULL)
  * @note Functon argument can be also expression as well as variable or immediate value
  */ 
-int parse_function_arguments(parser_t *parser, token_t *id_func);
+int parse_function_arguments(parser_t *parser, tree_node_t *func_sym);
 
 
 /**
@@ -407,9 +408,10 @@ int else_branch(parser_t *parser);
 
 /**
  * @brief parses the function call.
+ * @param func_sym Pointer to smbol table where is the function (it cannot be NULL)
  * @note presumes that the function IDENTIFIER was already read and the first token is going to be opening bracket
  */ 
-int parse_function_call(parser_t *parser, token_t *id_func);
+int parse_function_call(parser_t *parser, tree_node_t *func_sym);
 
 
 /**
