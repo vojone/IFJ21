@@ -5,7 +5,7 @@ end
 
 function main()
     local a : integer = 1
-    local b : string = 2
+    local b : string = "a"
     func(a,b)
 end
 main()

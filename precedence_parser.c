@@ -434,7 +434,9 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
             }
             else {
                 retval = make_type_str(&result->dtype, ' ');
-                pparser->was_operand = false;
+                if(!is_tok_type(SEPARATOR, &t_buff->current)) {
+                    pparser->was_operand = false;
+                }
             }
 
             break;
@@ -1164,7 +1166,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
         }
 
         char precedence = get_precedence(on_top, on_input);
-        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, stop_flag);
+        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, pparser.stop_flag);
         if(precedence == '=') {
             if(!pp_push(&pparser.stack, on_input)) {
                 ret = INTERNAL_ERROR;
@@ -1180,6 +1182,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
         }
         else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
             ret = reduce_top(&pparser, s, &failed_op_msg, dtypes);
+
             pparser.empty_cycle = false;
         }
         else {
@@ -1202,7 +1205,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
     print_err_message(&ret, &tok_buff, &failed_op_msg);
     free_everything(&pparser);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
+    token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return ret;
 }
 

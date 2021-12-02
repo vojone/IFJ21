@@ -1,11 +1,11 @@
 require "ifj21"
-function func(a : integer, b : string, c : integer) : integer
-    return c
-end
 
 function main()
-    local a : integer = 1
-    local b : string = 2
-    func(a,b)
+	local a:string = "hello"
+	local b:string = "there!"
+
+	local x:integer = #"help" * #a + #b + #a * #(a..b)
+	write(x, "\n")
 end
+
 main()

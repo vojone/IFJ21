@@ -8,7 +8,7 @@ COMPILER="../IFJ21"
 INTERPRETER="./ic21int"
 
 # Pokud chcete všechny testy, doplňte k test_cases '_2'
-TEST_DIR="test_cases"
+TEST_DIR="test_cases_2"
 TMP_DIR="tmp"
 
 
