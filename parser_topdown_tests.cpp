@@ -101,7 +101,7 @@ class test_fixture : public :: testing :: Test {
 };
 
 TEST_F(test_fixture, only_parse) {
-	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 
@@ -110,7 +110,7 @@ class an_error : public test_fixture {
 		void setData() override {
 			//not 100% sure wheter this should be SYNTAX_ERROR or LEXICAL_ERROR
 			scanner_input = 
-			R"( function main() local ; : integer end
+			R"( require "ifj21" function main() local ; : integer end
 			)";
 		}
 };
@@ -123,7 +123,7 @@ class basic : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(require "help.tl" function main() local s1 : integer local s2 : string = ", ktery jeste trochu obohatime" end
+			R"(require "ifj21" function main() local s1 : integer local s2 : string = ", ktery jeste trochu obohatime" end
 			)";
 		}
 };
@@ -136,7 +136,7 @@ class if_parse : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(require "help.tl" 
+			R"(require "ifj21" 
 			function main() 
 				local s1 : integer 
 				if s1 == 0 then 
@@ -157,7 +157,7 @@ class if_parse_err1 : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(require "help.tl" 
+			R"(require "ifj21"
 			function main() 
 				local s1 : integer 
 				if true then 
@@ -178,7 +178,7 @@ class function_parse_err : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(require "help.tl" 
+			R"(require "ifj21" 
 
 			function abc()
 				local s1 : integer
@@ -200,7 +200,7 @@ class if_parse_not_err : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(require "help.tl" 
+			R"(require "ifj21"
 			function main() 
 				local s1 : integer 
 				if s1 then 
@@ -221,7 +221,7 @@ class while_parse : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main() 
 					local s1 : integer 
 					local s2 : number
@@ -243,7 +243,7 @@ class parameters : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a : string, c: number)
 					local s1 : string
 				end
@@ -259,7 +259,7 @@ class function_types : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main() : string, number
 					local s1 : string
 
@@ -278,7 +278,7 @@ class function_return : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main() : string
 					local s1 : string = "As I Was"
 					if c then
@@ -300,7 +300,7 @@ class function_return2 : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a : string, c: integer) : string, integer
 					local s1 : string = "As I Was"
 					if c then
@@ -322,7 +322,7 @@ class function_return3 : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a : string, c: integer) : string, integer
 					local s1 : string = "As I Was"
 					if c then
@@ -345,7 +345,7 @@ class function_return4 : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a : string, c: integer) : string, integer
 					local s1 : string = "As I Was"
 					if c then
@@ -368,7 +368,7 @@ class missing_end : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a : string, c: integer) : string, integer
 					if c then
 						return a, 2
@@ -387,7 +387,7 @@ class multiple_assignment : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main(a: string, c: integer) : string, integer
 					local s1 : string = "As I Was"
 					local b : number
@@ -424,7 +424,7 @@ class function_call : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"(
+			R"(require "ifj21"
 				function main() : string, integer
 				end
 				main("a","string")
@@ -440,7 +440,7 @@ class double_assignment_function : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"( function main(a : string, c: integer) : string, integer
+			R"(require "ifj21" function main(a : string, c: integer) : string, integer
 					local s1 : string = "As I Was"
 					local b : integer
 					if a then    
@@ -545,7 +545,8 @@ class function_declaration : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"( global a : function (number) : number
+			R"(require "ifj21"
+              global a : function (number) : number
 				function a (b : number) : number
 					return 10.1
 				end
@@ -669,7 +670,8 @@ class function_check_global : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"( function main()
+			R"(require "ifj21" 
+                function main()
 				end
 				mainN(true,1,0)
 			)";
@@ -684,7 +686,7 @@ class function_check_inside : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"( function main()
+			R"(require "ifj21" function main()
 				end
 				function hello()
 					mainN(true,1,0)
@@ -701,7 +703,7 @@ class variable_check_local : public test_fixture {
 	protected:
 		void setData() override {
 			scanner_input = 
-			R"( function main()
+			R"(require "ifj21" function main()
 					local a : number
 					a = "Lorem ipsum dolor sit amet"
 				end
@@ -1120,7 +1122,7 @@ class nil_in_function : public test_fixture{ //????
 	protected:
 		void setData() override{
 			scanner_input =
-			R"(
+			R"(require "ifj21"
 				-- Testy na hodnotu nil ve funkci
 				-- Nemá projít, protože se předává nil
 				-- Aktuálně to vrací hodnotu 7 (SEMANTIC_ERROR_OTHER)
@@ -2006,9 +2008,10 @@ class coment_test2 : public test_fixture{
 				-- Komentáře
 
 				require "ifj21"
-				--[[function main()
+                function main()
+				--[[function main()]]
 					-- world says 
-					--[[hello there
+					--[[hello there]]
 				end
 			)";
 		}
@@ -2036,8 +2039,8 @@ class coment_test3 : public test_fixture{
 		}
 };
 
-TEST_F(coment_test3, syntax){
-	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
+TEST_F(coment_test3, lexer){
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 
@@ -2057,8 +2060,8 @@ class coment_test4 : public test_fixture{
 		}
 };
 
-TEST_F(coment_test4, syntax) {
-	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
+TEST_F(coment_test4, lexer) {
+	ASSERT_EQ(parse_program(&pt), LEXICAL_ERROR);
 }
 
 
@@ -2067,7 +2070,7 @@ class function_inside_argument1 : public test_fixture{
 	protected:
 		void setData() override{
 			scanner_input =
-			R"(
+			R"(require "ifj21"
 				write(reads())
 			)";
 		}
@@ -2083,7 +2086,7 @@ class function_inside_argument2 : public test_fixture{
 	protected:
 		void setData() override{
 			scanner_input =
-			R"(
+			R"(require "ifj21"
 				write(readi())
 			)";
 		}
@@ -2099,7 +2102,7 @@ class function_inside_return1 : public test_fixture{
 	protected:
 		void setData() override{
 			scanner_input =
-			R"(
+			R"(require "ifj21"
 function fdoesntworko() : string, string, number, integer
 local b : string
 return fdoesntworko()
@@ -2122,7 +2125,7 @@ class visibility1 : public test_fixture{
 	protected:
 		void setData() override{
 			scanner_input =
-			R"(
+			R"(require "ifj21"
 function g() 
     local a : integer = 8 
     if a == 8 then
