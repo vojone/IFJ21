@@ -415,6 +415,17 @@ void generate_return(prog_t *dst){
     app_instr(dst,"RETURN");
 }
 
+void generate_dump_values(prog_t *dst, size_t n){
+    app_instr(dst, "PUSHFRAME");
+    app_instr(dst, "CREATEFRAME");
+    app_instr(dst,"DEFVAR TF@TMP_DUMP");
+    for (size_t i = 0; i < n; i++)
+    {
+        app_instr(dst, "POPS TF@TMP_DUMP");
+    }
+    app_instr(dst,"POPFRAME");
+}
+
 /**
  * *---------VARIABLES---------
  */
@@ -853,18 +864,92 @@ void generate_ord_function(prog_t *dst){
 
 void generate_substr_function(prog_t *dst){
     generate_start_function(dst,"substr");   //function write()
-    
+    //generate params and check for nil
+    generate_call_function(dst,"$OP$checknil_double");
     generate_parameter(dst,"finish");
     generate_parameter(dst,"start");
+    generate_call_function(dst,"$OP$checknil_single");
     generate_parameter(dst,"string");
 
     app_instr(dst,"DEFVAR TF@result");
     app_instr(dst,"MOVE TF@result string@");
 
     app_instr(dst,"DEFVAR TF@char");
-    
+
+    //save strlen
+    app_instr(dst,"DEFVAR TF@strlen");
+    app_instr(dst,"PUSHS %sstring",VAR_FORMAT);
+    generate_operation_strlen(dst);
+    app_instr(dst,"POPS TF@strlen");
+
     app_instr(dst, "FLOAT2INT %sstart %sstart",VAR_FORMAT,VAR_FORMAT);
     app_instr(dst, "FLOAT2INT %sfinish %sfinish",VAR_FORMAT,VAR_FORMAT);
+    
+    // var cond1 = (1 <= start) && (1 <= finish) //jumpif !cond1
+    // if(str.length != 0)
+    //     var cond2 = (start <= str.length) && (finish <= str.length); //jumpif !cond2
+    // else{
+    //          var cond2 = (start == str.length + 1) && (finish == str.length + 1); //jumpif !cond2
+    //          return ""
+    //     }
+
+
+    //start of cond1
+    app_instr(dst, "PUSHS int@1");
+    app_instr(dst, "PUSHS %sstart",VAR_FORMAT);
+    generate_operation_lte(dst);
+    
+    app_instr(dst, "PUSHS int@1");
+    app_instr(dst, "PUSHS %sfinish",VAR_FORMAT);
+    generate_operation_lte(dst);
+    app_instr(dst, "ANDS");
+    app_instr(dst, "PUSHS bool@true");
+    //var cond1 = (1 <= start) && (1 <= finish)
+    app_instr(dst,"JUMPIFNEQS $SUBSTRNIL$");
+
+    //cond 2 start
+    app_instr(dst,"PUSHS TF@strlen");
+    app_instr(dst,"PUSHS int@0");
+    // if(str.length != 0) then 
+    app_instr(dst,"JUMPIFEQS $SUBSTRCOND_FALSE$");
+    //true branch (strlen != 0)
+    
+    app_instr(dst, "PUSHS %sstart",VAR_FORMAT);
+    app_instr(dst, "PUSHS TF@strlen");
+    generate_operation_lte(dst);
+    
+    app_instr(dst, "PUSHS %sfinish",VAR_FORMAT);
+    app_instr(dst, "PUSHS TF@strlen");
+    generate_operation_lte(dst);
+    
+    app_instr(dst, "ANDS");
+    app_instr(dst, "PUSHS bool@true");
+    app_instr(dst,"JUMPIFNEQS $SUBSTRNIL$");
+    
+    
+    //false branch (strlen == 0)
+    app_instr(dst,"JUMP $SUBSTRCOND_FALSE_END$");
+    app_instr(dst,"LABEL $SUBSTRCOND_FALSE$");
+
+    app_instr(dst, "PUSHS %sstart",VAR_FORMAT);
+    app_instr(dst, "PUSHS int@1");
+    generate_operation_eq(dst);
+    
+    app_instr(dst, "PUSHS %sfinish",VAR_FORMAT);
+    app_instr(dst, "PUSHS int@1");
+    generate_operation_eq(dst);
+    
+    app_instr(dst, "ANDS");
+    app_instr(dst, "PUSHS bool@true");
+    app_instr(dst,"JUMPIFNEQS $SUBSTRNIL$");
+
+    app_instr(dst,"PUSHS string@");
+    app_instr(dst,"JUMP $SUBSTREND$");
+    
+    app_instr(dst,"LABEL $SUBSTRCOND_FALSE_END$");
+
+    
+    //start = start - 1;
     app_instr(dst, "SUB %sstart %sstart int@1",VAR_FORMAT,VAR_FORMAT);
 
     //cycle start
@@ -881,7 +966,14 @@ void generate_substr_function(prog_t *dst){
     app_instr(dst, "LABEL $SUBSTR_CYCLE_END$");
 
     app_instr(dst, "PUSHS TF@result");
+
+    app_instr(dst,"JUMP $SUBSTREND$");
+    app_instr(dst,"LABEL $SUBSTRNIL$");
     
+    app_instr(dst, "PUSHS nil@nil");
+
+    app_instr(dst,"LABEL $SUBSTREND$");
+    app_instr(dst, "BREAK");
     generate_end_function(dst,"substr");
 }
 
@@ -995,6 +1087,15 @@ void generate_unaryminus_function(prog_t *dst){
 }
 
 void generate_same_types(prog_t *dst){
+    // if(a == int && b == float)
+    //     "int2floats a"
+    // else if(a == float && b == int)
+    //     "int2floats b"
+    // else
+    //     //do nothing
+    // "push a"
+    // "push b"
+
     generate_start_function(dst,"$BUILTIN$sametypes");
 
     //get param B
@@ -1007,15 +1108,34 @@ void generate_same_types(prog_t *dst){
     app_instr(dst,"DEFVAR TF@$TEMP$typeA");
     app_instr(dst,"TYPE TF@$TEMP$typeA %s$TEMP$A",VAR_FORMAT);
     
-
+    //if a == int && b === float then int2floats a
     app_instr(dst,"PUSHS TF@$TEMP$typeA");
-    app_instr(dst,"PUSHS TF@$TEMP$typeB");
-    app_instr(dst,"JUMPIFEQS $BUILTIN$sametypes$END");
-    //if they are not equal convert one of them to float
     app_instr(dst,"PUSHS string@int");
+    app_instr(dst,"EQS");
+    app_instr(dst,"PUSHS TF@$TEMP$typeB");
+    app_instr(dst,"PUSHS string@float");
+    app_instr(dst,"EQS");
+    
+    app_instr(dst,"ANDS");
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFEQS $ATOFLOAT$");
+
+    //if a == int && b === float then int2floats b
     app_instr(dst,"PUSHS TF@$TEMP$typeA");
-    app_instr(dst,"JUMPIFNEQS $BTOFLOAT$");
+    app_instr(dst,"PUSHS string@float");
+    app_instr(dst,"EQS");
+    app_instr(dst,"PUSHS TF@$TEMP$typeB");
+    app_instr(dst,"PUSHS string@int");
+    app_instr(dst,"EQS");
+    
+    app_instr(dst,"ANDS");
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFEQS $BTOFLOAT$");
+
+
+    app_instr(dst,"JUMP $BUILTIN$sametypes$END");
     //CONVERT A to FLOAT
+    app_instr(dst,"LABEL $ATOFLOAT$");
     app_instr(dst,"PUSHS %s$TEMP$A",VAR_FORMAT);
     app_instr(dst,"INT2FLOATS");
     app_instr(dst,"POPS %s$TEMP$A",VAR_FORMAT);
@@ -1042,7 +1162,7 @@ void generate_force_floats(prog_t *dst){
     generate_parameter(dst,"$TEMP$B");
     app_instr(dst,"DEFVAR TF@$TEMP$typeB");
     app_instr(dst,"TYPE TF@$TEMP$typeB %s$TEMP$B",VAR_FORMAT);
-    
+
     //get param A
     generate_parameter(dst,"$TEMP$A");
     app_instr(dst,"DEFVAR TF@$TEMP$typeA");

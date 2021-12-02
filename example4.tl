@@ -1,83 +1,50 @@
-write(substr(reads(),readn(),readn()))
+require "ifj21"
 
+function sqrt(n: number, eps: number): number
+    -- The current approximation
+	local x: number = n
 
+	if n == nil then
+        return nil
+    else
+	end
 
--- function substr2(str : string, begin: number, finish:number) : string
---     local res : string = ""
---     local si : integer = tointeger(begin)
---     local ei : integer = tointeger(finish)
---     -- local i : integer = 0;
---     while si <= ei do
---         res = res..chr(ord(str,si))
---         si = si + 1
---     end
---     return res
--- end
+	if n < 0 then
+        return nil
+    else
+	end
 
--- write(substr2(reads(),readn(),readn()))
+	while 2 do
+		-- Calculate next iteration to get a bit closer
+		local root: number = 0.5 * (x + n/x)
 
--- require "ifj21"
+		-- Creative way to check if abs(root - x) < eps
+		if ((root - x) < eps) then
+			if ((0 - eps) < (root - x)) then
+                return x
+            else
+            end
+        else
+        end
 
--- function modulo(a : integer, b : integer) : integer
---     return a - b * (a // b)
--- end
+		-- Update the approximation
+		x = root
+	end
+end
 
--- function main()
---     -- local key : string = "xplagi0b"
+function main()
+    write ("Type your number: ")
 
---     write("Enter a message to encode:\n")
---     local msg : string = reads()
+	local n: number = readn()
+	local eps: number = 0.000001
 
---     local forward_shift : integer = ord(msg, 2)
---     local back_shift : integer = ord(msg, 3)
+	local result: number = sqrt(n, eps)
 
---     local alpha_start : integer = ord("a", 1)
---     local alpha_end : integer = ord("z", 1)
+	if result then
+        write(result, "\n")
+    else
+        write("Could not calculate\n")
+    end
+end
 
---     forward_shift = forward_shift - alpha_start + 1
---     back_shift = 0 - (back_shift - alpha_start) - 1
-
-
---     local i : integer = 1
---     local c : integer
-
---     local shifted_char : string
-
---     local modulo_result : integer
-
---     local result : string = ""
-
---     while i <= #msg do
---         c = ord(msg, i)
-
---         if c < alpha_start then
---             -- Pokud mate break pouzijte break (Jirka Babica 2021)
---             i = #msg + 1
---         else
---             modulo_result = modulo(i, 2)
-            
---             if modulo_result == 0 then
---                 c = c + back_shift
---             else
---                 c = c + forward_shift
---             end
-
---             if c < alpha_start then
---                 c = c + 26
---             else end
-
---             if c > alpha_end then
---                 c = c - 26
---             else end
-
---             shifted_char = chr(c)
---             result = result .. shifted_char
-
---             i = i + 1
---         end
---     end
-
---     write(result, "\n")
--- end
-
--- main()
+main()

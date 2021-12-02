@@ -313,6 +313,10 @@ void generate_ord_function(prog_t *dst);
 
 void generate_substr_function(prog_t *dst);
 
+
+//builtin custom
+// void generate_tonumber_function(dst);
+
 void generate_checkzero_function_int(prog_t *dst);
 
 void generate_checkzero_function_float(prog_t *dst);
