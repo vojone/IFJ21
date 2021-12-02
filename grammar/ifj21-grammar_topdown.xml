@@ -15,17 +15,18 @@
  * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
 -->
 
-<program>               -> <global-statement-list>  <!--Only require and functions basically-->
+<program>               -> <prolog> <global-statement-list>  <!--Only require and functions basically-->
+
+<prolog>                -> require [string] 
+<prolog>                -> [eps]
 
 <statement-list>        -> <statement> <statement-list>
 <statement-list>        -> [eps]
 <statement-list>        -> <function-call>
 
-<!-- function declaration -->
+<!-- Function declaration -->
 <global-statement>      -> global [id] : function(<param-list>) <type-list>
 
-<!-- require -->
-<global-statement>      -> require [string]
 
 <!-- VARIABLES -->
 <statement>             -> local  [id] : [type] <value-assignment>

@@ -910,9 +910,8 @@ class function_as_variable : public test_fixture{
 			scanner_input =
 			R"(
 				-- Funkce se jmenuje stejně jako proměnná
-
+                require "ifj21"
                 global lmao : function()
-				require "ifj21"
 				function main()
 					local lmao : string
 					lmao = "testTextuProšel"
@@ -2137,6 +2136,29 @@ end
 
 TEST_F(visibility1, syntax){
 	ASSERT_EQ(parse_program(&pt), PARSE_SUCCESS);
+}
+
+
+class prolog_in_middle : public test_fixture{
+	protected:
+		void setData() override{
+			scanner_input =
+			R"(
+function g() 
+    local a : integer = 8 
+    if a == 8 then
+        local a : integer = a --[[ to vnitřní 'a' by mělo být taky 8]]
+        write(a)
+    end
+end
+
+require "ifj21"
+			)";
+		}
+};
+
+TEST_F(prolog_in_middle, syntax){
+	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
 

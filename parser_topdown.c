@@ -29,7 +29,7 @@
 
 
 
-#define RULESET_GLOBAL_LENGTH 5 /**< Number of rules that can be used for parsing rules in global scopes */
+#define RULESET_GLOBAL_LENGTH 4 /**< Number of rules that can be used for parsing rules in global scopes */
 
 rule_t * get_global_rule(size_t index) {
     if(index >= RULESET_GLOBAL_LENGTH) { //Safety check
@@ -37,7 +37,6 @@ rule_t * get_global_rule(size_t index) {
     }
 
     static rule_t ruleset_global[RULESET_GLOBAL_LENGTH] = {
-        {parse_require,             {KEYWORD, UNSET, "require"},  true },
         {parse_function_dec,        {KEYWORD, UNSET, "global"},   true },
         {parse_function_def,        {KEYWORD, UNSET, "function"}, true },
         {parse_global_identifier,   {IDENTIFIER, UNSET, NULL},    false},
@@ -161,8 +160,13 @@ int parse_program(parser_t *parser) {
     //scanner_init(scanner); 
     generate_init(&parser->dst_code);   
     
-    //run parsing
-    int res = global_statement_list(parser);
+    int res = PARSE_SUCCESS;
+    if(lookahead_token_attr(parser, KEYWORD, "require")) { //Check if there is prolog and parse it, if there is
+        res = parse_require(parser);
+    }
+    
+    //Run parsing
+    res = (res == PARSE_SUCCESS) ?  global_statement_list(parser) : res;
 
     debug_print("Finished! return code: %i, at: (%lu, %lu)\n", res, parser->scanner->cursor_pos[ROW], parser->scanner->cursor_pos[COL]);
 
@@ -174,8 +178,10 @@ int parse_program(parser_t *parser) {
         res = parser->return_code;
     }
 
-    //print generated code
+    //Print generated code
     print_program(&parser->dst_code);
+
+    program_dtor(&parser->dst_code);
 
     return res;
 
@@ -184,8 +190,8 @@ int parse_program(parser_t *parser) {
 
 //<global-statement-list> -> <global-statement> <global-statement-list>
 int global_statement_list(parser_t *parser) {
-    int ret = global_statement(parser);
-    
+    int ret = PARSE_SUCCESS;
+    ret = global_statement(parser);
     if(ret != PARSE_SUCCESS)
         return ret;
 
