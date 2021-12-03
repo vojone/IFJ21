@@ -36,12 +36,6 @@
 #include "dstack.h"
 
 
-typedef struct result {
-    bool success;
-    bool reachedEnd;
-} result_t;
-
-
 /**
  * @brief Return codes of parser 
  */ 
@@ -276,8 +270,8 @@ int parse_function_dec(parser_t *parser);
  * @return SEMANTIC_ERROR_DEFINITION if function was declared and defined (and data structure is not initialized), 
  *         otherwise returns PARSE_SUCCESS
  */ 
-int check_if_declared(parser_t *parser, bool *was_decl, 
-                      token_t *id_tok, sym_data_t *sym_data);
+int check_if_declared(parser_t *parser, bool *was_decl, tree_node_t *id_tok,
+                      token_t *func_id, sym_data_t *sym_data);
 
 
 /**
@@ -318,7 +312,7 @@ int func_def_epilogue(parser_t *parser);
  * @brief Checks if function has return statement inside (if function returns something)
  * @warning If warnings are turned off, it does nothing
  */ 
-int check_return(parser_t *parser, token_t *id_fc);
+int check_return(parser_t *parser, tree_node_t *id_fc);
 
 
 /**

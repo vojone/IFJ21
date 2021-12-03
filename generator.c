@@ -1246,9 +1246,10 @@ string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, sc
     char *name = get_attr(var_id,scanner);
 
     //search it in the table
-    tree_node_t *name_element = search_in_tables(sym_stack,symtab,name);
+    tree_node_t *name_element = deep_search(sym_stack, symtab, name);
     if(name_element == NULL)
         fprintf(stderr,"!CODE GENERATION ERROR! ID %s not in SYMTAB!\n",name);
+        
     string_t name_unique = name_element->data.name;
     return name_unique;
 

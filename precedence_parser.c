@@ -380,7 +380,7 @@ int process_identifier(p_parser_t *pparser,
     char *id_name = get_attr(&(t_buff->current), t_buff->scanner);
     expr_el_t *on_inp = &pparser->on_input;
     tree_node_t *symbol;
-    symbol = search_in_tables(&syms->symtab_st, &syms->symtab, id_name); //Seaerching symbol in symbol tables with variables
+    symbol = deep_search(&syms->symtab_st, &syms->symtab, id_name); //Seaerching symbol in symbol tables with variables
 
     if(symbol == NULL) {
         //Check if it is builtin function
@@ -876,7 +876,7 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
     if(str_cmp(rule->right_side, "i") == 0) {
         expr_el_t element_terminal = pp_top(&ops);
 
-        tree_node_t *res = search_in_tables(&syms->symtab_st, &syms->symtab, element_terminal.value);
+        tree_node_t *res = deep_search(&syms->symtab_st, &syms->symtab, element_terminal.value);
         if(element_terminal.is_fcall) {
             //Only function was called during reduction 
             res = search(&syms->global, element_terminal.value);

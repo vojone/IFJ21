@@ -371,10 +371,10 @@ bool check_builtin(char *key, symtab_t *dst) {
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
-                               symtab_t *start_symtab, 
-                               char *key) {
-
+tree_node_t * deep_search(symtabs_stack_t *sym_stack, 
+                          symtab_t *start_symtab, 
+                          char *key) {
+                              
     symtab_t *curr_tab = start_symtab;
     
     while(curr_tab != NULL) {
