@@ -1,5 +1,5 @@
 require "ifj21"
 function main()
-	write(reads(),"\n")
+	"\0s"
 end
 main()

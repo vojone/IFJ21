@@ -1,5 +1,6 @@
 require "ifj21"
 function main()
-	write(reads(),"\n")
+	local a : string = "aabb"
+	a = a.a
 end
 main()
