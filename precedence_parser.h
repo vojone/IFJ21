@@ -44,6 +44,7 @@
 
 #define PREVENT_ZERO_DIV true /**< If it is true it turns on semantic control of division by zero (there is also simple propagation of zero) */
 #define PREVENT_NIL true /**< If it is true it turns on semantic control of using nil in expressions */
+#define PRINT_EXPR_WARNINGS true /**< If it is true, precedence parser prints warnings when are some implicit actions performed */
 
 
 /**
@@ -428,6 +429,12 @@ int has_lower_prec(pp_stack_t *stack, expr_el_t on_input);
  */ 
 void print_err_message(int *return_value, tok_buffer_t *token_buffer, 
                       char **err_m);
+
+
+/**
+ * @brief Prints warning about undefined variable in expression
+ */ 
+void undefined_var_warning(tok_buffer_t *token_buffer, char *variable_name);
 
 
 /**

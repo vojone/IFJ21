@@ -410,6 +410,10 @@ int process_identifier(p_parser_t *pparser,
         }
     }
     else {
+        if(symbol->data.status != DEFINED && symbol->data.dtype != NIL) {
+            undefined_var_warning(t_buff, id_name);
+        }
+
         pparser->only_f_was_called = false;
 
         char type_c = dtype_to_char(symbol->data.dtype);
@@ -802,8 +806,6 @@ int get_str_to_reduction(pp_stack_t *s, pp_stack_t *op, string_t *to_be_red) {
         pp_pop(s);
     }
 
-    // fprintf(stderr, "To be reduced: %s\n", to_be_red->str);
-
     return EXPRESSION_SUCCESS;
 }
 
@@ -900,7 +902,6 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
         }
         else{
             //We are pushing variable
-            // fprintf(stderr,"Pushing variable %s to stack\n", res->data.name.str);
             generate_value_push(dst, VAR, res->data.dtype , res->data.name.str);
         }
     }
@@ -989,7 +990,6 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
         //Clear stack to calculate only first return value
         size_t pop_cnt = (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num;
         generate_dump_values(dst, pop_cnt);
-        // fprintf(stderr, "STACK POPPED %ld values!\n", pop_cnt);
     }
 
     pparser->was_f_call = false; /**< New input symbol -> reset function call flag */
@@ -1080,7 +1080,6 @@ void print_err_message(int *return_value,
     pos_t r = token_buffer->scanner->cursor_pos[ROW]; //Position of scanner cursor
     pos_t c = token_buffer->scanner->cursor_pos[COL];
     char * attr = get_attr(&(token_buffer->current), token_buffer->scanner); //Attribute of current token
-    char * lattr = get_attr(&(token_buffer->last), token_buffer->scanner); //Attribute of last token
 
     switch(*return_value)
     {
@@ -1118,7 +1117,7 @@ void print_err_message(int *return_value,
 
     case EXPRESSION_FAILURE:
         fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", r, c);
-        fprintf(stderr, "Invalid combination of tokens in expression! (\"\033[1;33m%s%s\033[0m\")\n", lattr, attr);
+        fprintf(stderr, "Invalid combination of tokens in expression! (nearby \"\033[1;33m%s\033[0m\")\n", attr);
         *return_value = SYNTAX_ERROR_IN_EXPR;
         break;
 
@@ -1133,6 +1132,17 @@ void print_err_message(int *return_value,
             *return_value = -(*return_value);
         }
         break;
+    }
+}
+
+
+void undefined_var_warning(tok_buffer_t *token_buffer, char *variable_name) {
+    if(PRINT_EXPR_WARNINGS) {
+        pos_t r = token_buffer->scanner->cursor_pos[ROW]; //Position of scanner cursor
+        pos_t c = token_buffer->scanner->cursor_pos[COL];
+
+        fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[1;33mWarning:\033[0m ", r, c);
+        fprintf(stderr, "Uninitialized variable '\033[1;33m%s\033[0m'! It is implicitly nil (but is not nil type)!\n", variable_name);
     }
 }
 
@@ -1237,7 +1247,8 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
         }        
 
         char precedence = get_precedence(pparser.on_top, pparser.on_input);
-        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, pparser.on_top.type, pparser.on_top.is_zero, pparser.on_input.type, pparser.on_input.is_zero, pparser.stop_flag);
+
+        //fprintf(stderr, "%s: %c Top: %d Input: %d", get_attr(&tok_buff.current, sc), precedence, pparser.on_top.type, pparser.on_input.type);
         if(precedence == '=') {
             if(!pp_push(&pparser.stack, pparser.on_input)) {
                 ret = INTERNAL_ERROR;

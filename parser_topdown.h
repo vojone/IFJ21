@@ -36,6 +36,9 @@
 #include "dstack.h"
 
 
+#define DEBUG true /**< If true, prints debug log to stderr */
+#define PRINT_WARNINGS true /**< If true, prints warning to stderr about some implicit actions (see documentation for more)*/
+
 /**
  * @brief Return codes of parser 
  */ 
@@ -202,7 +205,13 @@ int assignment(parser_t *parser, token_t t);
  * @brief Converts keyword (must be data type) to enum type
  * @note If keyword is not recognized as valid data type specifier returns INT
  */ 
-sym_dtype_t keyword_to_dtype(parser_t *parser, token_t * t, scanner_t *sc);
+sym_dtype_t keyword_to_dtype(token_t * t, scanner_t *sc);
+
+
+/**
+ * @brief Inverse to keyword_to_dtype
+ */ 
+char *dtype_to_keyword(sym_dtype_t dtype);
 
 
 /**
@@ -210,6 +219,13 @@ sym_dtype_t keyword_to_dtype(parser_t *parser, token_t * t, scanner_t *sc);
  */ 
 void ins_var(parser_t *parser, token_t *id_token, 
              sym_status_t status, sym_dtype_t dtype);
+
+
+/**
+ * @brief Updates status of variable defined b pointer to symbol table
+ * @note If pointer is NULL it does nothing
+ */ 
+void update_var_status(tree_node_t *var, sym_status_t new_stat);
 
 
 /**
