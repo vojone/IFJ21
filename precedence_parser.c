@@ -8,6 +8,15 @@
  *                       Last change: 25. 11. 2021
  *****************************************************************************/
 
+/**
+ * @file precedence_parser.c
+ * @brief Implementation of precedence parsing (PP)
+ * @note For more documentation (especially function description) @see precedence_parser.h
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
+ *
+ */
+
 #include "precedence_parser.h"
 
 DSTACK(expr_el_t, pp, fprintf(stderr," %d", s->data[i].type)) /**< Operations with stack, that saves elements from expr. */
@@ -196,34 +205,73 @@ bool is_tok_type(token_type_t exp_type, token_t *t) {
 }
 
 
-
 bool is_tok_attr(char *exp_attr, token_t *t, tok_buffer_t *tok_b) {
     return str_cmp(get_attr(t, tok_b->scanner), exp_attr) == 0;
 }
 
 
-void fcall_sem_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
-    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", 
+void fcall_sem_error(tok_buffer_t *tok_b, char *f_name, char *msg) {
+    fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSemantic error:\033[0m ", //Print err msg prolog
             tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
 
-    fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! ", get_attr(func_id, tok_b->scanner));
+    fprintf(stderr, "Bad function call of \033[1;33m%s\033[0m! ", f_name);
     fprintf(stderr, "%s\n", msg);
 }
 
 
-void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg) {
+void fcall_syn_error(tok_buffer_t *tok_b, char *f_name, char *msg) {
     fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t| \033[0;31mSyntax error:\033[0m ", 
             tok_b->scanner->cursor_pos[ROW], tok_b->scanner->cursor_pos[COL]);
 
-    fprintf(stderr, "In function call of \033[1;33m%s\033[0m! ", get_attr(func_id, tok_b->scanner));
+    fprintf(stderr, "In function call of \033[1;33m%s\033[0m! ", f_name);
     fprintf(stderr, "%s\n", msg);
 }
 
 
-int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s, 
+int parse_arg_expr(size_t arg_cnt, prog_t *dst_code, 
+                   symbol_tables_t *syms, tok_buffer_t *tok_b, 
+                   tree_node_t *symbol) {
+    
+    char *params_s = to_str(&symbol->data.params);
+    char *f_name = symbol->key;
+    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
+
+    string_t ret_type;
+    if(str_init(&ret_type) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
+
+    bool fcall;
+    int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &fcall, dst_code);
+    if(expr_retval != EXPRESSION_SUCCESS) {
+        str_dtor(&ret_type);
+        return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
+    }
+
+    if(!is_variadic) {
+        if(!is_compatible_in_arg(dst_code, params_s[arg_cnt], &ret_type)) { //Type check of epxression and argument and declared type
+            fcall_sem_error(tok_b, f_name, "Bad data types of arguments!");
+            str_dtor(&ret_type);
+            return SEMANTIC_ERROR_PARAMETERS_EXPR;
+        }
+        else {
+            //Parameter is ok
+        }
+    }
+
+    str_dtor(&ret_type);
+
+    return EXPRESSION_SUCCESS;
+}
+
+
+int argument_parser(prog_t *dst_code, tree_node_t *symbol, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b) {
 
     int ret = EXPRESSION_SUCCESS;
+    char *params_s = to_str(&symbol->data.params); //Getting pointer to string with parameter types
+    char *f_name = symbol->key;
+
     size_t cnt = 0;             
     bool closing_bracket = false;
     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
@@ -233,38 +281,16 @@ int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s,
         }
 
         token_t t = lookahead(tok_b->scanner);
-        if(is_tok_type(ERROR_TYPE, &t)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &ret)) {
+            return ret;
         }
-        else if(is_tok_type(INT_ERR_TYPE, &t)) {
-            return INTERNAL_ERROR;
-        }
-        else if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
-            
-            string_t ret_type;
-            if(str_init(&ret_type) != STR_SUCCESS) {
-                return INTERNAL_ERROR;
-            }
         
-            bool is_func_in_arg;
-            int expr_retval = parse_expression(tok_b->scanner, syms, &ret_type, &is_func_in_arg, dst_code);
-            if(expr_retval != EXPRESSION_SUCCESS) {
-                str_dtor(&ret_type);
-                return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
+        if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
+            
+            ret = parse_arg_expr(cnt, dst_code, syms, tok_b, symbol); //Check expression in argument
+            if(ret != EXPRESSION_SUCCESS) {
+                return ret;    
             }
-
-            if(!is_variadic) {
-                if(!is_compatible_in_arg(dst_code, params_s[cnt], &ret_type)) { //Type check of epxression and argument and declared type
-                    fcall_sem_error(tok_b, func_id, "Bad data types of arguments!");
-                    str_dtor(&ret_type);
-                    return SEMANTIC_ERROR_PARAMETERS_EXPR;
-                }
-                else {
-                    //Parameter is ok
-                }
-            }
-
-            str_dtor(&ret_type);
 
             cnt++;
         }
@@ -273,21 +299,19 @@ int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s,
             continue;
         }
         else {
-            fcall_syn_error(tok_b, func_id, "Missing ')' after function arguments!\n");
+            fcall_syn_error(tok_b, f_name, "Missing ')' after function arguments!\n");
             return SYNTAX_ERROR_IN_EXPR;
         }
 
         //Check if there will be next argument
         t = lookahead(tok_b->scanner);
-        if(is_tok_type(ERROR_TYPE, &t)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &ret)) {
+            return ret;
         }
-        else if(is_tok_type(INT_ERR_TYPE, &t)) {
-            return INTERNAL_ERROR;
-        }
-        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
+
+        if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
             if(cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
-                fcall_sem_error(tok_b, func_id, "Too many arguments!");
+                fcall_sem_error(tok_b, f_name, "Too many arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
             else {
@@ -297,17 +321,17 @@ int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s,
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
             closing_bracket = true;
             if((cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
-                fcall_sem_error(tok_b, func_id, "Missing arguments!");
+                fcall_sem_error(tok_b, f_name, "Missing arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
         }
         else {
-            fcall_syn_error(tok_b, func_id, "Missing ',' or ')' between arguments!\n");
+            fcall_syn_error(tok_b, f_name, "Missing ',' or ')' between arguments!\n");
             return SYNTAX_ERROR_IN_EXPR;
         }
     }
     if(cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
-        fcall_sem_error(tok_b, func_id, "Missing arguments!");
+        fcall_sem_error(tok_b, f_name, "Missing arguments!");
         return SEMANTIC_ERROR_PARAMETERS_EXPR;
     }
 
@@ -321,30 +345,24 @@ int fcall_parser(prog_t *dst_prog,
                  tok_buffer_t *tok_b) {
 
     int ret = EXPRESSION_SUCCESS;
-    token_t func_id = tok_b->current;
-    char *params_s = to_str(&symbol->data.params); //Getting pointer to string with parameter types
-
     if((ret = token_aging(tok_b)) != EXPRESSION_SUCCESS) {
         return ret;
     }
 
     token_t t = lookahead(tok_b->scanner); //Finding argument list and '('
-    if(is_tok_type(ERROR_TYPE, &t)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(&t, &ret)) {
+        return ret;
     }
-    else if(is_tok_type(INT_ERR_TYPE, &t)) {
-        return INTERNAL_ERROR;
-    }
-    else if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) { //Checking if there is '(' before arguments
+
+    if(!is_tok_type(SEPARATOR, &t) || !is_tok_attr("(", &t, tok_b)) { //Checking if there is '(' before arguments
         tok_b->current = t;
-        fcall_syn_error(tok_b, &func_id, "Missing '(' after function indentifier!\n");
+        fcall_syn_error(tok_b, symbol->key, "Missing '(' after function indentifier!\n");
         return SYNTAX_ERROR_IN_EXPR;
     }
     else {
-        int retval = argument_parser(dst_prog, &func_id, params_s, syms, tok_b); //Everything is ok, you can parse arguments
-
-        if(retval != EXPRESSION_SUCCESS) {
-            return retval;
+        ret = argument_parser(dst_prog, symbol, syms, tok_b); //Everything is ok, you can parse arguments
+        if(ret != EXPRESSION_SUCCESS) {
+            return ret;
         }
     }
 
@@ -355,11 +373,12 @@ int fcall_parser(prog_t *dst_prog,
 /**
  * @brief Processes identifier got on input
  */
-int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                       symbol_tables_t *syms, expr_el_t *result) { 
+int process_identifier(p_parser_t *pparser, 
+                       tok_buffer_t *t_buff, 
+                       symbol_tables_t *syms) { 
 
     char *id_name = get_attr(&(t_buff->current), t_buff->scanner);
-
+    expr_el_t *on_inp = &pparser->on_input;
     tree_node_t *symbol;
     symbol = search_in_tables(&syms->symtab_st, &syms->symtab, id_name); //Seaerching symbol in symbol tables with variables
 
@@ -372,7 +391,7 @@ int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff,
             return UNDECLARED_IDENTIFIER;
         }
         else {
-            str_cpy((char **)&result->value, id_name, strlen(id_name));
+            str_cpy((char **)&on_inp->value, id_name, strlen(id_name));
             //Process function call and arguments
             int retval = fcall_parser(pparser->dst_code, symbol, syms, t_buff);
             if(retval != EXPRESSION_SUCCESS) {
@@ -380,8 +399,8 @@ int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff,
             }
 
             //Function was succesfully called
-            cpy_strings(&result->dtype, &(symbol->data.ret_types), true);
-            result->is_fcall = true;
+            cpy_strings(&on_inp->dtype, &(symbol->data.ret_types), true);
+            on_inp->is_fcall = true;
 
 
             return EXPRESSION_SUCCESS;
@@ -391,22 +410,24 @@ int process_identifier(p_parser_t *pparser, tok_buffer_t *t_buff,
         pparser->only_f_was_called = false;
 
         char type_c = dtype_to_char(symbol->data.dtype);
-        make_type_str(&result->dtype, type_c);
+        make_type_str(&on_inp->dtype, type_c);
 
         return EXPRESSION_SUCCESS;
     }
 }
 
 
-int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                     symbol_tables_t *syms, expr_el_t *result) {
+int from_input_token(p_parser_t *pparser, 
+                     tok_buffer_t *t_buff, 
+                     symbol_tables_t *syms) {
 
-    result->type = tok_to_type(t_buff, &(pparser->only_f_was_called));
-    result->value = NULL;
-    result->is_zero = false;
-    result->is_fcall = false;
+    expr_el_t *on_inp = &(pparser->on_input);
+    on_inp->type = tok_to_type(t_buff, &(pparser->only_f_was_called));
+    on_inp->value = NULL;
+    on_inp->is_zero = false;
+    on_inp->is_fcall = false;
 
-    if(str_init(&result->dtype) != STR_SUCCESS) {
+    if(str_init(&on_inp->dtype) != STR_SUCCESS) {
         return INTERNAL_ERROR;
     }
 
@@ -415,39 +436,29 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
     switch (t_buff->current.token_type)
     {
         case INTEGER:
-            retval = make_type_str(&result->dtype, 'i');
-            pparser->was_operand = true;
+            retval = make_type_str(&on_inp->dtype, 'i');
             break;
         case NUMBER:
-            retval = make_type_str(&result->dtype, 'n');
-            pparser->was_operand = true;
+            retval = make_type_str(&on_inp->dtype, 'n');
             break;
         case STRING:
-            retval = make_type_str(&result->dtype, 's');
-            pparser->was_operand = true;
+            retval = make_type_str(&on_inp->dtype, 's');
             break;
         case IDENTIFIER:
-            if(!pparser->was_operand) {
-                retval = process_identifier(pparser, t_buff, syms, result);
+            if(get_precedence(pparser->on_top, operand()) != ' ') { //Simulate state in future (to recognize end of expression)
+                retval = process_identifier(pparser, t_buff, syms);
                 if(retval != EXPRESSION_SUCCESS) { //Checking if processing identifier was succesfull or not
                     return retval;
-                }
-                else {
-                    pparser->was_operand = true;
                 }
             }
 
             break;
         default:
-            if(is_nil(t_buff->scanner, &t_buff->current)) { //checking if it is nil type
-                retval = make_type_str(&result->dtype, 'z');
-                pparser->was_operand = true;
+            if(is_nil(t_buff->scanner, &t_buff->current)) { //Checking if it is nil type
+                retval = make_type_str(&on_inp->dtype, 'z');
             }
             else {
-                retval = make_type_str(&result->dtype, ' ');
-                if(!is_tok_type(SEPARATOR, &t_buff->current)) {
-                    pparser->was_operand = false;
-                }
+                retval = make_type_str(&on_inp->dtype, ' ');
             }
 
             break;
@@ -459,14 +470,14 @@ int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff,
 
     //Resolving zero flag (to prevent division by zero)
     if(is_zero(t_buff->scanner, &t_buff->current) && PREVENT_ZERO_DIV) {
-        result->is_zero = true;
+        on_inp->is_zero = true;
     }
 
     //Making hard copy of token attribute
-    if(result->value == NULL) {
+    if(on_inp->value == NULL) {
         char * curr_val = get_attr(&(t_buff->current), t_buff->scanner);
 
-        retval = str_cpy((char **)&result->value, curr_val, strlen(curr_val));
+        retval = str_cpy((char **)&on_inp->value, curr_val, strlen(curr_val));
         if(retval != STR_SUCCESS) {
             return INTERNAL_ERROR;
         }
@@ -516,7 +527,7 @@ expr_el_t prec_sign(char sign) {
             precedence_sign.type = '=';
             break;
         default:
-            precedence_sign.type = '<';
+            precedence_sign.type = '<'; //When there is something else, its always implicitly '<'
             break;
     }
 
@@ -524,6 +535,18 @@ expr_el_t prec_sign(char sign) {
     precedence_sign.is_zero = false;
 
     return precedence_sign;
+}
+
+
+expr_el_t operand() {
+    expr_el_t op;
+
+    op.type = OPERAND;
+    op.is_zero = false;
+    op.is_fcall = false;
+    op.value = NULL;
+
+    return op;
 }
 
 
@@ -619,7 +642,7 @@ bool is_compatible(string_t *dtypes1, string_t *dtypes2) {
 }
 
 
-int resolve_res_type(string_t *res, expr_rule_t *rule, 
+int resolve_res_type(string_t *res, expr_rule_t *rule,
                       expr_el_t cur_op, bool cur_ok) {
 
     if(prim_type(res) == UNDEFINED) { //If result type was not set yet set it current operand data type
@@ -945,15 +968,15 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
 
 
 int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                     symbol_tables_t *symtabs, expr_el_t *on_input) {
+                     symbol_tables_t *symtabs) {
 
     int retval = EXPRESSION_SUCCESS;
     if(pparser->stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
-        *on_input = stop_symbol();
+        pparser->on_input = stop_symbol(); //If there is end of expression, put stop symbol to input
     }
     else {
-        retval = from_input_token(pparser, t_buff, symtabs, on_input);
-        if(!pp_push(&(pparser->garbage), *on_input)) {
+        retval = from_input_token(pparser, t_buff, symtabs);
+        if(!pp_push(&(pparser->garbage), pparser->on_input)) {
             return INTERNAL_ERROR;
         }
     }
@@ -970,11 +993,11 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
 }
 
 
-int get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
+int get_top_symbol(p_parser_t *pparser) {
     expr_el_t on_top_tmp = pp_top(&(pparser->stack));
     expr_el_t tmp;
 
-    if(on_top_tmp.type == NON_TERM) { //Ignore nonterminal if there is 
+    if(on_top_tmp.type == NON_TERM) { //Ignore nonterminal if there is one
         tmp = pp_pop(&(pparser->stack));
         on_top_tmp = pp_top(&(pparser->stack));
         if(!pp_push(&(pparser->stack), tmp)) {
@@ -982,7 +1005,7 @@ int get_top_symbol(expr_el_t *on_top, p_parser_t *pparser) {
         }
     }
 
-    *on_top = on_top_tmp;
+    pparser->on_top = on_top_tmp;
 
     return EXPRESSION_SUCCESS;
 }
@@ -1008,11 +1031,9 @@ int token_aging(tok_buffer_t *token_buffer) {
     token_buffer->last = token_buffer->current; //Make current token older
     token_buffer->current = get_next_token(token_buffer->scanner);
 
-    if(is_tok_type(ERROR_TYPE, &token_buffer->current)) {
-        return LEXICAL_ERROR; //Check for lexical errors
-    }
-    else if(is_tok_type(INT_ERR_TYPE, &token_buffer->current)) {
-        return INTERNAL_ERROR; //Check for lexical errors
+    int ret = EXPRESSION_SUCCESS;
+    if(is_error_token(&token_buffer->current, &ret)) {
+        return ret;
     }
 
     return EXPRESSION_SUCCESS;
@@ -1051,10 +1072,10 @@ void print_err_message(int *return_value,
                        tok_buffer_t *token_buffer, 
                        char **err_m) {
 
-    pos_t r = token_buffer->scanner->cursor_pos[ROW];
+    pos_t r = token_buffer->scanner->cursor_pos[ROW]; //Position of scanner cursor
     pos_t c = token_buffer->scanner->cursor_pos[COL];
-    char * attr = get_attr(&(token_buffer->current), token_buffer->scanner);
-    char * lattr = get_attr(&(token_buffer->last), token_buffer->scanner);
+    char * attr = get_attr(&(token_buffer->current), token_buffer->scanner); //Attribute of current token
+    char * lattr = get_attr(&(token_buffer->last), token_buffer->scanner); //Attribute of last token
 
     switch(*return_value)
     {
@@ -1131,7 +1152,6 @@ int prepare_pp(prog_t *dst, p_parser_t *pp) {
     pp->stop_flag = false;
     pp->empty_expr = true;
     pp->empty_cycle = false;
-    pp->was_operand = false;
     pp->was_f_call = false;
 
     //Presume that it is only function call (important for stack popping and return codes)
@@ -1141,6 +1161,47 @@ int prepare_pp(prog_t *dst, p_parser_t *pp) {
     pp->dst_code = dst;
 
     return EXPRESSION_SUCCESS;
+}
+
+
+int update_structs(scanner_t *sc, symbol_tables_t *s, 
+                   tok_buffer_t *tok_buff, p_parser_t *pparser) {
+
+    int ret = EXPRESSION_SUCCESS;
+    tok_buff->current = lookahead(sc);
+    if(is_error_token(&tok_buff->current, &ret)) {
+        return ret;
+    }
+
+    ret = get_top_symbol(pparser); //Update top symbol (must be before get_input_symbol)
+    if(ret != EXPRESSION_SUCCESS) {
+        return ret;
+    }
+
+    ret = get_input_symbol(pparser, tok_buff, s); //Update input symbol
+    if(ret != EXPRESSION_SUCCESS) {
+        return ret;
+    }
+
+    return ret;
+}
+
+
+bool is_end_of_parsing(p_parser_t *pparser, int *return_value) {
+    if(pparser->on_top.type == STOP_SYM && 
+       pparser->on_input.type == STOP_SYM) {
+
+        if(pparser->empty_expr) {
+            *return_value = MISSING_EXPRESSION; //There cannot be empty expression if it was expected
+        }
+        else {
+            *return_value = EXPRESSION_SUCCESS; //All reductions were OK and there is end of expression
+        }
+        
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -1160,46 +1221,33 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
     }
     
     while(ret == EXPRESSION_SUCCESS) { //Main cycle
-        tok_buff.current = lookahead(sc);
-
-        if(tok_buff.current.token_type == ERROR_TYPE) {
-            ret = LEXICAL_ERROR;
-            break;
-        }
-
-        expr_el_t on_input, on_top;
-        ret = get_input_symbol(&pparser, &tok_buff, s, &on_input);
+        ret = update_structs(sc, s, &tok_buff, &pparser);
         if(ret != EXPRESSION_SUCCESS) {
             break;
         }
 
-        ret = get_top_symbol(&on_top, &pparser);
-        if(ret != EXPRESSION_SUCCESS) {
+        // There is end of the expression on input and stop symbol at the top of the stack
+        if(is_end_of_parsing(&pparser, &ret)) {
             break;
-        }
+        }        
 
-        /*** There is end of the expression on input and stop symbol at the top of the stack*/
-        if(on_top.type == STOP_SYM && on_input.type == STOP_SYM) {
-            ret = pparser.empty_expr ? MISSING_EXPRESSION : EXPRESSION_SUCCESS;
-            break;
-        }
-
-        char precedence = get_precedence(on_top, on_input);
+        char precedence = get_precedence(pparser.on_top, pparser.on_input);
         //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, pparser.stop_flag);
         if(precedence == '=') {
-            if(!pp_push(&pparser.stack, on_input)) {
+            if(!pp_push(&pparser.stack, pparser.on_input)) {
                 ret = INTERNAL_ERROR;
             }
 
-            ret = token_aging(&tok_buff); /**< Make last token from current token */
+            // Make last token from current token
+            ret = (ret == EXPRESSION_SUCCESS) ? token_aging(&tok_buff) : ret;
             pparser.empty_cycle = false;
         }
-        else if(precedence == '<') {  /**< Put input symbol to the top of the stack*/
-            has_lower_prec(&(pparser.stack), on_input);
-            ret = token_aging(&tok_buff);
+        else if(precedence == '<') { /**< Put input symbol to the top of the stack*/
+            ret = has_lower_prec(&(pparser.stack), pparser.on_input);
+            ret = (ret == EXPRESSION_SUCCESS) ? token_aging(&tok_buff) : ret;
             pparser.empty_cycle = false;
         }
-        else if(precedence == '>') { /**< Basicaly, reduct while you can't put input symbol to the top of the stack*/
+        else if(precedence == '>') { /**< Basicaly, reduce while you can't put input symbol to the top of the stack*/
             ret = reduce_top(&pparser, s, &failed_op_msg, dtypes);
 
             pparser.empty_cycle = false;

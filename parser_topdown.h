@@ -111,6 +111,12 @@ void to_outer_ctx(parser_t *parser);
 void to_inner_ctx(parser_t *parser);
 
 /**
+ * @brief Recognizes if current context is global context (due to symbol table stack)
+ * @return True if parser is in global context
+ */ 
+bool is_global_ctx(parser_t *parser);
+
+/**
  * @brief sets the parser and scanner to use
  * @note there can be only one instance i guess, because of the parser static var
  */ 

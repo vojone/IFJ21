@@ -144,6 +144,13 @@ token_t lookahead(scanner_t *scanner);
 char *tok_type_to_str(token_type_t tok_type);
 
 /**
+ * @brief Check if token type is type that signalizes error
+ * @param return_code output parameter, pointer to integer value where will be stored correspoding return code
+ * @return True if token has any of error type
+ */ 
+bool is_error_token(token_t *token, int *return_code);
+
+/**
  * @brief Inits scanner structure
  * @return If it returns INTERNAL_ERROR error ocurred during initialization
  */ 

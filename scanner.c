@@ -645,6 +645,24 @@ char *tok_type_to_str(token_type_t tok_type) {
 }
 
 
+bool is_error_token(token_t *token, int *return_code) {
+    if(token->token_type == ERROR_TYPE || token->token_type == INT_ERR_TYPE) {
+
+        if(token->token_type == ERROR_TYPE) { //Resolve return code
+            *return_code = LEXICAL_ERROR;
+        }
+        else {
+            *return_code = INTERNAL_ERROR;
+        }
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+
 token_t get_next_token(scanner_t *sc) {
     token_t result;
     token_init(&result);
