@@ -14,7 +14,7 @@
 /**
  * @file parser-topdown.c
  * @brief Source file for recursive descent parser
- * @note For more documentation @see parser_topdown.h
+ * @note For more documentation about functions and structures @see parser_topdown.h
  * 
  * @authors Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
  *          Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
@@ -23,9 +23,8 @@
 #include "parser_topdown.h"
 
 
-#define DEBUG true
-
-#define PRINT_WARNINGS true
+#define DEBUG true /**< If true, prints debug log to stderr */
+#define PRINT_WARNINGS true /**< If true, prints warning to stderr about some implicit actions (see documentation for more)*/
 
 
 
@@ -214,13 +213,11 @@ int statement_list(parser_t *parser) {
     }
 
     token_t t = lookahead(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(&t, &ret)) {
+        return ret;
     }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(compare_token(t, KEYWORD)) {
+
+    if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(parser, t, KEYWORD, "end")) {
             debug_print("got end\n");
             return PARSE_SUCCESS;
@@ -238,11 +235,9 @@ int statement_list(parser_t *parser) {
 int global_statement(parser_t *parser) {
     debug_print("parsing next global statement...\n");
     token_t t = lookahead(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int res = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &res)) {
+        return res;
     }
 
     //Get the apropriate rule
@@ -252,7 +247,7 @@ int global_statement(parser_t *parser) {
     }
     
     //Call the right function
-    int res = rule_to_use->rule_function(parser);
+    res = rule_to_use->rule_function(parser);
 
     //If there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
     debug_print("global statement %s returned code %i\n", rule_to_use->rule_first.attr, res);
@@ -265,11 +260,9 @@ int global_statement(parser_t *parser) {
 int statement(parser_t *parser) {
     debug_print("parsing next statement...\n");
     token_t t = lookahead(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int res = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &res)) {
+        return res;
     }
 
     //get the apropriate rule
@@ -279,7 +272,7 @@ int statement(parser_t *parser) {
     }
     
     //call the right function
-    int res = rule_to_use->rule_function(parser);
+    res = rule_to_use->rule_function(parser);
 
     //if there is (null) instead the first token of the rule, it means that the rule is using only token type and not attribute 
     debug_print("statement %s returned code %i\n", rule_to_use->rule_first.attr, res);
@@ -308,15 +301,13 @@ int assignment_lside(parser_t *parser, token_t* start_id,
     size_t id_number = 0;
     token_t t = *start_id;
     bool foundAssignmentOp = false;
+    int res = EXPRESSION_SUCCESS;
     while(!foundAssignmentOp) {
         //First token is already read at the beginning, so we check wheter we are at the beginning
         if(id_number != 0) {
             t = get_next_token(parser->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
-                return LEXICAL_ERROR;
-            }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
+            if(is_error_token(&t, &res)) {
+                return res;
             }
         }
 
@@ -326,7 +317,7 @@ int assignment_lside(parser_t *parser, token_t* start_id,
 
             //Try to find identifier in symbol table (or in parent symbol table)
             char * id_str = get_attr(&t, parser->scanner);
-            tree_node_t * symbol = search_in_tables(&parser->sym.symtab_st, &parser->sym.symtab, id_str);
+            tree_node_t * symbol = deep_search(&parser->sym.symtab_st, &parser->sym.symtab, id_str);
     
             if(!symbol || symbol->data.type != VAR) {
                 error_semantic(parser, "Undeclared variable \033[1;33m%s\033[0m!", id_str);
@@ -334,7 +325,7 @@ int assignment_lside(parser_t *parser, token_t* start_id,
             }
             else {
                 //push it to the var name stack for code generation
-                tok_push(var_names,t);
+                tok_push(var_names, t);
 
                 app_char(dtype_to_char(symbol->data.dtype), id_types);
             }
@@ -347,13 +338,11 @@ int assignment_lside(parser_t *parser, token_t* start_id,
 
         //Comma should follow, or assignment operator
         t = get_next_token(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &res)) {
+            return res;
         }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
-        }
-        else if(compare_token_attr(parser, t, SEPARATOR, ",")) {
+
+        if(compare_token_attr(parser, t, SEPARATOR, ",")) {
             //Ok, next token should be mext identifier
         }
         else if(compare_token_attr(parser, t, OPERATOR, "=")) {
@@ -378,8 +367,14 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
     str_init(&ret_types);
 
     size_t i = 0;
+    int ret = EXPRESSION_SUCCESS;
     for(; i < id_number; i++) {
         token_t t = lookahead(parser->scanner);
+        if(is_error_token(&t, &ret)) {
+            str_dtor(&ret_types);
+            return ret;
+        }
+
         if(!is_expression(parser, t)) {
             str_dtor(&ret_types);
             error_semantic(parser, "Missing rvalue in assignment (expected expression)!");
@@ -392,9 +387,11 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
         int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
         if(expr_retval == EXPRESSION_SUCCESS) {
             size_t u = 0;
+
             for(; to_str(&ret_types)[u] != '\0'; u++) { //If there is only function, it can return more than one values
                 sym_dtype_t cur_dtype = char_to_dtype(to_str(&ret_types)[u]);
                 sym_dtype_t should_be = char_to_dtype(id_types->str[i + u]);
+                
                 if(!is_valid_assign(parser,should_be, cur_dtype)) { //Type checking in (multiple) assignment
                     str_dtor(&ret_types);
                     if(!was_f_called) {
@@ -422,14 +419,12 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
         //If we are not at the end check for comma
         if(i + 1 != id_number) {
             token_t t = lookahead(parser->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
+            if(is_error_token(&t, &ret)) {
                 str_dtor(&ret_types);
-                return LEXICAL_ERROR;
+                return ret;
             }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
-            }
-            else if(compare_token_attr(parser, t, SEPARATOR, ",")) {
+
+            if(compare_token_attr(parser, t, SEPARATOR, ",")) {
                 //Ok
                 get_next_token(parser->scanner);
             }
@@ -584,15 +579,13 @@ int local_var_datatype(parser_t *p, token_t *curr_tok, sym_dtype_t *var_type) {
     
     //Should be a data type
     *curr_tok = get_next_token(p->scanner);
+    int ret = EXPRESSION_SUCCESS;
+    if(is_error_token(curr_tok, &ret)) {
+        return ret;
+    }
 
     //Determining data type of declared variable
-    if(compare_token(*curr_tok, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(*curr_tok, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(!is_datatype(p, *curr_tok)) {
+    if(!is_datatype(p, *curr_tok)) {
         error_unexpected_token(p, "datatype", *curr_tok);
         return SYNTAX_ERROR;
     }
@@ -611,11 +604,9 @@ int parse_local_var(parser_t *parser) {
 
     //Should be identifier
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int retval = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
     
     token_t var_id = t;
@@ -641,7 +632,6 @@ int parse_local_var(parser_t *parser) {
 
 
     //There must be data type
-    int retval;
     retval = local_var_datatype(parser, &t, &var_type);
 
     //Insert to symtab and generate code
@@ -661,20 +651,20 @@ int parse_local_var(parser_t *parser) {
 int parse_require(parser_t *parser) {
     //Go one token forward
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    int ret = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &ret)) {
+        return ret;
     }
-    else if(compare_token_attr(parser, t, KEYWORD, "require")) {
+
+    if(compare_token_attr(parser, t, KEYWORD, "require")) {
 
         //require is Ok, check string after
         t = get_next_token(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &ret)) {
+            return ret;
         }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
-        }
-        else if(compare_token_attr(parser, t, STRING, "\"ifj21\"")) {
+
+        if(compare_token_attr(parser, t, STRING, "\"ifj21\"")) {
             return PARSE_SUCCESS;
         }
         else {
@@ -711,24 +701,20 @@ int func_dec_returns(parser_t *parser, string_t *returns) {
         //Will just get the ':'
         debug_print("parsing function return types...\n");
         token_t t = get_next_token(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
-        }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
+        int retval = EXPRESSION_SUCCESS;
+        if(is_error_token(&t, &retval)) {
+            return retval;
         }
 
         bool finished = false;
         while(!finished) {
             //Should be datatype
             t = get_next_token(parser->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
-                return LEXICAL_ERROR;
+            if(is_error_token(&t, &retval)) {
+                return retval;
             }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
-            }
-            else if(!is_datatype(parser, t)) {
+
+            if(!is_datatype(parser, t)) {
                 error_unexpected_token(parser, "data type", t);
                 finished = true;
                 return SYNTAX_ERROR;
@@ -764,16 +750,15 @@ int func_dec_params(parser_t *parser, string_t *params) {
         debug_print("parsing function param types...\n");
 
         bool finished = false;
+        int retval = EXPRESSION_SUCCESS;
         while(!finished) {
             //Should be datatype
             token_t t = get_next_token(parser->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
-                return LEXICAL_ERROR;
+            if(is_error_token(&t, &retval)) {
+                return retval;
             }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
-            }
-            else if(!is_datatype(parser, t)) {
+
+            if(!is_datatype(parser, t)) {
                 error_unexpected_token(parser, "data type", t);
                 finished = true;
                 return SYNTAX_ERROR;
@@ -810,12 +795,10 @@ int parse_function_dec(parser_t *parser) {
     get_next_token(parser->scanner);
 
     //This is function ID
+    int retval = EXPRESSION_SUCCESS;
     token_t id_fc = get_next_token(parser->scanner);
-    if(compare_token(id_fc, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(id_fc, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    if(is_error_token(&id_fc, &retval)) {
+        return retval;
     }
 
     //Puts builtin function into symtable 
@@ -869,7 +852,6 @@ int parse_function_dec(parser_t *parser) {
     f_data.status = DECLARED;
 
     //Parsing param types if there is param type
-    int retval;
     retval = func_dec_params(parser, &f_data.params);
 
     retval = (retval == PARSE_SUCCESS) ? func_dec_returns(parser, &f_data.ret_types) : retval;
@@ -885,11 +867,10 @@ int parse_function_dec(parser_t *parser) {
 }
 
 
-int check_if_declared(parser_t *parser, bool *was_decl, 
+int check_if_declared(parser_t *parser, bool *was_decl, tree_node_t *symbol,
                       token_t *id_tok, sym_data_t *sym_data) {
 
     char *f_name = get_attr(id_tok, parser->scanner);
-    tree_node_t * symbol = search(&parser->sym.global, f_name);
     if(symbol) {
         *was_decl = true;
 
@@ -918,27 +899,24 @@ int check_if_declared(parser_t *parser, bool *was_decl,
 //[id] :
 int func_def_params_prolog(parser_t *parser, token_t *param_id) {
     //Should be IDENTIFIER
+    int retval = EXPRESSION_SUCCESS;
     *param_id = get_next_token(parser->scanner);
-    if(compare_token(*param_id, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(param_id, &retval)) {
+        return retval;
     }
-    else if(compare_token(*param_id, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(param_id->token_type != IDENTIFIER) {
+
+    if(param_id->token_type != IDENTIFIER) {
         error_unexpected_token(parser, "IDENTIFIER", *param_id);
         return SYNTAX_ERROR;
     }
     
     //Should be COLON
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(!compare_token_attr(parser, t, SEPARATOR, ":")) {
+    
+    if(!compare_token_attr(parser, t, SEPARATOR, ":")) {
         error_unexpected_token(parser, "':'", t);
         return SYNTAX_ERROR;
     }
@@ -952,13 +930,11 @@ int func_def_params(parser_t *p, token_t *id_token,
                     bool was_decl, sym_data_t *f_data) {
 
     size_t params_cnt = 0;
+    int retval = EXPRESSION_SUCCESS;
     //Check if there are parameters
     token_t t = lookahead(p->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
 
     tok_stack_t param_names;
@@ -981,14 +957,11 @@ int func_def_params(parser_t *p, token_t *id_token,
 
             //Should be DATATYPE
             t = get_next_token(p->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
-                tok_stack_dtor(&param_names);
-                return LEXICAL_ERROR;
+            if(is_error_token(&t, &retval)) {
+                return retval;
             }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
-            }
-            else if(!is_datatype(p, t)) {
+
+            if(!is_datatype(p, t)) {
                 error_unexpected_token(p, "DATA TYPE", t);
                 tok_stack_dtor(&param_names);
                 return SYNTAX_ERROR;
@@ -1074,30 +1047,26 @@ int func_def_returns(parser_t *p, token_t *id_token,
                      bool was_decl, sym_data_t *f_data) {
 
     size_t ret_cnt = 0;
+    int retval = EXPRESSION_SUCCESS;
     //Parsing types if there is colon
     
     if(lookahead_token_attr(p, SEPARATOR, ":")) {
         //Will just get the ':'
         debug_print("parsing function types...\n");
         token_t t = get_next_token(p->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
-        }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
+        if(is_error_token(&t, &retval)) {
+            return retval;
         }
 
         bool finished = false;
         while(!finished) {
             //Should be datatype
             t = get_next_token(p->scanner);
-            if(compare_token(t, ERROR_TYPE)) {
-                return LEXICAL_ERROR;
+            if(is_error_token(&t, &retval)) {
+                return retval;
             }
-            else if(compare_token(t, INT_ERR_TYPE)) {
-                return INTERNAL_ERROR;
-            }
-            else if(!is_datatype(p, t)) {
+
+            if(!is_datatype(p, t)) {
                 error_unexpected_token(p, "data type", t);
                 finished = true;
 
@@ -1155,15 +1124,19 @@ int func_def_returns(parser_t *p, token_t *id_token,
 //end
 int func_def_epilogue(parser_t *parser) {
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int retval = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
 
     //Generate function end
-    generate_end_function(&parser->dst_code,get_attr(parser->curr_func_id, parser->scanner));
+    char *cur_func_name = get_attr(parser->curr_func_id, parser->scanner);
+    
+    //generate implicit nil returns at the end and generate end
+    tree_node_t *symbol = search(&parser->sym.global, cur_func_name);
+    size_t ret_cnt = len(&symbol->data.ret_types);
+    generate_additional_returns(&parser->dst_code, ret_cnt);
+    generate_end_function(&parser->dst_code, cur_func_name);
 
     debug_print("parsing function finished! at: (%lu,%lu)\n", parser->scanner->cursor_pos[ROW], parser->scanner->cursor_pos[COL]); 
 
@@ -1185,10 +1158,9 @@ int func_def_epilogue(parser_t *parser) {
 }
 
 //Only warning function
-int check_return(parser_t *parser, token_t *id_fc) {
-    tree_node_t *symbol = search(&parser->sym.global, get_attr(id_fc, parser->scanner));
+int check_return(parser_t *parser, tree_node_t *symbol) {
     if(symbol && len(&symbol->data.ret_types) > 0 && !parser->found_return) {
-        warn(parser, "Function \033[1;33m%s\033[0m can reach the end without return!", get_attr(id_fc, parser->scanner));
+        warn(parser, "Function \033[1;33m%s\033[0m can reach the end without return!", symbol->key);
     }
 
     return PARSE_SUCCESS;
@@ -1200,15 +1172,15 @@ int parse_function_def(parser_t *parser) {
     get_next_token(parser->scanner);
 
     token_t id_fc = get_next_token(parser->scanner);
-    if(compare_token(id_fc, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(id_fc, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int retval = EXPRESSION_SUCCESS;
+    if(is_error_token(&id_fc, &retval)) {
+        return retval;
     }
 
     //Adds builtin function into symtable, so semantic checks can detects its redefinition
     char *f_name = get_attr(&id_fc, parser->scanner);
+    tree_node_t *symbol = search(&parser->sym.global, f_name); //Symbol can be NULL here!!
+
     bool is_builtin = check_builtin(f_name, &parser->sym.global);
     if(is_builtin) {
         error_semantic(parser, "There is builtin function with the same name as '\033[1;33m%s\033[0m' (change the name of your function)!", f_name);
@@ -1227,7 +1199,8 @@ int parse_function_def(parser_t *parser) {
 
     sym_data_t func_d;
     bool was_declared = false;
-    int retval = check_if_declared(parser, &was_declared, &id_fc, &func_d);
+
+    retval = check_if_declared(parser, &was_declared, symbol, &id_fc, &func_d);
     func_d.status = DEFINED;
 
     to_inner_ctx(parser); //Switch context (params must be in this context)
@@ -1257,7 +1230,7 @@ int parse_function_def(parser_t *parser) {
 
     retval = (retval == PARSE_SUCCESS) ? func_def_epilogue(parser) : retval;
 
-    retval = (retval == PARSE_SUCCESS) ? check_return(parser, &id_fc) : retval;
+    retval = (retval == PARSE_SUCCESS) ? check_return(parser, symbol) : retval;
 
     parser->curr_func_id = NULL;
 
@@ -1321,15 +1294,14 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
     size_t argument_cnt = 0;
     //In our case variadic means - with variable AMOUNT and TYPES of arguments
     bool is_variadic = (params_str[0] == '%') ? true : false;
+    int retval = EXPRESSION_SUCCESS;
     while(!closing_bracket) {
         token_t t = lookahead(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &retval)) {
+            return retval;
         }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
-        }
-        else if(is_expression(parser, t)) {
+
+        if(is_expression(parser, t)) {
             string_t ret_types;
             str_init(&ret_types);
             bool was_f_called;
@@ -1370,13 +1342,11 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
 
         //Check if there will be next argument
         t = get_next_token(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &retval)) {
+            return retval;
         }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
-        }
-        else if(compare_token_attr(parser, t, SEPARATOR, ",")) {
+
+        if(compare_token_attr(parser, t, SEPARATOR, ",")) {
             if(argument_cnt + 1 > param_num - 1 && !is_variadic) { //Function needs less arguments
                 error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!", func_name);
                 return SEMANTIC_ERROR_PARAMETERS;
@@ -1448,13 +1418,11 @@ int parse_if(parser_t *parser) {
     to_outer_ctx(parser); //Back to higher leve context
 
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(compare_token(t, KEYWORD)) {
+
+    if(compare_token(t, KEYWORD)) {
         //Generates end of if part statement
         generate_if_end(&parser->dst_code, current_cond_cnt);
         if(compare_token_attr(parser, t, KEYWORD, "end")) {
@@ -1512,14 +1480,13 @@ int parse_return(parser_t *parser) {
     bool finished = false;
     //We need string of all data types that function should return
     char * returns_str = to_str(&symbol->data.ret_types);
+    int retval = EXPRESSION_SUCCESS;
     while(!finished) {
         token_t t = lookahead(parser->scanner);
-        if(compare_token(t, ERROR_TYPE)) {
-            return LEXICAL_ERROR;
+        if(is_error_token(&t, &retval)) {
+            return retval;
         }
-        else if(compare_token(t, INT_ERR_TYPE)) {
-            return INTERNAL_ERROR;
-        }
+
         else if(!is_expression(parser, t)) {
             finished = true;
             if(len(&symbol->data.ret_types) > 0) {
@@ -1640,13 +1607,11 @@ int parse_while(parser_t *parser) {
     to_outer_ctx(parser); //Switch context to higher level
 
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(compare_token(t, KEYWORD)) {
+
+    if(compare_token(t, KEYWORD)) {
         if(compare_token_attr(parser, t, KEYWORD, "end")) {
 
             //Generate end of while
@@ -1696,17 +1661,19 @@ rule_t *determine_rule(parser_t *p, token_t t, rule_t *(*ruleset_f)(size_t)) {
 
 
 int parse_global_identifier(parser_t *parser) {
+    int retval = EXPRESSION_SUCCESS;
     token_t id_token = get_next_token(parser->scanner);
-    if(compare_token(id_token, ERROR_TYPE)) { //Check lexical errors 
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(id_token, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    if(is_error_token(&id_token, &retval)) { //Look for lexical errors
+        return retval;
     }
 
     debug_print("got identifier\n");
 
     token_t next = lookahead(parser->scanner);
+    if(is_error_token(&next, &retval)) {
+        return retval;
+    }
+
     bool opening_bracket = compare_token_attr(parser, next, SEPARATOR, "(");
     if(!opening_bracket) {
         error_unexpected_token(parser, "'(' after identifier (to be function call)", next);
@@ -1730,11 +1697,9 @@ int parse_global_identifier(parser_t *parser) {
 int parse_identifier(parser_t *p) {
     //Should be identifier
     token_t id_token = get_next_token(p->scanner);
-    if(compare_token(id_token, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(id_token, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    int retval = EXPRESSION_SUCCESS;
+    if(is_error_token(&id_token, &retval)) {
+        return retval;
     }
 
     debug_print("got identifier\n");
@@ -1742,11 +1707,8 @@ int parse_identifier(parser_t *p) {
     //It is neccessary to look at the next lexeme also
     //token_t id_token = get_next_token(scanner);
     token_t t = lookahead(p->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
 
     bool is_multiple_assignment = compare_token_attr(p, t, SEPARATOR, ",");
@@ -1759,7 +1721,7 @@ int parse_identifier(parser_t *p) {
         check_builtin(func, &p->sym.global); //Adds builtin correspondent function into symtable
 
         tree_node_t *func_valid = search(&p->sym.global, func);
-        if (func_valid == NULL) { // Function is not declared
+        if(func_valid == NULL) { // Function is not declared
             error_semantic(p, "Function with name '\033[1;33m%s\033[0m' is not declared", func);
             return SEMANTIC_ERROR_DEFINITION;
         }
@@ -1783,16 +1745,15 @@ int EOF_fun_rule(parser_t *parser) {
     //Will not actually get the token upon which has been decided to use this rule
     //but will get the next token
     //otherwise i would have to use params for each one of these rule functions
+    int retval = EXPRESSION_SUCCESS;
     token_t t = lookahead(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) {
-        return LEXICAL_ERROR;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
+    if(is_error_token(&t, &retval)) {
+        return retval;
     }
 
     error_unexpected_token(parser, "Reached EOF inside a function. Did you forget 'end'? END",t);
     parser->reached_EOF = true;
+
     return SYNTAX_ERROR;
 }
 
@@ -1831,13 +1792,12 @@ bool is_datatype(parser_t *parser, token_t t) {
 
 int parse_datatype(parser_t *parser) { 
     token_t t = get_next_token(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) { //Check if there was lexical error during scanning
-        return LEXICAL_ERROR;
+    int retval = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &retval)) { //Check if there was lexical error during scanning
+        return retval;
     }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        return INTERNAL_ERROR;
-    }
-    else if(is_datatype(parser, t)) {
+
+    if(is_datatype(parser, t)) {
         return PARSE_SUCCESS;
     }
 
@@ -1848,7 +1808,7 @@ int parse_datatype(parser_t *parser) {
 
 void error_unexpected_token(parser_t *parser, char * expected, token_t t) {
     fprintf(stderr, "(\033[1;37m%lu:%lu\033[0m)\t|\033[0;31m Syntax error:\033[0m ", (parser->scanner->cursor_pos[ROW]), (parser->scanner->cursor_pos[COL]));
-    fprintf(stderr, "Wrong token! '%s' expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%i\033[0m!\n", expected, get_attr(&t, parser->scanner), t.token_type);
+    fprintf(stderr, "Wrong token! '%s' expected, but token is: \033[1;33m%s\033[0m type: \033[0;33m%s\033[0m!\n", expected, get_attr(&t, parser->scanner), tok_type_to_str(t.token_type));
 }
 
 
@@ -1873,12 +1833,7 @@ void warn(parser_t *parser, const char * _Format, ...) {
 
 bool lookahead_token(parser_t *parser, token_type_t expecting) {
     token_t t = lookahead(parser->scanner);
-    if(compare_token(t, ERROR_TYPE)) { //Check lexical error
-        parser->return_code = LEXICAL_ERROR;
-        return false;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        parser->return_code = INTERNAL_ERROR;
+    if(is_error_token(&t, &parser->return_code)) { //Check lexical error
         return false;
     }
 
@@ -1888,12 +1843,7 @@ bool lookahead_token(parser_t *parser, token_type_t expecting) {
 
 bool lookahead_token_attr(parser_t *p, token_type_t exp_type, char * exp_attr) {
     token_t t = lookahead(p->scanner);
-    if(compare_token(t, ERROR_TYPE)) { //Check lexical error
-        p->return_code = LEXICAL_ERROR;
-        return false;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        p->return_code = INTERNAL_ERROR;
+    if(is_error_token(&t, &p->return_code)) { //Check lexical error
         return false;
     }
 
@@ -1903,25 +1853,16 @@ bool lookahead_token_attr(parser_t *p, token_type_t exp_type, char * exp_attr) {
 
 bool check_next_token(parser_t *p, token_type_t expecting) {
     token_t t = get_next_token(p->scanner);
+    if(is_error_token(&t, &p->return_code)) { //Check if error occurs during scanning
+        return false;
+    }
     
     if(compare_token(t, expecting)) {
         return true;
     }
 
-    //Check if error occurs during scanning
-    if(compare_token(t, ERROR_TYPE)) { //Check lexical error
-        p->return_code = LEXICAL_ERROR;
-        return false;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        p->return_code = INTERNAL_ERROR;
-        return false;
-    }
-
-    //If it was lexical error, error msg print scanner, but we bust print syntax err. msg
-    if(p->return_code == SYNTAX_ERROR) { 
-        error_unexpected_token(p, tok_type_to_str(t.token_type), t);
-    }
+    //If it was lexical error, error msg print scanner, but we must print syntax err. msg
+    error_unexpected_token(p, tok_type_to_str(t.token_type), t);
     
     return false;
 }
@@ -1929,24 +1870,17 @@ bool check_next_token(parser_t *p, token_type_t expecting) {
 
 bool check_next_token_attr(parser_t *p, token_type_t exp_type, char * exp_attr) {
     token_t t = get_next_token(p->scanner);
+    if(is_error_token(&t, &p->return_code)) { //Check if error occurs during scanning
+        return false;
+    }
 
     if(compare_token_attr(p, t, exp_type, exp_attr)) { //Check if both attribute and type are as expected
         return true;
     }
 
-    if(compare_token(t, ERROR_TYPE)) { //Check lexical error
-        p->return_code = LEXICAL_ERROR;
-        return false;
-    }
-    else if(compare_token(t, INT_ERR_TYPE)) {
-        p->return_code = INTERNAL_ERROR;
-        return false;
-    }
 
-    //If it was lexical error, error msg print scanner, but we bust print syntax err. msg
-    if(p->return_code == SYNTAX_ERROR) { 
-        error_unexpected_token(p, tok_type_to_str(t.token_type), t);
-    }
+    //If it was lexical error, error msg print scanner, but we must print syntax err. msg
+    error_unexpected_token(p, tok_type_to_str(t.token_type), t);
 
     return false;
 }

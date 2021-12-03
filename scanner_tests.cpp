@@ -627,6 +627,30 @@ TEST_F(comments, types) {
 }
 
 
+class numbers : public test_fixture {
+    protected:
+        void setData() override {
+            scanner_input =
+            R"(
+            --[[Comment comment comment]]1011010
+            123.123456789 12312. 123e+1000 1213e-78798
+            1232.987e1233 123112e12321 65456.46456e-5465
+            544645.5465e+87987 89787e
+            )";
+
+            exp_types = {
+                INTEGER, NUMBER, ERROR_TYPE, NUMBER, NUMBER,
+                NUMBER, NUMBER, NUMBER, NUMBER, ERROR_TYPE,
+                EOF_TYPE
+            };
+        }
+};
+
+TEST_F(numbers, types) {
+    testTypes();
+}
+
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 

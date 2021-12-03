@@ -309,7 +309,7 @@ void INT_F_trans(char c, token_t * token, scanner_t *sc) {
 
 void NUM_1_trans(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == DIGIT) {
-        sc->state = NUM_F;
+        sc->state = NUM_F1;
     }
     else {
         got_token(ERROR_TYPE, c, token, sc);
@@ -320,7 +320,7 @@ void NUM_1_trans(char c, token_t * token, scanner_t *sc) {
 
 void NUM_2_trans(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == DIGIT) {
-        sc->state = NUM_F;
+        sc->state = NUM_F2;
     }
     else if(str_search(c, "+-")) {
         sc->state = NUM_3;
@@ -334,7 +334,7 @@ void NUM_2_trans(char c, token_t * token, scanner_t *sc) {
 
 void NUM_3_trans(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == DIGIT) {
-        sc->state = NUM_F;
+        sc->state = NUM_F2;
     }
     else {
         got_token(ERROR_TYPE, c, token, sc);
@@ -343,9 +343,22 @@ void NUM_3_trans(char c, token_t * token, scanner_t *sc) {
 }
 
 
-void NUM_F_trans(char c, token_t * token, scanner_t *sc) {
+void NUM_F1_trans(char c, token_t * token, scanner_t *sc) {
     if(get_chtype(c) == DIGIT) {
-        sc->state = NUM_F;
+        sc->state = NUM_F1;
+    }
+    else if(str_search(c, "eE")) {
+        sc->state = NUM_2;
+    }
+    else {
+        got_token(NUMBER, c, token, sc);
+    }
+}
+
+
+void NUM_F2_trans(char c, token_t * token, scanner_t *sc) {
+    if(get_chtype(c) == DIGIT) {
+        sc->state = NUM_F2;
     }
     else {
         got_token(NUMBER, c, token, sc);
@@ -591,7 +604,8 @@ trans_func_t get_trans(fsm_state_t state) {
     transition_functions[NUM_1] = NUM_1_trans;
     transition_functions[NUM_2] = NUM_2_trans;
     transition_functions[NUM_3] = NUM_3_trans;
-    transition_functions[NUM_F] = NUM_F_trans;
+    transition_functions[NUM_F1] = NUM_F1_trans;
+    transition_functions[NUM_F2] = NUM_F2_trans;
     transition_functions[COM_1] = COM_1_trans;
     transition_functions[COM_2] = COM_2_trans;
     transition_functions[COM_3] = COM_3_trans;
@@ -631,6 +645,24 @@ char *tok_type_to_str(token_type_t tok_type) {
 }
 
 
+bool is_error_token(token_t *token, int *return_code) {
+    if(token->token_type == ERROR_TYPE || token->token_type == INT_ERR_TYPE) {
+
+        if(token->token_type == ERROR_TYPE) { //Resolve return code
+            *return_code = LEXICAL_ERROR;
+        }
+        else {
+            *return_code = INTERNAL_ERROR;
+        }
+
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+
 token_t get_next_token(scanner_t *sc) {
     token_t result;
     token_init(&result);
@@ -659,7 +691,7 @@ token_t get_next_token(scanner_t *sc) {
 
     } //while(result.token_type == UNKNOWN)
 
-    // fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
+    //fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 

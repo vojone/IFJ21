@@ -8,6 +8,15 @@
  *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 
+/**
+ * @file precedence_parser.c
+ * @brief Header file of precedence parsing functions
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
+ *
+ */
+
+
 #ifndef PRECEDENCE_PARSER_H
 #define PRECEDENCE_PARSER_H
 
@@ -78,12 +87,14 @@ DSTACK_DECL(expr_el_t, pp) /**< Declares stack with expr_els and its operations 
  * @brief Structure of precedence parser
  */ 
 typedef struct p_parser {
+    expr_el_t on_top;
+    expr_el_t on_input;
+
     pp_stack_t stack; /**< Main stack where reductions are performed */
     pp_stack_t garbage; /**< Garbage collecting stack where is stored every symbol that should be (or its part) freed */
     bool stop_flag; /**< Flag that stops main cycle in precedence parsing if there is probably end of expression */
     bool empty_expr; /**< Flag that signalizes empty expression */
     bool empty_cycle; /**< Flag that determines whether was performed any action (push to main stack or reduction) during main cycle */
-    bool was_operand;  /**< Flag that says if last symbol was operand or not (used for determining end of expression) */
 
     bool was_f_call;
     bool only_f_was_called; /**< If there is any other operantion than calling function in epxression it is set to false */
@@ -190,24 +201,32 @@ bool is_tok_attr(char *exp_attr, token_t *t, tok_buffer_t *tok_b);
 /**
  * @brief Prints error msg to stderr
  */ 
-void fcall_sem_error(tok_buffer_t *tok_b, token_t *func_id, char *msg);
+void fcall_sem_error(tok_buffer_t *tok_b, char *f_name, char *msg);
 
 
 /**
  * @brief Prints error msg to stderr
  */ 
-void fcall_syn_error(tok_buffer_t *tok_b, token_t *func_id, char *msg);
+void fcall_syn_error(tok_buffer_t *tok_b, char *f_name, char *msg);
 
 
 /**
- * @brief Parses arguments in function call in expression
+ * @brief Parses just one expression (argument) in function call
  */ 
-int argument_parser(prog_t *dst_code, token_t *func_id, char *params_s, 
+int parse_arg_expr(size_t arg_cnt, prog_t *dst_code, 
+                   symbol_tables_t *syms, tok_buffer_t *tok_b, 
+                   tree_node_t *symbol);
+
+
+/**
+ * @brief Parses arguments in function call in expression (checks separators and expressions)
+ */ 
+int argument_parser(prog_t *dst_code, tree_node_t *symbol, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b);
 
 /**
- * @brief Parses function call inside expression
- * @return EXPRESSION SUCCESS if wverything was ok
+ * @brief Parses function call inside expression (check if there is '(' whe nfunction is called)
+ * @return EXPRESSION_SUCCESS if wverything was ok
  */ 
 int fcall_parser(prog_t *dst_prog,
                  tree_node_t *symbol, 
@@ -216,22 +235,37 @@ int fcall_parser(prog_t *dst_prog,
 
 
 /**
- * @brief Creates expression element from current and last token
- */ 
-int from_input_token(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                     symbol_tables_t *syms, expr_el_t *result);
+ * @brief Processes identifier got on input
+ */
+int process_identifier(p_parser_t *pparser, 
+                       tok_buffer_t *t_buff, 
+                       symbol_tables_t *syms);
 
 
 /**
- * @brief Creates stop symbol and initializes it
+ * @brief Creates expression element from current and last token
+ */ 
+int from_input_token(p_parser_t *pparser, 
+                     tok_buffer_t *t_buff, 
+                     symbol_tables_t *syms);
+
+
+/**
+ * @brief Creates stop symbol as expression element and initializes it
  */ 
 expr_el_t stop_symbol();
 
 
 /**
- * @brief Creates precedence sign due to given parameter and initializes it
+ * @brief Creates precedence sign expr. el. due to given parameter and initializes it
  */ 
 expr_el_t prec_sign(char sign);
+
+
+/**
+ * @brief Creates operand expression element 
+ */
+expr_el_t operand();
 
 
 /**
@@ -359,14 +393,16 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
  * @brief Gets symbol from input (if it is valid as expression element otherwise is set to STOP_SYM)
  * @note Symbol on input adds to garbage stack to be freed at the end of expression parsing
  */ 
-int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                     symbol_tables_t *symtabs, expr_el_t *on_input);
+int get_input_symbol(p_parser_t *pparser, 
+                     tok_buffer_t *t_buff, 
+                     symbol_tables_t *symtabs,
+                     prog_t *dst);
 
 
 /**
  * @brief Gets first nonterminal from top of the stack (There can't be more of them due to operator grammar) 
  */ 
-int get_top_symbol(expr_el_t *on_top, p_parser_t *pparser);
+int get_top_symbol(p_parser_t *pparser);
 
 
 /**
@@ -405,6 +441,21 @@ void prepare_buffer(scanner_t *sc, tok_buffer_t *tok_b);
  * @param dst Pointer to program structure in which are instructions printed
  */ 
 int prepare_pp(prog_t *dst, p_parser_t *pp);
+
+
+/**
+ * @brief Updates parser structs and current token int token_buffer in main cycle
+ */ 
+int update_structs(scanner_t *sc, symbol_tables_t *s, 
+                   tok_buffer_t *tok_buff, p_parser_t *pparser, prog_t *dst);
+
+
+/**
+ * @brief Checks if there are $s on the top of stack an on the input
+ * @note Also determines if expression is empty or not, and information about it is in return_value
+ * @return True if there are
+ */ 
+bool is_end_of_parsing(p_parser_t *pparser, int *return_value);
 
 
 /**

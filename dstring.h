@@ -3,14 +3,14 @@
  *                                dstring.h
  * 
  *                   Authors: Vojtech Dvorak (xdvora3o)
- *Purpose: Declaration of basic functions to process (dynamic) string and chars
+ *  Purpose: Declaration of basic functions to process (dynamic) string
  *
  *                       Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstring.h
- * @brief Declaration of basic functions to process (dynamic) string and chars
+ * @brief Declaration of basic functions to process (dynamic) string
  * 
  * @authors Vojtech Dvorak (xdvora3o)
  */ 
@@ -31,7 +31,7 @@
 #define STR_FAILURE 1
 
  
-//String is implemented as dynamic array
+//Dnamic string is implemented as dynamic array
 typedef struct string {
     size_t length; /**< Length of string */
     size_t alloc_size; /**< Allocated space for string */
@@ -39,6 +39,7 @@ typedef struct string {
 } string_t;
 
 
+//Character classes
 enum char_type {
     ALPHA, DIGIT, WHITESPACE, CONTROL, OTHER_CHARACTER
 };
@@ -127,7 +128,7 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length);
 int cpy_strings(string_t* dst, string_t *src, bool zero_term);
 
 /**
- * @brief returns type of character
+ * @brief returns type of character (character class, @see char_type)
  */
 int get_chtype(const char c);
 
@@ -138,10 +139,17 @@ int get_chtype(const char c);
  */ 
 int str_cmp(const char *str1, const char *str2);
 
-
+/**
+ * @brief Returns length attribute of string_t structure
+ * @return length of string
+ */
 size_t len(string_t *str);
 
 
+/**
+ * @brief Compares two dynamic strings
+ * @return 0 if strings are equivalent
+ */ 
 int dstring_cmp(string_t* str1, string_t* str2);
 
 

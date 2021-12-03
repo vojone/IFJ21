@@ -64,7 +64,7 @@ typedef enum fsm_state {
     INIT,
     ID_F,
     INT_F,
-    NUM_1, NUM_2, NUM_3, NUM_F,
+    NUM_1, NUM_2, NUM_3, NUM_F1, NUM_F2,
     COM_1, COM_2, COM_3, COM_F1, COM_F2, COM_F3,
     STR_1, STR_2, STR_3, STR_4, STR_F,
     SEP_F,
@@ -142,6 +142,13 @@ token_t lookahead(scanner_t *scanner);
  * @return pointer to string (static alocated -> DONT FREE IT), or null if tok_type is not valid 
  */ 
 char *tok_type_to_str(token_type_t tok_type);
+
+/**
+ * @brief Check if token type is type that signalizes error
+ * @param return_code output parameter, pointer to integer value where will be stored correspoding return code
+ * @return True if token has any of error type
+ */ 
+bool is_error_token(token_t *token, int *return_code);
 
 /**
  * @brief Inits scanner structure

@@ -8,6 +8,14 @@
  *                  Last change: 25. 11. 2021
  *****************************************************************************/
 
+/**
+ * @file symtable.c
+ * @brief Declaration of symbol table functions and structures
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
+ */ 
+
+
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 
@@ -179,9 +187,9 @@ bool check_builtin(char *key, symtab_t *dst);
  * @brief Performs searching in stack of symtabs
  * @return If nothing is found returns NULL otherwise returns pointer to first occurence
  */
-tree_node_t * search_in_tables(symtabs_stack_t *sym_stack, 
-                               symtab_t *start_symtab, 
-                               char *key);
+tree_node_t * deep_search(symtabs_stack_t *sym_stack, 
+                          symtab_t *start_symtab, 
+                          char *key);
 
 
 #endif

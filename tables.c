@@ -12,7 +12,7 @@
  * @file tables.c
  * @brief Functions, that contain static variables with defined keywords,...
  * 
- * @authors Radek Marek, Vojtech Dvorak, Juraj Dedic, Tomas Dvorak
+ * @authors Vojtěch Dvořák (xdvora3o)
  */ 
 
 #include "tables.h"

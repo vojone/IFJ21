@@ -27,7 +27,9 @@
 
 int main() {
     scanner_t scanner;
-    scanner_init(&scanner);
+    if(scanner_init(&scanner) != EXIT_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
     parser_t parser;
     parser_setup(&parser, &scanner);

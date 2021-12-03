@@ -409,7 +409,7 @@ class string_expect : public test_fixture {
 		void setData() override {
 			scanner_input = 
 			R"(
-				require //missing file string
+				require --missing file string
 				function main()
 				end
 			)";
@@ -417,7 +417,7 @@ class string_expect : public test_fixture {
 };
 
 TEST_F(string_expect, only_parse) {
-	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
+	ASSERT_EQ(parse_program(&pt), SEMANTIC_ERROR_OTHER);
 }
 
 class function_call : public test_fixture {

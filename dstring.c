@@ -3,14 +3,14 @@
  *                                dstring.c
  * 
  *                  Authors: Vojtech Dvorak (xdvora3o)
- * Purpose: Source file of functions to process (dynamic) strings and chars
+ *      Purpose: Source file of functions to process (dynamic) strings
  * 
  *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
 
 /**
  * @file dstring.h
- * @brief Source file of functions to process (dynamic) strings and chars
+ * @brief Source file of functions to process (dynamic) strings
  * @see dstring.h to get functions description
  * 
  * @authors Vojtech Dvorak (xdvora3o)
