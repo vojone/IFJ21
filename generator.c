@@ -350,6 +350,8 @@ void generate_init(prog_t *dst){
     generate_checknil_function_double(dst);
     generate_same_types(dst);
     generate_force_floats(dst);
+    generate_force_ints(dst);
+    generate_tobool(dst);
 }
 
 /**
@@ -496,6 +498,9 @@ void generate_value_push(prog_t *dst,  sym_type_t type, sym_dtype_t dtype, const
  */ 
 void generate_if_condition(prog_t *dst, size_t n){
     app_instr(dst,"#if %i",n);
+    //convert other types to bool
+    generate_call_function(dst,"$BUILTIN$tobool");
+
     app_instr(dst,"PUSHS bool@true");
     app_instr(dst,"JUMPIFNEQS $ELSE$START$%i",n);
 }
@@ -527,6 +532,9 @@ void generate_while_condition_beginning(prog_t *dst, size_t n){
 }
 
 void generate_while_condition_evaluate(prog_t *dst, size_t n){
+    //convert other types to bool
+    generate_call_function(dst,"$BUILTIN$tobool");
+    
     app_instr(dst,"PUSHS bool@true");
     app_instr(dst,"JUMPIFNEQS $WHILE$END$%i",n);
 }
@@ -882,8 +890,11 @@ void generate_substr_function(prog_t *dst){
     generate_operation_strlen(dst);
     app_instr(dst,"POPS TF@strlen");
 
-    app_instr(dst, "FLOAT2INT %sstart %sstart",VAR_FORMAT,VAR_FORMAT);
-    app_instr(dst, "FLOAT2INT %sfinish %sfinish",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst,"PUSHS %sstart",VAR_FORMAT);
+    app_instr(dst,"PUSHS %sfinish",VAR_FORMAT);
+    generate_call_function(dst,"$BUILTIN$forceints");
+    app_instr(dst,"POPS %sfinish",VAR_FORMAT);
+    app_instr(dst,"POPS %sstart",VAR_FORMAT);
     
     // var cond1 = (1 <= start) && (1 <= finish) //jumpif !cond1
     // if(str.length != 0)
@@ -892,7 +903,6 @@ void generate_substr_function(prog_t *dst){
     //          var cond2 = (start == str.length + 1) && (finish == str.length + 1); //jumpif !cond2
     //          return ""
     //     }
-
 
     //start of cond1
     app_instr(dst, "PUSHS int@1");
@@ -1171,24 +1181,24 @@ void generate_force_floats(prog_t *dst){
     //check if A is INT
     app_instr(dst,"PUSHS string@int");
     app_instr(dst,"PUSHS TF@$TEMP$typeA");
-    app_instr(dst,"JUMPIFNEQS $SKIPCONVA$");
+    app_instr(dst,"JUMPIFNEQS $SKIPCONVA2FLOAT$");
     
-    //CONVERT A to INT
+    //CONVERT A to FLOAT
     app_instr(dst,"PUSHS %s$TEMP$A",VAR_FORMAT);
     app_instr(dst,"INT2FLOATS");
     app_instr(dst,"POPS %s$TEMP$A",VAR_FORMAT);
-    app_instr(dst,"LABEL $SKIPCONVA$");
+    app_instr(dst,"LABEL $SKIPCONVA2FLOAT$");
 
     //check if B is INT
     app_instr(dst,"PUSHS string@int");
     app_instr(dst,"PUSHS TF@$TEMP$typeB");
-    app_instr(dst,"JUMPIFNEQS $SKIPCONVB$");
+    app_instr(dst,"JUMPIFNEQS $SKIPCONVB2FLOAT$");
     
-    //CONVERT B to INT
+    //CONVERT B to FLOAT
     app_instr(dst,"PUSHS %s$TEMP$B",VAR_FORMAT);
     app_instr(dst,"INT2FLOATS");
     app_instr(dst,"POPS %s$TEMP$B",VAR_FORMAT);
-    app_instr(dst,"LABEL $SKIPCONVB$");
+    app_instr(dst,"LABEL $SKIPCONVB2FLOAT$");
 
     //end
     app_instr(dst,"PUSHS %s$TEMP$A",VAR_FORMAT);
@@ -1196,24 +1206,83 @@ void generate_force_floats(prog_t *dst){
     generate_end_function(dst,"$BUILTIN$forcefloats");
 }
 
+void generate_force_ints(prog_t *dst){
+    generate_start_function(dst,"$BUILTIN$forceints");
 
+    //get param B
+    generate_parameter(dst,"$TEMP$B");
+    app_instr(dst,"DEFVAR TF@$TEMP$typeB");
+    app_instr(dst,"TYPE TF@$TEMP$typeB %s$TEMP$B",VAR_FORMAT);
 
-const char *convert_type(sym_dtype_t dtype){
-    switch (dtype)
-    {
-    case INT:
-        return "int";
-    case BOOL:
-        return "bool";
-    case STR:
-        return "string";
-    case NUM:
-        return "float";
-    default:
-        return "nil";
-        break;
-    }
+    //get param A
+    generate_parameter(dst,"$TEMP$A");
+    app_instr(dst,"DEFVAR TF@$TEMP$typeA");
+    app_instr(dst,"TYPE TF@$TEMP$typeA %s$TEMP$A",VAR_FORMAT);
+    
+    //check if A is FLOAT
+    app_instr(dst,"PUSHS string@float");
+    app_instr(dst,"PUSHS TF@$TEMP$typeA");
+    app_instr(dst,"JUMPIFNEQS $SKIPCONVA$2INT");
+    
+    //CONVERT A to INT
+    app_instr(dst,"PUSHS %s$TEMP$A",VAR_FORMAT);
+    app_instr(dst,"FLOAT2INTS");
+    app_instr(dst,"POPS %s$TEMP$A",VAR_FORMAT);
+    app_instr(dst,"LABEL $SKIPCONVA$2INT");
+
+    //check if B is FLOAT
+    app_instr(dst,"PUSHS string@float");
+    app_instr(dst,"PUSHS TF@$TEMP$typeB");
+    app_instr(dst,"JUMPIFNEQS $SKIPCONVB$2INT");
+    
+    //CONVERT B to INT
+    app_instr(dst,"PUSHS %s$TEMP$B",VAR_FORMAT);
+    app_instr(dst,"FLOAT2INTS");
+    app_instr(dst,"POPS %s$TEMP$B",VAR_FORMAT);
+    app_instr(dst,"LABEL $SKIPCONVB$2INT");
+
+    //end
+    app_instr(dst,"PUSHS %s$TEMP$A",VAR_FORMAT);
+    app_instr(dst,"PUSHS %s$TEMP$B",VAR_FORMAT);
+    generate_end_function(dst,"$BUILTIN$forceints");
 }
+
+void generate_tobool(prog_t *dst){
+
+    generate_start_function(dst,"$BUILTIN$tobool");
+    generate_parameter(dst, "TMP");
+
+
+    app_instr(dst, "DEFVAR TF@$TYPE$");
+
+    app_instr(dst, "TYPE TF@$TYPE$ %sTMP",VAR_FORMAT);
+    
+    app_instr(dst, "PUSHS TF@$TYPE$");
+    app_instr(dst, "PUSHS string@bool");
+    app_instr(dst, "JUMPIFEQS $toboolORIGINAL$");
+
+    app_instr(dst, "PUSHS TF@$TYPE$");
+    app_instr(dst, "PUSHS string@nil");
+    app_instr(dst, "JUMPIFEQS $toboolFALSE$");
+    
+    //return true
+    app_instr(dst, "PUSHS bool@true");
+    app_instr(dst, "JUMP $toboolEND$");
+
+    //return original value
+    app_instr(dst, "LABEL $toboolORIGINAL$");
+    app_instr(dst, "PUSHS %sTMP",VAR_FORMAT);
+    app_instr(dst, "JUMP $toboolEND$");
+    
+    //return false
+    app_instr(dst, "LABEL $toboolFALSE$");
+    app_instr(dst, "PUSHS bool@false");
+
+    app_instr(dst, "LABEL $toboolEND$");
+    generate_end_function(dst,"$BUILTIN$tobool");
+}
+
+
 
 /**
  * *---------VARIOUS---------
@@ -1331,6 +1400,24 @@ void to_ascii(const char * str, string_t * out){
             escape_sequence = true;
     }
 }
+
+const char *convert_type(sym_dtype_t dtype){
+    switch (dtype)
+    {
+    case INT:
+        return "int";
+    case BOOL:
+        return "bool";
+    case STR:
+        return "string";
+    case NUM:
+        return "float";
+    default:
+        return "nil";
+        break;
+    }
+}
+
 
 
 /***                            End of generator.c                         ***/

@@ -298,49 +298,111 @@ void generate_operation_strlen(prog_t *dst);
 /**
  * *---------BUILTIN---------
  */ 
+
 /**
  * @brief generates prebuilt write function
  * @note supports exactly one argument
  */ 
 void generate_write_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt reads function
+ */ 
 void generate_reads_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt readi function
+ */ 
 void generate_readi_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt readn function
+ */ 
 void generate_readn_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt tointeger function
+ */ 
 void generate_tointeger_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt chr function
+ */ 
 void generate_chr_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt ord function
+ */ 
 void generate_ord_function(prog_t *dst);
 
+/**
+ * @brief generates prebuilt substr function
+ */ 
 void generate_substr_function(prog_t *dst);
 
 
-//builtin custom
-// void generate_tonumber_function(dst);
+/**
+ * *BUILTIN INTERNAL FUNCTIONS - cannot be called from IFJ21 source code
+ */ 
 
+/**
+ * @brief checks the operand on top of the stack for 0
+ * @note if there is a zero it will exit exit with error 9
+ */ 
 void generate_checkzero_function_int(prog_t *dst);
 
+/**
+ * @brief checks the operand on top of the stack for 0
+ * @note if there is a zero it will exit exit with error 9
+ */ 
 void generate_checkzero_function_float(prog_t *dst);
 
+/**
+ * @brief checks one operand on top of the stack for nil
+ * @note if there is a nil it will exit exit with error 8
+ */ 
 void generate_checknil_function_single(prog_t *dst);
 
+/**
+ * @brief checks two operands on top of the stack for nil
+ * @note if there is a nil it will exit exit with error 8
+ */
 void generate_checknil_function_double(prog_t *dst);
 
+/**
+ * @brief function to get negative value on top of stack
+ */
 void generate_unaryminus_function(prog_t *dst);
 
+/**
+ * @brief function to convert values on top of the stack to same types
+ * @note if there is float and int it will make 2 floats 
+ */
 void generate_same_types(prog_t *dst);
 
+/**
+ * @brief convert 2 values on top of the stack to floats
+ */
 void generate_force_floats(prog_t *dst);
+
+/**
+ * @brief convert 2 values on top of the stack to ints
+ */
+void generate_force_ints(prog_t *dst);
+
+/**
+ * @brief if there is not bool on top of stack it will convert the value to bool
+ */
+void generate_tobool(prog_t *dst_code);
 
 
 /**
  * *---------VARIOUS---------
- */ 
+ */
 
+/**
+ * @brief converts the value to number
+ */ 
 void generate_int2num(prog_t *dst_code);
 
 
