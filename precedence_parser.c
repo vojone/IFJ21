@@ -398,6 +398,9 @@ int process_identifier(p_parser_t *pparser,
                 return retval;
             }
 
+            //Current token attribute is restored to function name (for correct behaviour in precedence table)
+            t_buff->current.attr = symbol->key;
+
             //Function was succesfully called
             cpy_strings(&on_inp->dtype, &(symbol->data.ret_types), true);
             on_inp->is_fcall = true;
@@ -938,7 +941,7 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
     int ret;
     ret = get_str_to_reduction(&(pparser->stack), &operands, &to_be_reduced);
 
-    //fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
+    fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
     expr_rule_t *rule;
     if(ret == EXPRESSION_SUCCESS) {
         ret = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
@@ -1234,7 +1237,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
         }        
 
         char precedence = get_precedence(pparser.on_top, pparser.on_input);
-        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, on_top.type, on_top.is_zero, on_input.type, on_input.is_zero, pparser.stop_flag);
+        //fprintf(stderr, "%s: %c %d(%d) %d(%d) Stop flag: %d\n", get_attr(&tok_buff.current, sc), precedence, pparser.on_top.type, pparser.on_top.is_zero, pparser.on_input.type, pparser.on_input.is_zero, pparser.stop_flag);
         if(precedence == '=') {
             if(!pp_push(&pparser.stack, pparser.on_input)) {
                 ret = INTERNAL_ERROR;
@@ -1274,7 +1277,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
     print_err_message(&ret, &tok_buff, &failed_op_msg);
     free_everything(&pparser);
 
-    token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
+    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return ret;
 }
 

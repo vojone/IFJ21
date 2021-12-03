@@ -4,5 +4,6 @@ function heh() : integer, integer
 end
 function main()
     write(heh()-3)
+    write("\n")
 end
 main()
