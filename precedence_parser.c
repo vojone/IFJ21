@@ -968,7 +968,7 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
 
 
 int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff, 
-                     symbol_tables_t *symtabs) {
+                     symbol_tables_t *symtabs, prog_t *dst) {
 
     int retval = EXPRESSION_SUCCESS;
     if(pparser->stop_flag || is_EOE(t_buff->scanner, &(t_buff->current))) {
@@ -984,7 +984,9 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
     //If the last reduced symbol was function call and there is another expression elements we must clear stack
     if(pparser->was_f_call && !pparser->only_f_was_called) {
         //Clear stack to calculate only first return value
-        fprintf(stderr, "STACK POPPED %ld values!\n", (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num);
+        size_t pop_cnt = (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num;
+        generate_dump_values(dst, pop_cnt);
+        // fprintf(stderr, "STACK POPPED %ld values!\n", pop_cnt);
     }
 
     pparser->was_f_call = false; /**< New input symbol -> reset function call flag */
@@ -1165,7 +1167,7 @@ int prepare_pp(prog_t *dst, p_parser_t *pp) {
 
 
 int update_structs(scanner_t *sc, symbol_tables_t *s, 
-                   tok_buffer_t *tok_buff, p_parser_t *pparser) {
+                   tok_buffer_t *tok_buff, p_parser_t *pparser, prog_t *dst) {
 
     int ret = EXPRESSION_SUCCESS;
     tok_buff->current = lookahead(sc);
@@ -1178,7 +1180,7 @@ int update_structs(scanner_t *sc, symbol_tables_t *s,
         return ret;
     }
 
-    ret = get_input_symbol(pparser, tok_buff, s); //Update input symbol
+    ret = get_input_symbol(pparser, tok_buff, s, dst); //Update input symbol
     if(ret != EXPRESSION_SUCCESS) {
         return ret;
     }
@@ -1221,7 +1223,7 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
     }
     
     while(ret == EXPRESSION_SUCCESS) { //Main cycle
-        ret = update_structs(sc, s, &tok_buff, &pparser);
+        ret = update_structs(sc, s, &tok_buff, &pparser, dst);
         if(ret != EXPRESSION_SUCCESS) {
             break;
         }

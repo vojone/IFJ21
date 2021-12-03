@@ -1131,6 +1131,11 @@ int func_def_epilogue(parser_t *parser) {
 
     //Generate function end
     char *cur_func_name = get_attr(parser->curr_func_id, parser->scanner);
+    
+    //generate implicit nil returns at the end and generate end
+    tree_node_t *symbol = search(&parser->sym.global, cur_func_name);
+    size_t ret_cnt = len(&symbol->data.ret_types);
+    generate_additional_returns(&parser->dst_code, ret_cnt);
     generate_end_function(&parser->dst_code, cur_func_name);
 
     debug_print("parsing function finished! at: (%lu,%lu)\n", parser->scanner->cursor_pos[ROW], parser->scanner->cursor_pos[COL]); 

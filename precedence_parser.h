@@ -395,7 +395,8 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
  */ 
 int get_input_symbol(p_parser_t *pparser, 
                      tok_buffer_t *t_buff, 
-                     symbol_tables_t *symtabs);
+                     symbol_tables_t *symtabs,
+                     prog_t *dst);
 
 
 /**
@@ -446,7 +447,7 @@ int prepare_pp(prog_t *dst, p_parser_t *pp);
  * @brief Updates parser structs and current token int token_buffer in main cycle
  */ 
 int update_structs(scanner_t *sc, symbol_tables_t *s, 
-                   tok_buffer_t *tok_buff, p_parser_t *pparser);
+                   tok_buffer_t *tok_buff, p_parser_t *pparser, prog_t *dst);
 
 
 /**

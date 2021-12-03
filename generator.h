@@ -216,6 +216,11 @@ void generate_additional_returns(prog_t *dst,size_t n);
 void generate_return(prog_t *dst);
 
 /**
+ * @brief generates pops for eliminating redundant values on stack 
+ */ 
+void generate_dump_values(prog_t *dst, size_t n);
+
+/**
  * *---------VARIABLES---------
  */
 
