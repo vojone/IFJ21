@@ -1,1 +1,0 @@
-Declared global function call
