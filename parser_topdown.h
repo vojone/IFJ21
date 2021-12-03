@@ -36,7 +36,7 @@
 #include "dstack.h"
 
 
-typedef struct result{
+typedef struct result {
     bool success;
     bool reachedEnd;
 } result_t;

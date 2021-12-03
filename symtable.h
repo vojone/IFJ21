@@ -8,6 +8,14 @@
  *                  Last change: 25. 11. 2021
  *****************************************************************************/
 
+/**
+ * @file symtable.c
+ * @brief Declaration of symbol table functions and structures
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
+ */ 
+
+
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 

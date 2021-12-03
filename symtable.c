@@ -8,6 +8,14 @@
  *                        Last change: 25. 11. 2021
  *****************************************************************************/
 
+/**
+ * @file symtable.c
+ * @brief Implementation of symbol table used in compiler
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
+ */ 
+
+
 #include "symtable.h"
 
 DSTACK(tree_node_t*, ts,) /**< Operations with tree nodes stack (used in destroy tab function) */

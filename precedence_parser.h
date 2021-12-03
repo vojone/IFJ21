@@ -8,6 +8,15 @@
  *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 
+/**
+ * @file precedence_parser.c
+ * @brief Header file of precedence parsing functions
+ * 
+ * @authors Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
+ *
+ */
+
+
 #ifndef PRECEDENCE_PARSER_H
 #define PRECEDENCE_PARSER_H
 

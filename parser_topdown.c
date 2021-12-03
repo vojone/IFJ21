@@ -14,7 +14,7 @@
 /**
  * @file parser-topdown.c
  * @brief Source file for recursive descent parser
- * @note For more documentation @see parser_topdown.h
+ * @note For more documentation about functions and structures @see parser_topdown.h
  * 
  * @authors Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
  *          Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
@@ -23,9 +23,8 @@
 #include "parser_topdown.h"
 
 
-#define DEBUG true
-
-#define PRINT_WARNINGS true
+#define DEBUG true /**< If true, prints debug log to stderr */
+#define PRINT_WARNINGS true /**< If true, prints warning to stderr about some implicit actions (see documentation for more)*/
 
 
 
