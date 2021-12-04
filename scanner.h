@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include "dstring.h"
 #include "tables.h"
+#include "dstack.h"
 
 #define UNSET -1
  
@@ -55,6 +56,11 @@ typedef struct token {
     size_t first_ch_index;
     void * attr;
 } token_t;
+
+
+
+DSTACK_DECL(token_t, tok) /**< Token buffer declaration */
+
 
 /**
  * @brief All possible states of FSM ( = base of scanner impelemntation)

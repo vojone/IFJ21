@@ -33,6 +33,8 @@
 
 DSTACK(instr_t *, instr,)
 
+DSTACK(prog_t, prog,)
+
 
 instr_t *new_instruction() {
     instr_t *instr = NULL;
@@ -160,6 +162,23 @@ int app_instr(prog_t *dst, const char *const _Format, ...) {
     dst->last_instr = new_instr;
 
     return EXIT_SUCCESS;
+}
+
+
+void app_prog(prog_t *dst, prog_t *prog) {
+    if(get_first(dst) != NULL) { //Destination program can be empty
+        
+        if(get_first(prog) != NULL) { //Apended program can be empty
+            prog->first_instr->prev = dst->last_instr;
+        }
+
+        dst->last_instr->next = prog->first_instr;     
+    }
+    else {
+        dst->first_instr = prog->first_instr;
+    }
+
+    dst->last_instr = prog->last_instr;
 }
 
 

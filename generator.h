@@ -53,6 +53,8 @@ typedef struct program {
     instr_t *while_topmost; //pointer to the while which is first in the current scope
 } prog_t;
 
+DSTACK_DECL(prog_t, prog)
+
 
 /**
  * @brief Creates new empty intruction
@@ -120,6 +122,11 @@ instr_t *get_prev(instr_t *instr);
  */ 
 int app_instr(prog_t *dst, const char *const _Format, ...);
 
+/**
+ * @brief Appends program (instruction sequence) to another program
+ * @warning Appended program cannot be destroyed! (something can be double freed)
+ */ 
+void app_prog(prog_t *dst, prog_t *prog);
 
 /**
  * @brief Inserts new instruction after given instruction

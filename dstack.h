@@ -4,7 +4,6 @@
  * 
  *                  Authors: Vojtech Dvorak (xdvora3o)
  *  Purpose: Header file with macros that can generate auxiliary stacks
- *              Contains also stack declarations used in multiple files 
  * 
  *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
@@ -12,7 +11,6 @@
 /**
  * @file dstack.h
  * @brief Header file with macros that can generate auxiliary stacks
- *        Contains also stack declarations used in multiple files 
  * 
  * @authors Vojtech Dvorak (xdvora3o)
  */ 
@@ -24,8 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-
-#include "scanner.h"
+#include <string.h>
 
 
 #define INIT_SIZE 16 /**< Initial size of stack (after initialization)*/
@@ -34,7 +31,6 @@
  * @brief Generates declaration of stack (of functions and structure) with specific name and data type
  * @param NAME prefix that will be added to opearations and structure name
  * @param TYPE data type of elements in the stack
- * @note Look at dstack.c to get better imagination how does it work and to generate stack definition
  */ 
 #define DSTACK_DECL(TYPE, NAME)                             \
                                                             \
@@ -53,6 +49,11 @@ typedef struct NAME##_stack {                               \
  * @brief Allocates initial memory space for stack          \
  */                                                         \
 bool NAME##_stack_init(NAME##_stack_t *s);                  \
+                                                            \
+/**                                                         \
+ * @brief Initializes stack to given capacity (insted of implicit capacity)\
+ */                                                         \
+bool NAME##_stack_init_to(NAME##_stack_t *s, size_t capacity); \
                                                             \
 /**                                                         \
  * @brief Deallocates all resources of                      \
@@ -100,11 +101,16 @@ unsigned int NAME##_get_top_ind(NAME##_stack_t *s);         \
  * @brief Prints content of stack (Just for easier debugging)\
  */                                                         \
 void NAME##_show(NAME##_stack_t *s);                        \
+                                                            \
+/**                                                         \
+ * @brief Rotates with stack to revert order of elements in stack\
+ */                                                         \
+bool NAME##_revert(NAME##_stack_t *s);                      \
 
 
 
 /**
- * @brief Generates definition of stack (of related functions) with specific name and data type
+ * @brief Generates definition of stack (and related functions) with specific name and data type
  * @param NAME prefix that will be added to opearations and structure name
  * @param TYPE data type of elements in the stack
  * @param PRINT_CMD Command that is used for printing data in the stack (not important, used only in show)
@@ -123,6 +129,17 @@ bool NAME##_stack_init(NAME##_stack_t *s) {                     \
     return true;                                                \
 }                                                               \
                                                                 \
+bool NAME##_stack_init_to(NAME##_stack_t *s, size_t cap) {      \
+    s->top = 0;                                                 \
+    s->data = (TYPE *)malloc(sizeof(TYPE)*cap);                 \
+    if(!s->data) {                                              \
+        fprintf(stderr, "Stack: Can't allocate!\n");            \
+        return false;                                           \
+    }                                                           \
+    s->allocated = cap;                                         \
+                                                                \
+    return true;                                                \
+}                                                               \
                                                                 \
 void NAME##_stack_dtor(NAME##_stack_t *s) {                     \
     free(s->data);                                              \
@@ -167,10 +184,10 @@ TYPE * NAME##_get_ptr(NAME##_stack_t *s, int index) {               \
     }                                                               \
 }                                                                   \
                                                                     \
-                                                                    \
 unsigned int NAME##_get_top_ind(NAME##_stack_t *s) {                \
-        return s->top - 1;                                          \
+    return s->top - 1;                                              \
 }                                                                   \
+                                                                    \
                                                 \
 void NAME##_show(NAME##_stack_t *s) {           \
     int i = 0;                                  \
@@ -181,9 +198,30 @@ void NAME##_show(NAME##_stack_t *s) {           \
     }                                           \
     fprintf(stderr, "<= top\n");                \
 }                                               \
+                                                \
+bool NAME##_revert(NAME##_stack_t *s) {         \
+    NAME##_stack_t tmp;                         \
+    if(!NAME##_stack_init_to(&tmp, s->allocated)) {\
+        return false;                           \
+    }                                           \
+                                                \
+                                                \
+    TYPE tmp_el;                                \
+    while(!NAME##_is_empty(s)) {                \
+        tmp_el = NAME##_pop(s);                 \
+        NAME##_push(&tmp, tmp_el);              \
+    }                                           \
+                                                \
+    s->data = memmove(s->data, tmp.data, s->allocated*sizeof(TYPE));\
+    s->top = tmp.top;                           \
+                                                \
+                                                \
+    NAME##_stack_dtor(&tmp);                    \
+                                                \
+    return true;                                \
+}                                               \
+                                                \
 
-
-DSTACK_DECL(token_t, tok)
 
 
 #endif

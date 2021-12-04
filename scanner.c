@@ -18,6 +18,10 @@
 
 #include "scanner.h"
 
+
+DSTACK(token_t, tok, fprintf(stderr," %ld", s->data[i].first_ch_index)) /**< Token buffer definition */
+
+
 /**
  * @brief Prints lexical error message to stderr
  */ 

@@ -11,11 +11,11 @@ function foo() : integer, integer
 end
 
 function main()
-    local a : number = 0
-    local b : number = 0
-    local c : number = 0
+    local a : number = 8e+123
+    local b : integer = 1
+    local c : number = 0.123e-123
 
-    a, b, c = bar(), 3
+    a, b, c = bar(), foo()
 
     write(a, b, c, "\n")
 end

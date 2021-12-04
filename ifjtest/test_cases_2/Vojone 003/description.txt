@@ -1,0 +1,1 @@
+Multiple assignment with side effect

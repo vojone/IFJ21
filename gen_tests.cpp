@@ -82,19 +82,22 @@ TEST_F(test_fixture, only_parse) {
     //Dont forget to call init_program() before
     app_instr(&program, "Ahoj %a", 4.1); //<- stop
     instr_t *stop = get_last(&program);
+    (void)stop;
     app_instr(&program, "SVETE");
     app_instr(&program, "?");
     app_instr(&program, "!");
 
-    ins_before(&program, stop, "PUSHS");
+    prog_t new_prog;
+    init_new_prog(&new_prog);
+    app_instr(&new_prog, "Hello");
+    app_instr(&new_prog, "World!");
+    app_prog(&program, &new_prog);
 
-    revert(&program, stop, get_last(&program));
-
-    stop = get_prev(stop);
-
-    ins_after(&program, stop, "POPS");
+    app_instr(&program, "1");
     //Dont forget to call program_dtor()
 }
+
+
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

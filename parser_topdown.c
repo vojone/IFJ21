@@ -276,12 +276,12 @@ int statement(parser_t *parser) {
 }
 
 
-bool is_valid_assign(parser_t *parser, sym_dtype_t var_type, sym_dtype_t r_side_type) {
+bool is_valid_assign(prog_t *dst_code, sym_dtype_t var_type, sym_dtype_t r_side_type) {
     if(var_type == r_side_type || r_side_type == NIL) { //Types are same or rvalue type is nil
         return true;
     }
     else if(var_type == NUM && r_side_type == INT) { //Types can be implicitly converted
-        generate_int2num(&parser->dst_code);
+        generate_int2num(dst_code);
         return true;
     }
     else {
@@ -354,25 +354,45 @@ int assignment_lside(parser_t *parser, token_t* start_id,
     return PARSE_SUCCESS;
 }
 
+void prog_stack_deep_dtor(prog_stack_t *prog) {
+    while(!prog_is_empty(prog)) {
+        prog_t cur = prog_pop(prog);
+        program_dtor(&cur);
+    }
+
+    prog_stack_dtor(prog);
+}
 
 int assignment_rside(parser_t *parser, string_t *id_types) {
     size_t id_number = len(id_types); //Number of values is length of string with datatypes characters
     bool was_f_called = false;
 
+    prog_stack_t expr_progs;
+    if(!prog_stack_init(&expr_progs)) {
+        return INTERNAL_ERROR;
+    }
+
     string_t ret_types;
-    str_init(&ret_types);
+    if(str_init(&ret_types) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
     size_t i = 0;
+    prog_t cur_expr;
     int ret = EXPRESSION_SUCCESS;
     for(; i < id_number; i++) {
+        init_new_prog(&cur_expr); //Pointers are stord in program stack, so dont care about leaks
+
         token_t t = lookahead(parser->scanner);
         if(is_error_token(&t, &ret)) {
             str_dtor(&ret_types);
+            prog_stack_deep_dtor(&expr_progs);
             return ret;
         }
 
         if(!is_expression(parser, t)) {
             str_dtor(&ret_types);
+            prog_stack_deep_dtor(&expr_progs);
             error_semantic(parser, "Missing rvalue in assignment (expected expression)!");
             return SEMANTIC_ERROR_ASSIGNMENT;
         }
@@ -380,15 +400,16 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
         //check for valid expression
         debug_print("Calling precedence parser...\n");
     
-        int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
+        int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &cur_expr);
         if(expr_retval == EXPRESSION_SUCCESS) {
             size_t u = 0;
 
-            for(; to_str(&ret_types)[u] != '\0'; u++) { //If there is only function, it can return more than one values
+            for(; to_str(&ret_types)[u] != '\0' && u + i < len(id_types); u++) { //If there is only function, it can return more than one values
                 sym_dtype_t cur_dtype = char_to_dtype(to_str(&ret_types)[u]);
                 sym_dtype_t should_be = char_to_dtype(id_types->str[i + u]);
                 
-                if(!is_valid_assign(parser,should_be, cur_dtype)) { //Type checking in (multiple) assignment
+                if(!is_valid_assign(&cur_expr, should_be, cur_dtype)) { //Type checking in (multiple) assignment
+                    prog_stack_deep_dtor(&expr_progs);
                     str_dtor(&ret_types);
                     if(!was_f_called) {
                         error_semantic(parser, "Type of variable is not compatible with rvalue of assignment!");
@@ -404,10 +425,17 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
                 }
             }
 
+            if(!prog_push(&expr_progs, cur_expr)) { //Saving expression code to stack
+                prog_stack_deep_dtor(&expr_progs);
+                str_dtor(&ret_types);
+                return INTERNAL_ERROR;
+            }
+
             i += (u > 0) ? (u - 1) : u; //If there was one return value, don't icrement, because i increments
         }
         else {
             debug_print("Error while parsing expression for multiple assignment\n");
+            prog_stack_deep_dtor(&expr_progs);
             str_dtor(&ret_types);
             return expr_retval;
         }
@@ -416,6 +444,7 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
         if(i + 1 != id_number) {
             token_t t = lookahead(parser->scanner);
             if(is_error_token(&t, &ret)) {
+                prog_stack_deep_dtor(&expr_progs);
                 str_dtor(&ret_types);
                 return ret;
             }
@@ -425,13 +454,27 @@ int assignment_rside(parser_t *parser, string_t *id_types) {
                 get_next_token(parser->scanner);
             }
             else {
+                prog_stack_deep_dtor(&expr_progs);
                 str_dtor(&ret_types);
-                error_unexpected_token(parser, ",", t);
-                return SYNTAX_ERROR;
+
+                if(was_f_called) {
+                    error_semantic(parser, "Function in assignment doesn't return enough values!");
+                    return SEMANTIC_ERROR_PARAMETERS;
+                }
+                else {
+                    error_semantic(parser, "Missing rvalue in assignment!");
+                    return SEMANTIC_ERROR_ASSIGNMENT;
+                }
             }
         }
     }
 
+    while(!prog_is_empty(&expr_progs)) { //Apends expression to main program (to evaluate it from right to left)
+        prog_t cur = prog_pop(&expr_progs);
+        app_prog(&parser->dst_code, &cur);
+    }
+    
+    prog_stack_deep_dtor(&expr_progs);
     str_dtor(&ret_types);
 
     return PARSE_SUCCESS;
@@ -445,11 +488,16 @@ int assignment(parser_t *parser, token_t t) {
     debug_print("var id: %s\n", get_attr(&var_id, parser->scanner));
 
     string_t id_types;
-    str_init(&id_types);
+    if(str_init(&id_types) != STR_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
     //Push names to the stack in lside
     tok_stack_t var_names;
-    tok_stack_init(&var_names);
+    if(!tok_stack_init(&var_names)) {
+        str_dtor(&id_types);
+        return INTERNAL_ERROR;
+    }
 
     int retval = assignment_lside(parser, &var_id, &id_types, &var_names);
 
@@ -458,7 +506,11 @@ int assignment(parser_t *parser, token_t t) {
     retval = (retval == PARSE_SUCCESS) ? assignment_rside(parser, &id_types) : retval;
     
     //Generate assignment of the values on stack
-    generate_multiple_assignment(&parser->dst_code,&parser->sym.symtab_st, &parser->sym.symtab, &var_names, parser->scanner);
+    if(!tok_revert(&var_names)) {
+        retval = INTERNAL_ERROR;
+    }
+
+    generate_multiple_assignment(&parser->dst_code, &parser->sym.symtab_st, &parser->sym.symtab, &var_names, parser->scanner);
 
     str_dtor(&id_types);
     tok_stack_dtor(&var_names);
@@ -576,7 +628,7 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
             *status = DEFINED; //Ok
         }
 
-        if(!is_valid_assign(parser, dtype, prim_dtype(&ret_types))) { //Check of data type compatibility in initialization
+        if(!is_valid_assign(&parser->dst_code, dtype, prim_dtype(&ret_types))) { //Check of data type compatibility in initialization
             error_semantic(parser, "Incomatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
             str_dtor(&ret_types);
             return SEMANTIC_ERROR_ASSIGNMENT;
@@ -1365,7 +1417,7 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
             if(!is_variadic) {
                 sym_dtype_t d_type = char_to_dtype(params_str[argument_cnt]);
                 sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]); //Get primary returned type (first of them)
-                if(!is_valid_assign(parser, d_type, prim_dtype)) { //Check data type of argument
+                if(!is_valid_assign(&parser->dst_code, d_type, prim_dtype)) { //Check data type of argument
                     error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", func_name);
                     str_dtor(&ret_types);
                     return SEMANTIC_ERROR_PARAMETERS;
@@ -1528,14 +1580,22 @@ int parse_return(parser_t *parser) {
     token_t* id_fc = parser->curr_func_id;
     tree_node_t *symbol = search(&parser->sym.global, get_attr(id_fc, parser->scanner));
     
+    prog_stack_t expr_progs;
+    if(!prog_stack_init(&expr_progs)) {
+        return INTERNAL_ERROR;
+    }
+
     size_t returns_cnt = 0;
     bool finished = false;
     //We need string of all data types that function should return
     char * returns_str = to_str(&symbol->data.ret_types);
+    prog_t cur_expr;
     int retval = EXPRESSION_SUCCESS;
     while(!finished) {
+        init_new_prog(&cur_expr);
         token_t t = lookahead(parser->scanner);
         if(is_error_token(&t, &retval)) {
+            prog_stack_deep_dtor(&expr_progs);
             return retval;
         }
 
@@ -1556,15 +1616,17 @@ int parse_return(parser_t *parser) {
             //There is expression in return statement -> call precedence parser
             debug_print("Calling precedence parser to parse return in %s...\n", get_attr(id_fc, parser->scanner));
 
-            int retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
+            int retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &cur_expr);
             if(retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_types);
+                prog_stack_deep_dtor(&expr_progs);
                 return retval;
             }
             else {
                 sym_dtype_t dec_type = char_to_dtype(returns_str[returns_cnt]);
                 sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]);
-                if(!is_valid_assign(parser, dec_type, prim_dtype)) { //Check compatibility of declared return type and got return type
+                if(!is_valid_assign(&cur_expr, dec_type, prim_dtype)) { //Check compatibility of declared return type and got return type
+                    prog_stack_deep_dtor(&expr_progs);
                     str_dtor(&ret_types);
 
                     if(was_f_called) { //There was only function call in return statement 
@@ -1581,6 +1643,12 @@ int parse_return(parser_t *parser) {
                 else {
                     //Ok
                 }
+            }
+
+            if(!prog_push(&expr_progs, cur_expr)) { //Saving expression code to stack
+                prog_stack_deep_dtor(&expr_progs);
+                str_dtor(&ret_types);
+                return INTERNAL_ERROR;
             }
 
             str_dtor(&ret_types);
@@ -1605,7 +1673,7 @@ int parse_return(parser_t *parser) {
             //We go one token forward
             get_next_token(parser->scanner);
             if(len(&symbol->data.ret_types) - 1 < returns_cnt + 1) {
-
+                prog_stack_deep_dtor(&expr_progs);
                 error_semantic(parser, "Function \033[1;33m%s\033[0m returns %d values but more return values were found!", 
                                get_attr(id_fc, parser->scanner), 
                                returns_cnt + 1, 
@@ -1620,7 +1688,13 @@ int parse_return(parser_t *parser) {
 
     parser->found_return = true;
 
+    while(!prog_is_empty(&expr_progs)) { //Apends expression to main program (to evaluate it from right to left)
+        prog_t cur = prog_pop(&expr_progs);
+        app_prog(&parser->dst_code, &cur);
+    }
+
     generate_return(&parser->dst_code);
+    prog_stack_deep_dtor(&expr_progs);
     
     return PARSE_SUCCESS;
 }
