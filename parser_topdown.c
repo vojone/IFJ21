@@ -117,6 +117,7 @@ void parser_setup(parser_t *parser, scanner_t *scanner) {
     prog_t dst_code;
     init_new_prog(&dst_code);
     parser->dst_code = dst_code;
+    instr_stack_init(&parser->dst_code.cycle_stack);
 }
 
 
@@ -131,6 +132,7 @@ void parser_dtor(parser_t *parser) {
 
     symtabs_stack_dtor(&(parser->sym.symtab_st));
     tok_stack_dtor(&(parser->decl_func));
+    instr_stack_dtor(&parser->dst_code.cycle_stack);
 }
 
 
