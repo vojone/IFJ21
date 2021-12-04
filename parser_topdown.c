@@ -406,6 +406,7 @@ int assignment_rside(parser_t *parser, string_t *id_types, string_t *rside) {
         debug_print("Calling precedence parser...\n");
 
         int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &cur_expr);
+        debug_print("RET_TYPES: %s\n", to_str(&ret_types));
         if(expr_retval == EXPRESSION_SUCCESS && i < id_number) {
             size_t u = 0;
             for(; to_str(&ret_types)[u] != '\0' && u + i < id_number; u++) { //If there is only function, it can return more than one values
@@ -1120,7 +1121,7 @@ int func_def_params(parser_t *p, token_t *id_token,
                 }
 
 
-                ins_var(p, &param_id, DECLARED, dtype); //Insert parameters to symbol table
+                ins_var(p, &param_id, DEFINED, dtype); //Insert parameters to symbol table
                 p->decl_cnt++; //Incrementation of declaration counter to make variable name unique
 
                 params_cnt++;

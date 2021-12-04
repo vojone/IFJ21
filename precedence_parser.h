@@ -184,7 +184,7 @@ sym_dtype_t prim_type(string_t *type_string);
 /**
  * @brief Checks copatibility of data type string (returned from function or expression) and arg. type
  */ 
-bool is_compatible_in_arg(prog_t *prog, char arg_type, string_t *dtypes);
+bool is_compatible_in_arg(prog_t *prog, char par_type, char arg_type);
 
 
 /**
@@ -214,7 +214,7 @@ void fcall_syn_error(tok_buffer_t *tok_b, char *f_name, char *msg);
 /**
  * @brief Parses just one expression (argument) in function call
  */ 
-int parse_arg_expr(size_t arg_cnt, prog_t *dst_code, 
+int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code, 
                    symbol_tables_t *syms, tok_buffer_t *tok_b, 
                    tree_node_t *symbol);
 

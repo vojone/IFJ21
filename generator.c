@@ -436,14 +436,28 @@ void generate_return(prog_t *dst){
     app_instr(dst,"RETURN");
 }
 
-void generate_dump_values(prog_t *dst, size_t n){
+void generate_dump_values(prog_t *dst, size_t save_n, size_t delete_n){
     app_instr(dst, "PUSHFRAME");
     app_instr(dst, "CREATEFRAME");
-    app_instr(dst,"DEFVAR TF@TMP_DUMP");
-    for (size_t i = 0; i < n; i++)
+
+    for (size_t i = 0; i < save_n; i++) //Storing save_n values from top
+    {
+        app_instr(dst,"DEFVAR TF@TMP_STORAGE$%ld", i);
+        app_instr(dst, "POPS TF@TMP_STORAGE$%ld", i);
+    }
+
+    app_instr(dst, "DEFVAR TF@TMP_DUMP");
+    for (size_t i = 0; i < delete_n; i++) //Deleting delete_n values
     {
         app_instr(dst, "POPS TF@TMP_DUMP");
     }
+
+    for (long int i = save_n - 1; i >= 0; i--) //Pushing values back in reversed order
+    {
+        fprintf(stderr, "%ld", i);
+        app_instr(dst, "PUSHS TF@TMP_STORAGE$%ld", i);
+    }
+
     app_instr(dst,"POPFRAME");
 }
 

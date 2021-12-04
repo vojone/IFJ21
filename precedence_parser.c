@@ -183,14 +183,14 @@ void int2num(prog_t *dst) {
 }
 
 
-bool is_compatible_in_arg(prog_t *dst, char arg_type, string_t *dtypes) {
-    if(prim_type(dtypes) == char_to_dtype(arg_type)) {
+bool is_compatible_in_arg(prog_t *dst, char par_type, char arg_type) {
+    if(char_to_dtype(arg_type) == char_to_dtype(par_type)) {
         return true;
     }
-    else if(prim_type(dtypes) == NIL) { //If "rvalue" datatype is nil it is compatible with everything
+    else if(char_to_dtype(arg_type) == NIL) { //If "rvalue" datatype is nil it is compatible with everything
         return true;
     }
-    else if(prim_type(dtypes) == INT && char_to_dtype(arg_type) == NUM) {
+    else if(char_to_dtype(arg_type) == INT && char_to_dtype(par_type) == NUM) {
         int2num(dst);
         return true;
     }
@@ -228,11 +228,12 @@ void fcall_syn_error(tok_buffer_t *tok_b, char *f_name, char *msg) {
 }
 
 
-int parse_arg_expr(size_t arg_cnt, prog_t *dst_code, 
+int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code, 
                    symbol_tables_t *syms, tok_buffer_t *tok_b, 
                    tree_node_t *symbol) {
     
     char *params_s = to_str(&symbol->data.params);
+    size_t param_num = strlen(params_s);
     char *f_name = symbol->key;
     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
 
@@ -247,15 +248,25 @@ int parse_arg_expr(size_t arg_cnt, prog_t *dst_code,
         str_dtor(&ret_type);
         return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
     }
-
+    fprintf(stderr, "%ld %ld %c!\n", *arg_cnt, len(&ret_type), params_s[0]);
     if(!is_variadic) {
-        if(!is_compatible_in_arg(dst_code, params_s[arg_cnt], &ret_type)) { //Type check of epxression and argument and declared type
-            fcall_sem_error(tok_b, f_name, "Bad data types of arguments!");
-            str_dtor(&ret_type);
-            return SEMANTIC_ERROR_PARAMETERS_EXPR;
+        size_t u = 0;
+        while(*arg_cnt < param_num && u < len(&ret_type)) {
+            if(!is_compatible_in_arg(dst_code, params_s[*arg_cnt], to_str(&ret_type)[u])) { //Type check of epxression and argument and declared type
+                fcall_sem_error(tok_b, f_name, "Bad data types of arguments!");
+                str_dtor(&ret_type);
+                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+            }
+            else {
+                //Parameter is ok
+            }
+
+            u++;
+            (*arg_cnt)++;
         }
-        else {
-            //Parameter is ok
+
+        if(u < len(&ret_type)) {
+            generate_dump_values(dst_code, u, len(&ret_type) - u); //Remove return values that are not used in function call
         }
     }
 
@@ -287,12 +298,11 @@ int argument_parser(prog_t *dst_code, tree_node_t *symbol,
         
         if(!is_EOE(tok_b->scanner, &t) && !is_tok_attr(")", &t, tok_b)) {
             
-            ret = parse_arg_expr(cnt, dst_code, syms, tok_b, symbol); //Check expression in argument
+            ret = parse_arg_expr(&cnt, dst_code, syms, tok_b, symbol); //Check expression in argument
             if(ret != EXPRESSION_SUCCESS) {
                 return ret;    
             }
 
-            cnt++;
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) { //End of argument list
             closing_bracket = true;
@@ -606,8 +616,8 @@ expr_rule_t *get_rule(unsigned int index) {
     }
 
     static expr_rule_t rules[REDUCTION_RULES_NUM] = {
-        {"(E)", "*", ORIGIN, FIRST ,NULL,NULL},
-        {"i", "*", ORIGIN, FIRST, NULL,NULL},
+        {"(E)", "*", ORIGIN, FIRST ,NULL ,NULL},
+        {"i", "*", ORIGIN, FIRST, NULL ,NULL},
         {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects number/integer as operands", generate_operation_add},
         {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects number/integer as operands", generate_operation_sub},
         {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects number/integer as operands", generate_operation_mul},
@@ -926,6 +936,14 @@ int reduce(p_parser_t *pparser, pp_stack_t ops, symbol_tables_t *syms,
 }
 
 
+void only_primary_type(string_t *ret_types, expr_rule_t *rule) {
+    if(str_cmp("i", rule->right_side) != 0 && 
+       str_cmp("(E)", rule->right_side) != 0) {
+        cut_string(ret_types, 1);
+    }
+}
+
+
 int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
                char ** failed_op_msg, string_t *ret_types) {
 
@@ -950,6 +968,8 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
 
             if(str_cmp(to_str(&to_be_reduced), rule->right_side) == 0) {
                 int t_check_res = type_check(operands, rule, ret_types); /**<Checking type compatibility and getting result data type */
+                
+                only_primary_type(ret_types, rule);
 
                 if(t_check_res != EXPRESSION_SUCCESS) {
                     *failed_op_msg = rule->error_message;
@@ -984,12 +1004,11 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
             return INTERNAL_ERROR;
         }
     }
-
     //If the last reduced symbol was function call and there is another expression elements we must clear stack
     if(pparser->was_f_call && !pparser->only_f_was_called) {
         //Clear stack to calculate only first return value
         size_t pop_cnt = (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num;
-        generate_dump_values(dst, pop_cnt);
+        generate_dump_values(dst, 1, pop_cnt);
     }
 
     pparser->was_f_call = false; /**< New input symbol -> reset function call flag */

@@ -1,22 +1,7 @@
 require "ifj21"
-
-function bar() : integer, integer
-    write("Bar\n")
-    return 1, 2
-end
-
-function foo() : integer, integer
-    write("Foo\n")
-    return 3, 4
-end
-
 function main()
-    local a : number = 0
-    local b : number = 0
-    local c : number = 0
-
-    a, b, c = tointeger(bar()), foo()
-
-    write(a, b, c, "\n")
+	local a : integer = 72
+	local b : string
+	b = chr(a)
 end
 main()

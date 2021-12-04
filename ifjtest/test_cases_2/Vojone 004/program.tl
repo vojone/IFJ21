@@ -12,10 +12,10 @@ end
 
 function main()
     local a : number = 0
-    local b : integer = 0
-    local c : number = 0
+    local b : number = 0
+    local c : integer = 0
 
-    a, b, c = tointeger(bar()), foo()
+    a, b, c = bar(), foo()
 
     write(a, b, c, "\n")
 end

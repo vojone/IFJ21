@@ -26,6 +26,7 @@
 #include "symtable.h"
 #include "scanner.h"
 
+#define MAX_CNT_LEN 32
 
 /*** Structures and functions for handling internal representation of code ***/
 /**For example of usage @see gen_test.cpp**/
@@ -225,7 +226,7 @@ void generate_return(prog_t *dst);
 /**
  * @brief generates pops for eliminating redundant values on stack 
  */ 
-void generate_dump_values(prog_t *dst, size_t n);
+void generate_dump_values(prog_t *dst, size_t save_n, size_t delete_n);
 
 /**
  * *---------VARIABLES---------
