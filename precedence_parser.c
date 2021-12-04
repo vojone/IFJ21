@@ -249,8 +249,15 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
         return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
     }
 
+    size_t u = 0;
+    token_t t = lookahead(tok_b->scanner);
+    int ret = EXPRESSION_SUCCESS;
+    if(is_error_token(&t, &ret)) { 
+        str_dtor(&ret_type);
+        return ret;
+    }
+
     if(!is_variadic) {
-        size_t u = 0;
         while(*arg_cnt < param_num && u < len(&ret_type)) {
             if(!is_compatible_in_arg(dst_code, params_s[*arg_cnt], to_str(&ret_type)[u])) { //Type check of epxression and argument and declared type
                 fcall_sem_error(tok_b, f_name, "Bad data types of arguments!");
@@ -263,18 +270,25 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
 
             u++;
             (*arg_cnt)++;
+
+            if(is_tok_type(SEPARATOR, &t), is_tok_attr(",", &t, tok_b)) { //If there is comma after, pick only one of function return values
+                break;
+            }
         }
 
-        *arg_cnt += len(&ret_type) - u; //Add difference to recognize too many arguments
+        if(!fcall) {
+            *arg_cnt += len(&ret_type) - u; //Add difference to recognize too many arguments (if they are comming from function, they can be disposed)
+        }
 
         if(u < len(&ret_type)) {
             generate_dump_values(dst_code, u, len(&ret_type) - u); //Remove return values that are not used in function call
         }
     }
+    
 
     str_dtor(&ret_type);
 
-    return EXPRESSION_SUCCESS;
+    return ret;
 }
 
 
@@ -322,7 +336,7 @@ int argument_parser(prog_t *dst_code, tree_node_t *symbol,
         }
 
         if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
-            if(cnt + 1 > strlen(params_s) && !is_variadic) { //Function needs less arguments
+            if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
                 fcall_sem_error(tok_b, f_name, "Too many arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
@@ -332,10 +346,16 @@ int argument_parser(prog_t *dst_code, tree_node_t *symbol,
         }
         else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
             closing_bracket = true;
+            //fprintf(stderr, "%ld %ld\n", cnt, strlen(params_s));
             if((cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
                 fcall_sem_error(tok_b, f_name, "Missing arguments!");
                 return SEMANTIC_ERROR_PARAMETERS_EXPR;
             }
+            else if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
+                fcall_sem_error(tok_b, f_name, "Too many arguments!");
+                return SEMANTIC_ERROR_PARAMETERS_EXPR;
+            }
+            
         }
         else {
             fcall_syn_error(tok_b, f_name, "Missing ',' or ')' between arguments!\n");

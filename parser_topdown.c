@@ -1468,9 +1468,15 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
 
                     u++;
                     argument_cnt++;
+
+                    if(compare_token_attr(parser, t, SEPARATOR, ",")) { //If there is comma after, pick only one of function return values
+                        break;
+                    }
                 }
 
-                argument_cnt += len(&ret_types) - u;  //Add difference to recognize too many arguments
+                if(!was_f_called) {
+                    argument_cnt += len(&ret_types) - u;  //Add difference to recognize too many arguments
+                }
 
                 if(u < len(&ret_types)) {
                     generate_dump_values(&parser->dst_code, u, len(&ret_types) - u); //Remove return values that are not used in function call
@@ -1497,7 +1503,6 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
         if(is_error_token(&t, &retval)) {
             return retval;
         }
-        debug_print("%s %ld %ld\n", get_attr(&t, parser->scanner), argument_cnt, param_num);
         if(compare_token_attr(parser, t, SEPARATOR, ",")) {
             if(argument_cnt + 1 > param_num && !is_variadic) { //Function needs less arguments
                 error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!", func_name);
