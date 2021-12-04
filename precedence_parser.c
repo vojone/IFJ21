@@ -248,7 +248,7 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
         str_dtor(&ret_type);
         return -expr_retval; /**< Negative return code means "Propagate it, but don't write err msg "*/
     }
-    fprintf(stderr, "%ld %ld %c!\n", *arg_cnt, len(&ret_type), params_s[0]);
+
     if(!is_variadic) {
         size_t u = 0;
         while(*arg_cnt < param_num && u < len(&ret_type)) {
@@ -264,6 +264,8 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
             u++;
             (*arg_cnt)++;
         }
+
+        *arg_cnt += len(&ret_type) - u; //Add difference to recognize too many arguments
 
         if(u < len(&ret_type)) {
             generate_dump_values(dst_code, u, len(&ret_type) - u); //Remove return values that are not used in function call

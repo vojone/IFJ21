@@ -1448,26 +1448,32 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
             str_init(&ret_types);
             bool was_f_called;
             //There is expression in argument -> call precedence parser
-            int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called,&parser->dst_code);
+            int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &parser->dst_code);
             if(expr_retval != EXPRESSION_SUCCESS) {
                 str_dtor(&ret_types);
                 return expr_retval;
             }
 
             if(!is_variadic) {
-                sym_dtype_t d_type = char_to_dtype(params_str[argument_cnt]);
-                sym_dtype_t prim_dtype = char_to_dtype(to_str(&ret_types)[0]); //Get primary returned type (first of them)
-                if(!is_valid_assign(&parser->dst_code, d_type, prim_dtype)) { //Check data type of argument
-                    error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", func_name);
-                    str_dtor(&ret_types);
-                    return SEMANTIC_ERROR_PARAMETERS;
-                }
-                else {
-                    if(is_convertable(d_type, prim_dtype)) {
-                        generate_int2num(&parser->dst_code);
+                size_t u = 0;
+                while(argument_cnt < param_num && u < len(&ret_types)) {
+                    if(!is_compatible_in_arg(&parser->dst_code, params_str[argument_cnt], to_str(&ret_types)[u])) { //Type check of epxression and argument and declared type
+                        error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Bad data types of arguments!", func_name);    
+                        str_dtor(&ret_types);
+                        return SEMANTIC_ERROR_PARAMETERS;
+                    }
+                    else {
+                        //Parameter is ok
                     }
 
-                    //Ok
+                    u++;
+                    argument_cnt++;
+                }
+
+                argument_cnt += len(&ret_types) - u;  //Add difference to recognize too many arguments
+
+                if(u < len(&ret_types)) {
+                    generate_dump_values(&parser->dst_code, u, len(&ret_types) - u); //Remove return values that are not used in function call
                 }
             }
             else {
@@ -1491,9 +1497,9 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
         if(is_error_token(&t, &retval)) {
             return retval;
         }
-
+        debug_print("%s %ld %ld\n", get_attr(&t, parser->scanner), argument_cnt, param_num);
         if(compare_token_attr(parser, t, SEPARATOR, ",")) {
-            if(argument_cnt + 1 > param_num - 1 && !is_variadic) { //Function needs less arguments
+            if(argument_cnt + 1 > param_num && !is_variadic) { //Function needs less arguments
                 error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!", func_name);
                 return SEMANTIC_ERROR_PARAMETERS;
             }
@@ -1503,8 +1509,12 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
         }
         else if(compare_token_attr(parser, t, SEPARATOR, ")")) {
             closing_bracket = true;
-            if(argument_cnt != param_num - 1 && !is_variadic) { //Function needs more arguments
+            if(argument_cnt < param_num && !is_variadic) { //Function needs more arguments
                 error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!", func_name);
+                return SEMANTIC_ERROR_PARAMETERS;
+            }
+            else if(argument_cnt > param_num && !is_variadic) {
+                error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Too many arguments!", func_name);
                 return SEMANTIC_ERROR_PARAMETERS;
             }
         }
@@ -1513,10 +1523,8 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
 
             return SYNTAX_ERROR;
         }
-
-        argument_cnt++;
     }
-    if(argument_cnt == 0 && param_num > 0) { //Function needs arguments but there aren't any
+    if(argument_cnt == 0 && param_num > 0 && !is_variadic) { //Function needs arguments but there aren't any
         error_semantic(parser, "Bad function call of \033[1;33m%s\033[0m! Missing arguments!", func_name);
 
         return SEMANTIC_ERROR_PARAMETERS;

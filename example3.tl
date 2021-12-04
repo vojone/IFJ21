@@ -1,7 +1,10 @@
 require "ifj21"
-function main()
-	local a : integer = 72
-	local b : string
-	b = chr(a)
+
+function foo(f: integer) :integer, string
 end
+
+function main()
+	local a : integer = foo(foo(7))
+end
+
 main()
