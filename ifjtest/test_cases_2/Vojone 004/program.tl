@@ -1,6 +1,6 @@
 require "ifj21"
 
-function bar() : integer, integer
+function bar() : integer, number
     write("Bar\n")
     return 1, 2
 end
@@ -12,7 +12,7 @@ end
 
 function main()
     local a : number = 0
-    local b : number = 0
+    local b : integer = 0
     local c : number = 0
 
     a, b, c = tointeger(bar()), foo()

@@ -1,6 +1,6 @@
 require "ifj21"
 
-function bar() : integer, integer
+function bar() : integer, number
     write("Bar\n")
     return 1, 2
 end

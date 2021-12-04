@@ -1,0 +1,1 @@
+Multiple assignment (last rvalue should be disposed)

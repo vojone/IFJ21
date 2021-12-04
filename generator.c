@@ -468,7 +468,7 @@ void generate_declare_variable(prog_t *dst,  void *sym_stack,symtab_t *symtab , 
 }
 
 
-void generate_multiple_assignment(prog_t *dst,  void *sym_stack,symtab_t *symtab , void *param_names, scanner_t * scanner){
+void generate_multiple_assignment(prog_t *dst,  void *sym_stack, symtab_t *symtab , void *param_names, scanner_t * scanner){
     tok_stack_t *params = param_names;
     while (!tok_is_empty(params))
     {
@@ -1309,6 +1309,10 @@ void generate_tobool(prog_t *dst){
 
 void generate_int2num(prog_t *dst_code) {
     app_instr(dst_code,"INT2FLOATS");
+}
+
+void generate_clears(prog_t *dst_code) {
+    app_instr(dst_code,"CLEARS");
 }
 
 

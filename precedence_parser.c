@@ -179,7 +179,7 @@ sym_dtype_t prim_type(string_t *type_string) {
 
 
 void int2num(prog_t *dst) {
-    code_print(dst, "INT2FLOATS");
+    generate_int2num(dst);
 }
 
 
@@ -988,8 +988,8 @@ int get_input_symbol(p_parser_t *pparser, tok_buffer_t *t_buff,
     //If the last reduced symbol was function call and there is another expression elements we must clear stack
     if(pparser->was_f_call && !pparser->only_f_was_called) {
         //Clear stack to calculate only first return value
-        //size_t pop_cnt = (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num;
-        //generate_dump_values(dst, pop_cnt);
+        size_t pop_cnt = (pparser->last_call_ret_num > 0) ? pparser->last_call_ret_num - 1 : pparser->last_call_ret_num;
+        generate_dump_values(dst, pop_cnt);
     }
 
     pparser->was_f_call = false; /**< New input symbol -> reset function call flag */

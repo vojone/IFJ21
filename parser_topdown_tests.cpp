@@ -1486,6 +1486,7 @@ TEST_F(if_statement_syntax_2, syntax){
 	ASSERT_EQ(parse_program(&pt), SYNTAX_ERROR);
 }
 
+
 class if_statement_syntax_3 : public test_fixture{
 	protected:
 		void setData() override{

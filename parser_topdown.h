@@ -162,15 +162,10 @@ int statement(parser_t *parser);
 
 
 /**
- * @brief Calls function of generator that makes type conversion
+ * @brief Check if data type at r side can be converted to variable data type
+ * @return True if yes
  */ 
-void int2num_conv();
-
-
-/**
- * @brief Calls function of generator that makes type conversion
- */ 
-void num2int_conv();
+bool is_convertable(sym_dtype_t var_type, sym_dtype_t r_side_type);
 
 
 /**
@@ -193,7 +188,13 @@ int assignment_lside(parser_t *parser, token_t* start_id,
 /**
  * @brief Parses right side of assignment
  */ 
-int assignment_rside(parser_t *parser, string_t *id_types);
+int assignment_rside(parser_t *parser, string_t *id_types, string_t *rside);
+
+
+/**
+ * @brief Frees everything inside given stack of programs
+ */
+void prog_stack_deep_dtor(prog_stack_t *prog);
 
 
 /**
