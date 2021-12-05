@@ -1,10 +1,3 @@
 require "ifj21"
 
-function foo(f: integer) :integer, string
-end
-
-function main()
-	local a : integer = foo(foo(7))
-end
-
-main()
+write(44*7-(5*25+(39+54+96*58+18*((84)/21*77+0+28/23*76/75-76/40-87/15-27-9+87)-50*67/2-81/18-54/50/90)-81)/53*83+51/75-42/88*2+52*30*77+11-27*7/60)
