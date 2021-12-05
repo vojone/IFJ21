@@ -5,13 +5,13 @@ function foo() : integer
     return 1
 end
 
-function bar() : integer, integer, string
+function bar() : integer
     write("Bar")
     return 2
 end
 
 function baz() : integer, integer
-    return bar()
+    return foo(), bar()
 end
 
 function main()

@@ -373,6 +373,7 @@ void generate_init(prog_t *dst){
     generate_force_floats(dst);
     generate_force_ints(dst);
     generate_tobool(dst);
+    generate_int2num(dst);
 }
 
 /**
@@ -454,9 +455,27 @@ void generate_dump_values(prog_t *dst, size_t save_n, size_t delete_n){
         app_instr(dst, "POPS TF@TMP_DUMP");
     }
 
-    for (long int i = save_n - 1; i >= 0; i--) //Pushing values back in reversed order
+    for (long int i = save_n - 1; i >= 0; i--) //Pushing values back in to achieve original order
     {
-        fprintf(stderr, "%ld", i);
+        app_instr(dst, "PUSHS TF@TMP_STORAGE$%ld", i);
+    }
+
+    app_instr(dst,"POPFRAME");
+}
+
+
+void generate_reverse_stack(prog_t *dst, size_t n_values) {
+    app_instr(dst, "PUSHFRAME");
+    app_instr(dst, "CREATEFRAME");
+
+    for (size_t i = 0; i < n_values; i++) //Storing save_n values from top
+    {
+        app_instr(dst,"DEFVAR TF@TMP_STORAGE$%ld", i);
+        app_instr(dst, "POPS TF@TMP_STORAGE$%ld", i);
+    }
+
+    for (long int i = 0;  i < n_values; i++) //Pushing values back in reversed order
+    {
         app_instr(dst, "PUSHS TF@TMP_STORAGE$%ld", i);
     }
 
@@ -1318,15 +1337,39 @@ void generate_tobool(prog_t *dst){
     generate_end_function(dst,"$BUILTIN$tobool");
 }
 
+void generate_int2num(prog_t *dst_code) {
+    generate_start_function(dst_code, "$IMPLICIT$int2num");
+    generate_parameter(dst_code, "TMP");
+
+    app_instr(dst_code, "DEFVAR TF@$TYPE$");
+    
+    app_instr(dst_code, "TYPE TF@$TYPE$ %sTMP", VAR_FORMAT);
+    
+    app_instr(dst_code, "PUSHS %sTMP", VAR_FORMAT);
+    app_instr(dst_code, "PUSHS TF@$TYPE$");
+    app_instr(dst_code, "PUSHS string@nil");
+    app_instr(dst_code, "JUMPIFEQS $int2numSKIPCONVERSION$");
+
+    app_instr(dst_code, "INT2FLOATS");
+
+    app_instr(dst_code, "LABEL $int2numSKIPCONVERSION$");
+
+
+    generate_end_function(dst_code, "$IMPLICIT$int2num");
+}
 
 
 /**
  * *---------VARIOUS---------
  */ 
 
-void generate_int2num(prog_t *dst_code) {
-    app_instr(dst_code,"INT2FLOATS");
+
+void impl_int2num(prog_t *dst_code) {
+    app_instr(dst_code, "PUSHFRAME");
+    app_instr(dst_code, "CALL $FUN$$IMPLICIT$int2num");
+    app_instr(dst_code, "POPFRAME");
 }
+
 
 void generate_clears(prog_t *dst_code) {
     app_instr(dst_code,"CLEARS");

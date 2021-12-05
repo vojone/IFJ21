@@ -179,7 +179,7 @@ sym_dtype_t prim_type(string_t *type_string) {
 
 
 void int2num(prog_t *dst) {
-    generate_int2num(dst);
+    impl_int2num(dst);
 }
 
 

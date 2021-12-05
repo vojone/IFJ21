@@ -1,6 +1,6 @@
 require "ifj21"
 
-function main()
+function main() : integer
 	local a:string = "hello"
 	local b:string = "there!"
 

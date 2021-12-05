@@ -63,7 +63,7 @@ DSTACK_DECL(token_t, tok) /**< Token buffer declaration */
 
 
 /**
- * @brief All possible states of FSM ( = base of scanner impelemntation)
+ * @brief All possible states of FSM ( = base of scanner implementation)
  * @note If token ends with _F suffix, that means, that state is finite
  */ 
 typedef enum fsm_state {

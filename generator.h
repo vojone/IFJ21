@@ -219,6 +219,11 @@ void generate_return(prog_t *dst);
 void generate_dump_values(prog_t *dst, size_t save_n, size_t delete_n);
 
 /**
+ * @brief Picks n_values from stack in pushes it back in reversed order
+ */ 
+void generate_reverse_stack(prog_t *dst, size_t n_values);
+
+/**
  * *---------VARIABLES---------
  */
 
@@ -393,15 +398,23 @@ void generate_force_ints(prog_t *dst);
  */
 void generate_tobool(prog_t *dst_code);
 
+/**
+ * @brief converts the value to number
+ */ 
+void generate_int2num(prog_t *dst_code);
+
 
 /**
  * *---------VARIOUS---------
  */
 
 /**
- * @brief converts the value to number
+ * @brief Calls function to implicit recast of integer value on top of stack to number 
  */ 
-void generate_int2num(prog_t *dst_code);
+void impl_int2num(prog_t *dst_code);
+
+
+void generate_clears(prog_t *dst_code);
 
 
 

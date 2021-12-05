@@ -540,10 +540,9 @@ int assignment(parser_t *parser, token_t t) {
     while(!tok_is_empty(&var_names)) {
         token_t name_token = tok_pop(&var_names);
         string_t name_unique = get_unique_name(&parser->sym.symtab_st, &parser->sym.symtab, &name_token, parser->scanner);
-        
-        size_t type_str_len = len(&id_types);
-        if(is_convertable(to_str(&id_types)[type_str_len - cnt], to_str(&rside_types)[type_str_len - cnt])) {
-            generate_int2num(&parser->dst_code);
+
+        if(is_convertable(char_to_dtype(to_str(&id_types)[cnt]), char_to_dtype(to_str(&rside_types)[cnt]))) {
+            impl_int2num(&parser->dst_code);
         }
 
         cnt++;
@@ -1401,12 +1400,6 @@ int parse_function_call(parser_t *parser, tree_node_t *func_sym) {
         //Find necessary data in symbol table
         char *func_name = func_sym->key;
 
-        char *returns_str = to_str(&func_sym->data.ret_types);
-        if(is_global_ctx(parser) && strlen(returns_str) > 0) {
-            error_semantic(parser, "Cannot call function '%s' from global scope, beacuse it returns something!", func_name);
-            return SEMANTIC_ERROR_PARAMETERS;
-        }
-
         char *params_str = to_str(&func_sym->data.params);
         bool is_variadic = (params_str[0] == '%') ? true : false;
 
@@ -1703,7 +1696,7 @@ int parse_return(parser_t *parser) {
                 }
                 else {
                     if(is_convertable(dec_type, prim_dtype)) {
-                        generate_int2num(&cur_expr);
+                        impl_int2num(&cur_expr);
                     }
                     //Ok
                 }
@@ -1752,10 +1745,17 @@ int parse_return(parser_t *parser) {
 
     parser->found_return = true;
 
+    if(!prog_revert(&expr_progs)) { //Reverse stack to evaluate expressions in return left to right
+        prog_stack_deep_dtor(&expr_progs);
+        return INTERNAL_ERROR;
+    }   
+
     while(!prog_is_empty(&expr_progs)) { //Apends expression to main program (to evaluate it from right to left)
         prog_t cur = prog_pop(&expr_progs);
         app_prog(&parser->dst_code, &cur);
     }
+
+    generate_reverse_stack(&parser->dst_code, returns_cnt);
 
     generate_return(&parser->dst_code);
     prog_stack_deep_dtor(&expr_progs);
