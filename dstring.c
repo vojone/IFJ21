@@ -4,6 +4,7 @@
  * 
  *                  Authors: Vojtech Dvorak (xdvora3o)
  *      Purpose: Source file of functions to process (dynamic) strings
+ *              Inspired by 'str' module from example IFJ project
  * 
  *                    Last change: 25. 11. 2021
  *****************************************************************************/ 

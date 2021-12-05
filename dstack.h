@@ -5,6 +5,9 @@
  *                  Authors: Vojtech Dvorak (xdvora3o)
  *  Purpose: Header file with macros that can generate auxiliary stacks
  * 
+ *        Idea of "data structure macro" to make thing easier was 
+ *     inspired by second IAL project (but implementation is different)
+ * 
  *                        Last change: 25. 11. 2021
  *****************************************************************************/ 
 

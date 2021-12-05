@@ -2,10 +2,12 @@
  *                                  IFJ21
  *                                symtable.h
  * 
- *          Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
+ *         Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Declaration of symbol table functions and structures
  * 
- *                  Last change: 25. 11. 2021
+ *             Based on our solutions of second IAL project
+ * 
+ *                      Last change: 25. 11. 2021
  *****************************************************************************/
 
 /**

@@ -164,16 +164,6 @@ void print_program(prog_t *source);
 
 
 
-
-typedef struct gen {
-    void *declare_variable;
-} gen_t;
-
-typedef struct char_mapping{
-    char input[3];
-    char output[4];
-} char_mapping_t;
-
 /**
  * @brief inicializes the code
  */ 

@@ -4,6 +4,7 @@
  * 
  *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  *              Purpose: Implementation of code generating functions
+ *               For function description see correspoding .h file
  * 
  *                       Last change: 25. 11. 2021
  *****************************************************************************/
@@ -11,6 +12,7 @@
 /**
  * @file generator.c
  * @brief Source file with implementation of code generator
+ * @note For function description see correspoding .h file
  * 
  * @authors Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
@@ -1372,34 +1374,6 @@ bool is_prefix_of(char * prefix, char * str){
     }
     return true;
 }
-
-char_mapping_t get_mapping(char * buffer){
-    char_mapping_t mappings[] = {
-        {"\n","\\010"},
-        {"\n","\\010"},
-    };
-    int mappings_length = sizeof(mappings)/sizeof(char_mapping_t);
-    for (int i = 0; i < mappings_length; i++)
-    {
-        char_mapping_t map = mappings[i];
-        if(is_prefix_of(map.input,buffer))
-            return map;
-    }
-    char_mapping_t null_map = {"",""};
-    return null_map;
-}
-
-// void to_ascii(const char * str, string_t * out){
-//     for (size_t i = 1; i < strlen(str)-1; i++)
-//     {
-//         char c = str[i];
-//         if( c == ' '){
-//             app_str(out, "\\032");
-//         }else{
-//             app_char(c,out);
-//         }
-//     }
-// }
 
 void to_ascii(const char * str, string_t * out){
     char c ='\0';

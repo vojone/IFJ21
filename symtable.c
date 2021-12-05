@@ -5,6 +5,8 @@
  *       Authors: Vojtěch Dvořák (xdvora3o), Tomáš Dvořák (xdvora3r)
  *        Purpose: Implementation of symbol table used in compiler
  * 
+ *              Based on our solutions of second IAL project
+ * 
  *                        Last change: 25. 11. 2021
  *****************************************************************************/
 
