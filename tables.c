@@ -43,9 +43,9 @@ char * get_keyword(unsigned int index) {
 char * get_operator(unsigned int index) {
     static char * operator_table[OPERATOR_TABLE_SIZE] = 
     {
-        "#", "*", "+", "-", "..", 
+        "#", "%", "*", "+", "-", "..", 
         "/", "//", "<", "<=", "=", 
-        "==", ">", ">=", "~="
+        "==", ">", ">=", "^", "~="
     };
 
     return operator_table[index];
