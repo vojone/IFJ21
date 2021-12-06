@@ -114,7 +114,7 @@ typedef enum zero_prop_flags {
 } zero_prop_flags_t;
 
 
-#define REDUCTION_RULES_NUM 16
+#define REDUCTION_RULES_NUM 17
 
 typedef struct expr_rule {
     char * right_side; /**< Right side of reduction rule */

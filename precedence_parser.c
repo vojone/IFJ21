@@ -654,6 +654,7 @@ expr_rule_t *get_rule(unsigned int index) {
         {"E==E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"==\"", generate_operation_eq},
         {"E~=E", "z(nis|nis)z", BOOL, NONE, "Incompatible operands of \"~=\"", generate_operation_neq},
         {"E..E", "s|s", STR, NONE, "Operation \"..\" needs strings as operands", generate_operation_concat},
+        {"E^E", "ni|i", NUM, NONE, "Operation \"^\" needs number/integer as first operand and integer as second", generate_operation_pow},
     };
 
     return &(rules[index]);
