@@ -145,10 +145,17 @@ int check_if_defined(parser_t *parser) {
         tree_node_t * symbol = search(&parser->sym.global, func_name);
         if(symbol) { //Just for safety
 
-            if(symbol->data.status == DECLARED) { //Function was declared but not defined
-                error_semantic(parser, "Function \033[1;33m%s\033[0m was declared but not defined!");
-                return SEMANTIC_ERROR_OTHER;
+            if(symbol->data.status == DECLARED) {
+                if(symbol->data.was_used) { //Function was declared and called but not defined
+                    error_semantic(parser, "Function '\033[1;33m%s\033[0m' was declared, called but not defined!", func_name);
+                    return SEMANTIC_ERROR_DEFINITION;
+                }
+                else {
+                    warn(parser, "Function '\033[1;33m%s\033[0m' was declared, but is not used nor defined!", func_name);
+                    return PARSE_SUCCESS;
+                }
             }
+    
         }
     }
 
@@ -327,7 +334,7 @@ int assignment_lside(parser_t *parser, token_t* start_id,
                 tok_push(var_names, t);
 
                 app_char(dtype_to_char(symbol->data.dtype), id_types);
-                update_var_status(symbol, DEFINED);
+                set_var_status(symbol, DEFINED);
             }
 
         }
@@ -635,9 +642,16 @@ void ins_var(parser_t *parser, token_t *id_token,
 }
 
 
-void update_var_status(tree_node_t *var, sym_status_t new_stat) {
+void set_var_status(tree_node_t *var, sym_status_t new_stat) {
     if(var) {
-        var->data.status = new_stat; //The most direct way
+        var->data.status = new_stat; //The most direct way without searching in any symtab
+    }
+}
+
+
+void set_use_flag(tree_node_t *symbol, bool new_s) {
+    if(symbol) {
+        symbol->data.was_used = new_s;
     }
 }
 
@@ -1406,10 +1420,11 @@ int parse_function_call(parser_t *parser, tree_node_t *func_sym) {
         //Generate function call unless variadic
         if(!is_variadic) {
             debug_print("function %s is not variadic", func_name);
-            //!remove later
-            // fprintf(stderr,"CONTENT Ende: %s",parser->dst_code.first_instr->content.str);
             generate_call_function(&parser->dst_code, func_name);
         }
+
+        //Update was_used
+        set_use_flag(func_sym, true);
 
         return retval;
     }
@@ -1419,7 +1434,6 @@ int parse_function_call(parser_t *parser, tree_node_t *func_sym) {
 }
 
 
-//!Check the implementation for strlen: "#E"
 //func_sym cannot be NULL!
 int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
     bool closing_bracket = false;

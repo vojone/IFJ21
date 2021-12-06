@@ -1,0 +1,1 @@
+Type number given as base and an exponent.

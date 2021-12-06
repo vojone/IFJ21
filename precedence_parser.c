@@ -398,6 +398,8 @@ int fcall_parser(prog_t *dst_prog,
         }
     }
 
+    symbol->data.was_used = true; //Update was_used of called function
+
     return EXPRESSION_SUCCESS;
 }
 

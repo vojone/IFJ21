@@ -1,0 +1,1 @@
+Call function with one nil parameter with zero arguments.

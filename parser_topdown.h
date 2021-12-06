@@ -126,7 +126,8 @@ void parser_dtor(parser_t *parser);
 
 
 /**
- * @brief Checks if all declared functions were defined
+ * @brief Checks if all declared (and called) functions were defined
+ * @return If called function was not defined, it returns error code, if function was not called, it prints warning
  */ 
 int check_if_defined(parser_t *parser);
 
@@ -224,10 +225,17 @@ void ins_var(parser_t *parser, token_t *id_token,
 
 
 /**
- * @brief Updates status of variable defined b pointer to symbol table
+ * @brief Updates status of variable defined by pointer to symbol table
  * @note If pointer is NULL it does nothing
  */ 
-void update_var_status(tree_node_t *var, sym_status_t new_stat);
+void set_var_status(tree_node_t *var, sym_status_t new_stat);
+
+
+/**
+ * @brief Updates was_used flag of given symbol
+ * @note If pointer is NULL it does nothing
+ */ 
+void set_use_flag(tree_node_t *symbol, bool new_s);
 
 
 /**

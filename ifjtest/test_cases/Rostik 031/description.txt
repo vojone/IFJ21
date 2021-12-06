@@ -1,0 +1,1 @@
+Function without return should return nil.

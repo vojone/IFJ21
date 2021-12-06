@@ -1,27 +1,12 @@
+
+
 require "ifj21"
 
-function foo() : integer
-    write("Foo")
-    return 1
-end
-
-function bar() : integer, integer, string
-    write("Bar")
-    return 2
-end
-
-function baz() : integer, integer
-    return bar()
-end
+global foo : function() : integer
 
 function main()
-    local a : integer
-    local b : number
-
-    a,b = baz()
-
-    write(a, tointeger(b), "\n")
-
+    local a : integer =  5
 end
 
 main()
+foo()
