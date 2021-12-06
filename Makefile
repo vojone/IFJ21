@@ -15,7 +15,7 @@ PP_PARSER = precedence_parser
 
 PARSER_EXE = IFJ21Parser
 
-INZIP = *.c *.h Makefile rozdeleni rozsireni README.md
+INZIP = *.c *.h Makefile rozdeleni rozsireni dokumentace.pdf README.md
 
 
 #--------------------------------------TESTS-----------------------------------

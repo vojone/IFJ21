@@ -61,7 +61,7 @@ typedef struct tok_buffer {
  * @brief Type of element in expression (and in operator grammar)
  */ 
 typedef enum grm_sym_type {
-    HASH, MINUS, MULT, DIV, INT_DIV, ADD, SUB, CONCAT,
+    HASH, MINUS, POW, MOD, MULT, DIV, INT_DIV, ADD, SUB, CONCAT,
     LT, LTE, GT, GTE, EQ, NOTEQ, L_PAR, R_PAR, OPERAND, 
     STOP_SYM, TERM_NUM
 } grm_sym_type_t;
@@ -114,7 +114,7 @@ typedef enum zero_prop_flags {
 } zero_prop_flags_t;
 
 
-#define REDUCTION_RULES_NUM 16
+#define REDUCTION_RULES_NUM 18
 
 typedef struct expr_rule {
     char * right_side; /**< Right side of reduction rule */

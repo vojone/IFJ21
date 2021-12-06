@@ -31,8 +31,6 @@ else-branch           ::= else statement-list
 
 
 statement             ::= while expression do statement-list end
-while
-
 
 global-statement      ::= function-call
 statement             ::= [function-id]( argument-list )
