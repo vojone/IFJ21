@@ -1,0 +1,1 @@
+Initializing an integer variable to a string value.

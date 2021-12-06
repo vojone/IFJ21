@@ -1,0 +1,1 @@
+Define variable of the same name as a declared function.

@@ -248,7 +248,7 @@ void INIT_trans(char c, token_t * token, scanner_t *sc) {
     else if(c == '~') {
         sc->state = OP_1;
     }
-    else if(str_search(c, "+*#")) {
+    else if(str_search(c, "+*#^\045")) {
         sc->state = OP_F1; 
     }
     else if(c == '/') {

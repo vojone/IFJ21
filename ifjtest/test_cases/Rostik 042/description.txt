@@ -1,0 +1,1 @@
+Assignment of all possible types from functions.

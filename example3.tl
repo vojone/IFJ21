@@ -1,3 +1,3 @@
 require "ifj21"
 
-write(20/6)
+write(2^6)
