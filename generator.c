@@ -352,14 +352,14 @@ void generate_init(prog_t *dst){
     app_instr(dst,"CREATEFRAME");
 
     //builtin
-    generate_write_function(dst);
-    generate_reads_function(dst);
-    generate_readi_function(dst);
-    generate_readn_function(dst);
-    generate_tointeger_function(dst);
-    generate_chr_function(dst);
-    generate_ord_function(dst);
-    generate_substr_function(dst);
+    // generate_write_function(dst);
+    // generate_reads_function(dst);
+    // generate_readi_function(dst);
+    // generate_readn_function(dst);
+    // generate_tointeger_function(dst);
+    // generate_chr_function(dst);
+    // generate_ord_function(dst);
+    // generate_substr_function(dst);
     
     //operation functions
     generate_unaryminus_function(dst);
@@ -376,6 +376,52 @@ void generate_init(prog_t *dst){
     generate_int2num(dst);
     generate_operation_function_pow(dst);
     generate_operation_function_mod(dst);
+}
+
+function_name_t *get_builtin_by_name(char *name) {
+    static function_name_t builtin[] = {
+        {"chr",generate_chr_function},
+        {"ord",generate_ord_function},
+        {"readi",generate_readi_function},
+        {"readn",generate_readn_function},
+        {"reads",generate_reads_function},
+        {"substr",generate_substr_function},
+        {"tointeger",generate_tointeger_function},
+        {"write",generate_write_function},
+    };
+    for (size_t i = 0; i < sizeof(builtin)/sizeof(function_name_t); i++)
+    {
+        function_name_t item = builtin[i];
+        if(str_cmp(item.name, name) == 0){
+            return &builtin[i];
+        }   
+    }
+    return NULL;
+}
+
+int generate_builtin(prog_t *dst, symtab_t *symtab){
+    //symtab should be global
+    // bool is_builtin = check_builtin(get_attr(&id_fc, parser->scanner), &parser->sym.global);
+    for (size_t i = 0; i < BUILTIN_TABLE_SIZE; i++)
+    {
+        /* code */
+        sym_data_t *data = builtin_functions(i);
+        tree_node_t *func_valid = search(symtab, data->name.str);
+        if(search(symtab, data->name.str) != NULL) {
+            //if used we generate it
+            function_name_t *func = get_builtin_by_name(data->name.str);
+            if(func == NULL){
+                return INTERNAL_ERROR;
+            }else{
+                func->function_ptr(dst);
+                fprintf(stderr,"Generating %s\n",data->name.str);
+            }
+        }
+        if(func_valid == NULL){
+            fprintf(stderr,"%s not found\n",data->name.str);
+        }
+    }
+    return 0;
 }
 
 /**

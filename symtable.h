@@ -184,6 +184,11 @@ sym_data_t* search_builtin(const char *f_name);
  */
 bool check_builtin(char *key, symtab_t *dst);
 
+/**
+ * @brief Contains static array with builtin functions and its attributes (parameter, return types)
+ */ 
+sym_data_t* builtin_functions(unsigned int index);
+
 
 /**
  * @brief Performs searching in stack of symtabs
