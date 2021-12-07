@@ -5,7 +5,7 @@
  *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
  *              Purpose: Implementation of precedence parsing (PP)
  * 
- *                       Last change: 25. 11. 2021
+ *                       Last change: 7. 12. 2021
  *****************************************************************************/
 
 /**
@@ -239,7 +239,7 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
     char *params_s = to_str(&symbol->data.params);
     size_t param_num = strlen(params_s);
     char *f_name = symbol->key;
-    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
+     bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
 
     string_t ret_type;
     if(str_init(&ret_type) != STR_SUCCESS) {
@@ -296,6 +296,50 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
 }
 
 
+int after_argument(bool *closing_bracket, tree_node_t *symbol, 
+                   size_t cnt, tok_buffer_t *tok_b) {
+
+    int ret = EXPRESSION_SUCCESS;
+    char *params_s = to_str(&symbol->data.params); //Getting pointer to string with parameter types
+    char *f_name = symbol->key;
+    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
+
+    //Check if there will be next argument
+    token_t t = lookahead(tok_b->scanner);
+    if(is_error_token(&t, &ret)) {
+        return ret;
+    }
+
+    if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
+        if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
+            fcall_sem_error(tok_b, f_name, "Too many arguments!");
+            return SEMANTIC_ERROR_PARAMETERS_EXPR;
+        }
+        else {
+            //Ok
+        }
+    }
+    else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
+        *closing_bracket = true;
+        if((cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
+            fcall_sem_error(tok_b, f_name, "Missing arguments!");
+            return SEMANTIC_ERROR_PARAMETERS_EXPR;
+        }
+        else if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
+            fcall_sem_error(tok_b, f_name, "Too many arguments!");
+            return SEMANTIC_ERROR_PARAMETERS_EXPR;
+        }
+        
+    }
+    else {
+        fcall_syn_error(tok_b, f_name, "Missing ',' or ')' between arguments!\n");
+        return SYNTAX_ERROR_IN_EXPR;
+    }
+
+    return EXPRESSION_SUCCESS;
+}
+
+
 int argument_parser(prog_t *dst_code, tree_node_t *symbol, 
                     symbol_tables_t *syms, tok_buffer_t *tok_b) {
 
@@ -305,7 +349,6 @@ int argument_parser(prog_t *dst_code, tree_node_t *symbol,
 
     size_t cnt = 0;             
     bool closing_bracket = false;
-    bool is_variadic = (params_s[0] == '%') ? true : false; //In our case variadic means - with variable AMOUNT and TYPES of arguments
     while(!closing_bracket) {
         if((ret = token_aging(tok_b)) != EXPRESSION_SUCCESS) {
             return ret;
@@ -333,37 +376,9 @@ int argument_parser(prog_t *dst_code, tree_node_t *symbol,
             return SYNTAX_ERROR_IN_EXPR;
         }
 
-        //Check if there will be next argument
-        t = lookahead(tok_b->scanner);
-        if(is_error_token(&t, &ret)) {
+        ret = after_argument(&closing_bracket, symbol, cnt, tok_b);
+        if(ret != EXPRESSION_SUCCESS) {
             return ret;
-        }
-
-        if(is_tok_type(SEPARATOR, &t) && is_tok_attr(",", &t, tok_b)) {
-            if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
-                fcall_sem_error(tok_b, f_name, "Too many arguments!");
-                return SEMANTIC_ERROR_PARAMETERS_EXPR;
-            }
-            else {
-                //Ok
-            }
-        }
-        else if(is_tok_type(SEPARATOR, &t) && is_tok_attr(")", &t, tok_b)) {
-            closing_bracket = true;
-            //fprintf(stderr, "%ld %ld\n", cnt, strlen(params_s));
-            if((cnt < strlen(params_s)) && !is_variadic) { //Function needs more arguments
-                fcall_sem_error(tok_b, f_name, "Missing arguments!");
-                return SEMANTIC_ERROR_PARAMETERS_EXPR;
-            }
-            else if(cnt > strlen(params_s) && !is_variadic) { //Function needs less arguments
-                fcall_sem_error(tok_b, f_name, "Too many arguments!");
-                return SEMANTIC_ERROR_PARAMETERS_EXPR;
-            }
-            
-        }
-        else {
-            fcall_syn_error(tok_b, f_name, "Missing ',' or ')' between arguments!\n");
-            return SYNTAX_ERROR_IN_EXPR;
         }
     }
     if(cnt == 0 && strlen(params_s) > 0) { //Function needs arguments but there aren't any
@@ -781,7 +796,7 @@ int type_check(pp_stack_t op_stack, expr_rule_t *rule, string_t *res_type) {
     char c;
     for(int i = 0; (c = rule->operator_types[i]) != '\0' && !ret; i++) {
         if(c == '|') { /**< Next operator symbol */
-            if(!is_curr_ok) { /**< Specifier for current operator was not found -> error */
+            if(!is_curr_ok) { 
                 ret = get_tcheck_ret(&current);
                 break;
             }
@@ -865,7 +880,7 @@ bool resolve_res_zero(pp_stack_t operands, expr_rule_t *rule) {
         break;
     case SECOND:
         if(!pp_is_empty(&operands)) {
-            pp_pop(&operands); //Dont canre about first operand
+            pp_pop(&operands);
             if(!pp_is_empty(&operands) && pp_pop(&operands).is_zero) { //Second must be zero
                 return true;
             }
@@ -991,8 +1006,6 @@ int reduce_top(p_parser_t *pparser, symbol_tables_t *syms,
 
     int ret;
     ret = get_str_to_reduction(&(pparser->stack), &operands, &to_be_reduced);
-
-    fprintf(stderr, "To be reduced: %s\n", to_str(&to_be_reduced));
     expr_rule_t *rule;
     if(ret == EXPRESSION_SUCCESS) {
         ret = EXPRESSION_FAILURE; /**< If rule is not found it is invalid operation -> return EXPR_FAILURE */
@@ -1297,8 +1310,6 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
         }        
 
         char precedence = get_precedence(pparser.on_top, pparser.on_input);
-
-        //fprintf(stderr, "%s: %c Top: %d Input: %d", get_attr(&tok_buff.current, sc), precedence, pparser.on_top.type, pparser.on_input.type);
         if(precedence == '=') {
             if(!pp_push(&pparser.stack, pparser.on_input)) {
                 ret = INTERNAL_ERROR;
@@ -1338,7 +1349,6 @@ int parse_expression(scanner_t *sc, symbol_tables_t *s, string_t *dtypes,
     print_err_message(&ret, &tok_buff, &failed_op_msg);
     free_everything(&pparser);
 
-    //token_t next = lookahead(sc); fprintf(stderr, "REST: %s\n", get_attr(&next, sc));
     return ret;
 }
 

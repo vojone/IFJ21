@@ -6,23 +6,27 @@ prolog                ::= require"ifj21"
 
 statement-list        ::= statement statement-list
 statement-list        ::= ''
-statement-list        ::= function-call
 
 
-global-statement      ::= global[id]:function( param-list ) type-list
+global-statement      ::= global[id]:function( decl-param-list ) type-list
 
+decl-param-list       ::= [type] decl-param
+decl-param-list       ::= ''
+decl-param            ::= ,[type]
+decl-param            ::= ''
 
 
 statement             ::= local[id]:[type] value-assignment
 value-assignment      ::= ''
 value-assignment      ::= = expression
+statement             ::= function-call
 
 statement             ::= assignment
 assignment            ::= id-list = expression-list
 
-id-list       ::=  [id] id-list-1
-id-list-1     ::= ,[id] id-list-1
-id-list-1     ::= ''
+id-list               ::=  [id] id-list-1
+id-list-1             ::= ,[id] id-list-1
+id-list-1             ::= ''
 
 
 statement             ::= if expression then statement-list else-branch end
@@ -33,12 +37,13 @@ else-branch           ::= else statement-list
 statement             ::= while expression do statement-list end
 
 global-statement      ::= function-call
-statement             ::= [function-id]( argument-list )
 argument-list         ::= argument argument-list-1
 argument-list         ::= '' 
 argument-list-1       ::= , argument argument-list-1
 argument-list-1       ::= ''
 argument              ::= expression
+
+function-call         ::=     [function-id]( argument-list  )
 
 
 global-statement-list ::= global-statement global-statement-list
@@ -55,7 +60,6 @@ type-list             ::= ''
 type-list             ::= :[type] type-list-1
 type-list-1           ::= ,[type] type-list-1
 type-list-1           ::= ''
-
 
 statement             ::= return expression-list
 

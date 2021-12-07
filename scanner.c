@@ -5,7 +5,7 @@
  *                  Authors: Vojtěch Dvořák (xdvora3o)
  *           Purpose: Source file with implementation of lexer (scanner)
  * 
- *                     Last change: 25. 11. 2021
+ *                      Last change: 7. 12. 2021
  *****************************************************************************/ 
 
 /**
@@ -695,7 +695,6 @@ token_t get_next_token(scanner_t *sc) {
 
     } //while(result.token_type == UNKNOWN)
 
-    //fprintf(stderr,"Got token at: (%lu:%lu), token type: %i, attr: %s\n", sc->cursor_pos[ROW], sc->cursor_pos[COL], result.token_type, get_attr(&result, sc));
     return result;
 } //get_next_token()
 
@@ -709,7 +708,6 @@ token_t lookahead(scanner_t *sc) {
         result = sc->tok_buffer;
     }
     else {
-        //fprintf(stderr, "Lookahead: ");
         result = get_next_token(sc);
         sc->tok_buffer = result;
         sc->is_tok_buffer_full = true;

@@ -4,7 +4,8 @@
  * 
  *                  Authors: Vojtech Dvorak (xdvora3o)
  *      Purpose: Source file of functions to process (dynamic) strings
- *              Inspired by 'str' module from example IFJ project
+ * 
+ *             Inspired by 'str' module from example IFJ project
  * 
  *                    Last change: 25. 11. 2021
  *****************************************************************************/ 
@@ -52,7 +53,7 @@ int extend_string(string_t *string) {
 int app_char(char c, string_t *string) {
     //There must be always place for '\0' character
     if(string->alloc_size - 1 < string->length + 1) {
-        size_t new_size = string->alloc_size*2;
+        size_t new_size = string->alloc_size*2; //Double place for string
         string->str = (char *)realloc(string->str, sizeof(char)*new_size);
         if(!string->str) {
             fprintf(stderr, "dstring: str_init: Cannot extend string!\n");
@@ -93,7 +94,7 @@ void cut_string(string_t *string, size_t new_length) {
 
 int prep_char(char c, string_t *string) {
     if(string->alloc_size - 1 < string->length + 1) {
-        size_t new_size = string->alloc_size*2;
+        size_t new_size = string->alloc_size*2; //Double place for string
         string->str = (char *)realloc(string->str, sizeof(char)*new_size);
         if(!string->str) {
             fprintf(stderr, "dstring: str_init: Cannot extend string!\n");
@@ -172,7 +173,7 @@ int str_cpy(char **dst, const char *src, size_t length) {
 }
 
 int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
-    str_clear(dst); //Length of source + \0
+    str_clear(dst);
     for(size_t i = 0; i < length; i++) {
         if(app_char(src[i], dst) == STR_FAILURE) {
             fprintf(stderr, "dstring: str_cpy: Cannot copy a string!\n");
@@ -185,7 +186,7 @@ int str_cpy_tostring(string_t* dst, const char *src, size_t length) {
 
 
 int cpy_strings(string_t* dst, string_t *src, bool zero_term) {
-    str_clear(dst); //Length of source + \0
+    str_clear(dst);
     for(size_t i = 0; zero_term ? src->str[i] != '\0' : i < src->length; i++) {
         if(app_char(src->str[i], dst) == STR_FAILURE) {
             fprintf(stderr, "dstring: str_cpy: Cannot copy a string!\n");

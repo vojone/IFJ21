@@ -3,14 +3,14 @@
  *                                scanner.h
  * 
  *                   Authors: Vojtěch Dvořák (xdvora3o)
- *   Purpose: File, that contains declarations of lexer (scanner) functions
+ *Purpose: File, that contains declarations of lexer (scanner) public functions
  * 
- *                    Last change: 25. 11. 2021
+ *                      Last change: 7. 12. 2021
  *****************************************************************************/ 
 
 /**
  * @file scanner.h
- * @brief File, that contains declarations of lexer (scanner) functions
+ * @brief File, that contains declarations of lexer (scanner) public functions
  * 
  * @authors Vojtěch Dvořák (xdvora3o)
  */ 

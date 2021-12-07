@@ -5,7 +5,7 @@
  *                     Authors: Vojtěch Dvořák (xdvora3o)
  * Purpose: Functions, that contain static variables with defined keywords,...
  * 
- *                      Last change: 25. 11. 2021
+ *                      Last change: 7. 12. 2021
  *****************************************************************************/ 
 
 /**
