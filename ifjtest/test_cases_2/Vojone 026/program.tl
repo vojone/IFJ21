@@ -1,6 +1,5 @@
 require "ifj21"
 function main()
-    write(3%2)
-    write(-3%2)
+    local a : number = 5^4.1
 end
 main()
