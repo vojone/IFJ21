@@ -27,6 +27,8 @@ E   : '(' E ')'
     | E '-' E
     | E '*' E
     | E '/' E
+    | E '%' E
+    | E '^' E
 
 
 /*Logical rules*/

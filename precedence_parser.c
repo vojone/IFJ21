@@ -650,8 +650,8 @@ expr_rule_t *get_rule(unsigned int index) {
         {"i", "*", ORIGIN, FIRST, NULL ,NULL},
         {"E+E", "ni|ni", ORIGIN, ALL, "\"+\" expects numbers/integers as operands", generate_operation_add},
         {"E-E", "ni|ni", ORIGIN, ALL, "\"-\" expects numbers/integers as operands", generate_operation_sub},
-        {"E^E", "ni|ni", NUM, NONE, "\"^\" expects numbers/integers as operands", NULL},
-        {"E\045E", "ni|!ni", ORIGIN, FIRST, "\"\045\" expects numbers/integers as operands", NULL}, //E%E
+        {"E^E", "ni|ni", NUM, NONE, "\"^\" expects numbers/integers as operands", generate_operation_pow},
+        {"E\045E", "ni|!ni", ORIGIN, FIRST, "\"\045\" expects numbers/integers as operands", generate_operation_mod}, //E%E
         {"E*E", "ni|ni", ORIGIN, ONE, "\"*\" expects numbers/integers as operands", generate_operation_mul},
         {"E/E", "ni|!ni", NUM, FIRST, "\"/\" expects numbers/integers as operands", generate_operation_div},
         {"E//E", "i|!i", INT, FIRST, "\"//\" expects integers as operands", generate_operation_idiv},

@@ -374,6 +374,8 @@ void generate_init(prog_t *dst){
     generate_force_ints(dst);
     generate_tobool(dst);
     generate_int2num(dst);
+    generate_operation_function_pow(dst);
+    generate_operation_function_mod(dst);
 }
 
 /**
@@ -799,6 +801,112 @@ void generate_operation_concat(prog_t *dst){
 
     app_instr(dst,"POPFRAME");
     app_instr(dst,"# end operator A..B");
+}
+
+void generate_operation_pow(prog_t *dst){
+    app_instr(dst,"# start operator A^B");
+    generate_call_function(dst,"$BUILTIN_POW$");
+}
+
+void generate_operation_function_pow(prog_t *dst){
+    generate_start_function(dst,"$BUILTIN_POW$");
+    generate_call_function(dst,"$OP$checknil_double");
+    generate_parameter(dst, "exponent");
+    generate_parameter(dst, "base");
+    app_instr(dst,"DEFVAR %sbase_type",VAR_FORMAT);
+    app_instr(dst,"TYPE %sbase_type %sbase",VAR_FORMAT,VAR_FORMAT);
+
+    //check if base is int => tofloat
+    app_instr(dst,"JUMPIFEQ $POW_SKIP_CONVERT$ string@float %sbase_type",VAR_FORMAT);
+
+    app_instr(dst,"INT2FLOAT %sbase %sbase",VAR_FORMAT,VAR_FORMAT);
+
+    app_instr(dst,"LABEL $POW_SKIP_CONVERT$");
+
+
+    //check if exponent == 0
+    app_instr(dst,"JUMPIFEQ $POW_ZERO$ int@0 %sexponent",VAR_FORMAT);
+
+    //check if exponent < 0
+    app_instr(dst,"PUSHS %sexponent",VAR_FORMAT);
+    app_instr(dst,"PUSHS int@0");
+    generate_operation_lt(dst);
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFNEQS $POW_FLIP_SKIP$");
+
+    app_instr(dst,"MUL %sexponent int@-1 %sexponent",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst,"DIV %sbase float@%a %sbase",VAR_FORMAT,1.0f,VAR_FORMAT);
+
+    app_instr(dst,"LABEL $POW_FLIP_SKIP$");
+    
+    
+    app_instr(dst,"PUSHS %sbase",VAR_FORMAT);
+    //cycle
+    app_instr(dst,"LABEL $POW_START_CYCLE$");
+    app_instr(dst,"JUMPIFEQ $POW_END_CYCLE$ int@1 %sexponent",VAR_FORMAT);
+
+    app_instr(dst,"PUSHS %sbase",VAR_FORMAT);
+    app_instr(dst,"MULS");
+
+    app_instr(dst,"SUB %sexponent %sexponent int@1",VAR_FORMAT,VAR_FORMAT);
+    app_instr(dst,"JUMP $POW_START_CYCLE$");
+    app_instr(dst,"LABEL $POW_END_CYCLE$");
+    
+    app_instr(dst,"JUMP $POW_END$");
+    app_instr(dst,"LABEL $POW_ZERO$",VAR_FORMAT);
+    app_instr(dst,"PUSHS float@%a",1.0f);
+
+    app_instr(dst,"LABEL $POW_END$");
+
+    generate_end_function(dst,"$BUILTIN_POW$");
+}
+
+void generate_operation_mod(prog_t *dst){
+    app_instr(dst,"# start operator AmodB");
+    generate_call_function(dst,"$BUILTIN_MOD$");
+}
+
+void generate_operation_function_mod(prog_t *dst){
+    generate_start_function(dst,"$BUILTIN_MOD$");
+
+    generate_call_function(dst,"$BUILTIN$forcefloats");
+    //checkzero decide type
+
+    // app_instr(dst,"LABEL $MOD$call_checkzero_int");
+
+
+    // app_instr(dst,"LABEL $MOD$call_checkzero_int");
+    // generate_call_function(dst,"$OP$checkzero_int");
+
+    generate_parameter(dst,"B");
+    generate_parameter(dst,"A");
+    app_instr(dst,"DEFVAR %snegative",VAR_FORMAT);
+
+    // app_instr(dst,"PUSHS %sA",VAR_FORMAT);
+    // app_instr(dst,"PUSHS ",-1.0f);
+    // generate_operation_lt(dst);
+    // app_instr(dst,"PUSHS bool@true");
+    // app_instr(dst,"JUMPIFNEQ $MOD$SKIP_A");
+
+    // app_instr(dst,"MUL %sA int@",VAR_FORMAT);
+    // app_instr(dst,"LABEL $MOD$SKIP_A");
+
+    app_instr(dst,"LABEL $MOD_CYCLE$");
+    app_instr(dst,"PUSHS %sA",VAR_FORMAT);
+    app_instr(dst,"PUSHS %sB",VAR_FORMAT);
+    generate_operation_lt(dst);
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFEQS $MOD_CYCLE_END$");
+    
+    app_instr(dst,"SUB %sA %sA %sB",VAR_FORMAT,VAR_FORMAT,VAR_FORMAT);
+
+    app_instr(dst,"JUMP $MOD_CYCLE$");
+    app_instr(dst,"LABEL $MOD_CYCLE_END$");
+
+    app_instr(dst,"PUSHS %sA",VAR_FORMAT);
+
+
+    generate_end_function(dst,"$BUILTIN_MOD$");
 }
 
 /**

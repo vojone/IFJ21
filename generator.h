@@ -301,6 +301,12 @@ void generate_operation_lte(prog_t *dst);
 void generate_operation_concat(prog_t *dst);
 void generate_operation_strlen(prog_t *dst);
 
+void generate_operation_pow(prog_t *dst);
+void generate_operation_function_pow(prog_t *dst);
+
+void generate_operation_mod(prog_t *dst);
+void generate_operation_function_mod(prog_t *dst);
+
 
 /**
  * *---------BUILTIN---------
