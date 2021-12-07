@@ -23,10 +23,14 @@
 #include "dstack.h"
 #include <stdbool.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <float.h>
 #include "symtable.h"
 #include "scanner.h"
 
-#define MAX_CNT_LEN 32
+#define MAX_CNT_LEN 32 /**< Maximum length of value in counter */
+
+#define GEN_WARNING true
 
 /*** Structures and functions for handling internal representation of code ***/
 /**For example of usage @see gen_test.cpp**/

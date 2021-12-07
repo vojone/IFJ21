@@ -523,7 +523,7 @@ void generate_assign_value(prog_t *dst, const char * name){
 }
 
 
-void generate_value_push(prog_t *dst,  sym_type_t type, sym_dtype_t dtype, const char * token ){
+void generate_value_push(prog_t *dst,  sym_type_t type, sym_dtype_t dtype, const char * token){
     
     if(type == VAR){
         app_instr(dst,"PUSHS %s%s",VAR_FORMAT,token);
@@ -537,7 +537,18 @@ void generate_value_push(prog_t *dst,  sym_type_t type, sym_dtype_t dtype, const
             
             str_dtor(&token_s);
         }else if(dtype == NUM){
-            double num = atof(token);
+            char *rest = NULL;
+            double num = strtod(token, &rest);
+
+            if(errno == ERANGE) { //Prevent inf
+                if(GEN_WARNING) {
+                    fprintf(stderr, "\t|\033[1;33m Warning: \033[0m");
+                    fprintf(stderr, "Numeric literal '\033[1;33m%s\033[0m' is out of compilers range. It will be truncated to '%e'\n", token, DBL_MAX);
+                }
+                
+                num = DBL_MAX;
+            }
+
             app_instr(dst,"PUSHS %s@%a",convert_type(dtype), num);
         }else{
             app_instr(dst,"PUSHS %s@%s",convert_type(dtype), token);

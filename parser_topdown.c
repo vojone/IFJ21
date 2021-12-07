@@ -163,6 +163,17 @@ int check_if_defined(parser_t *parser) {
 }
 
 
+bool safe_increment(size_t *cnt) {
+    if(*cnt == SIZE_MAX) { //Prevent overflow
+        return false;
+    }
+    else {
+        (*cnt)++;
+        return true;
+    }
+}
+
+
 //<program>               -> <global-statement-list>
 int parse_program(parser_t *parser) {
     //scanner_init(scanner); 
@@ -778,7 +789,10 @@ int parse_local_var(parser_t *parser) {
     //There can be a value assignment
     retval = (retval == PARSE_SUCCESS) ? local_var_assignment(parser, &status, var_type, &var_id) : retval;
     
-    parser->decl_cnt++; //Incrementation of declaration counter to declare unique var names in target code
+    //Incrementation of declaration counter to declare unique var names in target code
+    if(!safe_increment(&parser->decl_cnt)) {
+        return INTERNAL_ERROR;
+    }
 
     return retval;
 }
@@ -811,7 +825,7 @@ int parse_require(parser_t *parser) {
 
     }
     else {
-        error_unexpected_token(parser, "'require'", t);
+        error_unexpected_token(parser, "require", t);
     }
 
     return SYNTAX_ERROR;
@@ -1135,9 +1149,13 @@ int func_def_params(parser_t *p, token_t *id_token,
                     app_char(dtype_c, &f_data->params);
                 }
 
+                //Insert parameters to symbol table
+                ins_var(p, &param_id, DEFINED, dtype); 
 
-                ins_var(p, &param_id, DEFINED, dtype); //Insert parameters to symbol table
-                p->decl_cnt++; //Incrementation of declaration counter to make variable name unique
+                //Incrementation of declaration counter to make variable name unique
+                if(!safe_increment(&p->decl_cnt)) {
+                    return INTERNAL_ERROR;
+                }
 
                 params_cnt++;
                 
@@ -1552,7 +1570,10 @@ int parse_function_arguments(parser_t *parser, tree_node_t *func_sym) {
 int parse_if(parser_t *parser) {
     //We must copy the value, because there can be nested ifs
     size_t current_cond_cnt = parser->cond_cnt;
-    parser->cond_cnt++;
+    if(!safe_increment(&parser->cond_cnt)) {
+        return INTERNAL_ERROR;
+    }
+
     //Go one token forward
     get_next_token(parser->scanner);
 
@@ -1789,7 +1810,9 @@ int parse_while(parser_t *parser) {
 
     //Save the counter to prevent overwriting in nested loops
     size_t current_cnt = parser->loop_cnt;
-    parser->loop_cnt++;
+    if(!safe_increment(&parser->loop_cnt)) {
+        return INTERNAL_ERROR;
+    }
 
     //Generate while beginning
     generate_while_condition_beginning(&parser->dst_code, current_cnt);

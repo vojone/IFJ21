@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include "dstring.h"
 #include "scanner.h"
 #include "dstack.h"
@@ -123,6 +124,13 @@ void parser_setup(parser_t *parser, scanner_t *scanner);
  * @brief Frees all resources hold by parser and its components
  */ 
 void parser_dtor(parser_t *parser);
+
+
+/**
+ * @brief Checks if given counter reached maimum value and increments it
+ * @return false if maximum value was reached 
+ */ 
+bool safe_increment(size_t *cnt);
 
 
 /**
