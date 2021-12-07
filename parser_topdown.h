@@ -7,7 +7,7 @@
  * 
  *              Purpose: Header file for recursive descent parser
  * 
- *                       Last change: 25. 11. 2021
+ *                        Last change: 7. 12. 2021
  *****************************************************************************/
 
 /**
@@ -115,10 +115,10 @@ void to_inner_ctx(parser_t *parser);
 bool is_global_ctx(parser_t *parser);
 
 /**
- * @brief sets the parser and scanner to use
- * @note there can be only one instance i guess, because of the parser static var
+ * @brief Inits parser to be used for program parsing
+ * @return if initialization was succesful returns EXIT_SUCCESS, also can return INTERNAL_ERROR
  */ 
-void parser_setup(parser_t *parser, scanner_t *scanner);
+int parser_setup(parser_t *parser, scanner_t *scanner);
 
 /**
  * @brief Frees all resources hold by parser and its components
@@ -183,6 +183,11 @@ bool is_convertable(sym_dtype_t var_type, sym_dtype_t r_side_type);
 bool is_valid_assign(prog_t *dst_code, sym_dtype_t var_type, 
                      sym_dtype_t r_side_type);
 
+/**
+ * @brief Parses one identifier on lside of assignments
+ */ 
+int assignment_parse_id(parser_t *parser, token_t *t,
+                        string_t *id_types, tok_stack_t *var_names);
 
 /**
  * @brief Parses lside of assignment (supports also multiple assignment)
@@ -192,6 +197,14 @@ bool is_valid_assign(prog_t *dst_code, sym_dtype_t var_type,
  */ 
 int assignment_lside(parser_t *parser, token_t* start_id, 
                      string_t *id_types, tok_stack_t *var_names);
+
+
+/**
+ * @brief Parses one expression in assignment and performs type checking
+ */ 
+int assignment_expr(size_t *cnt, parser_t *parser, 
+                    string_t *id_types, string_t *rside,
+                    bool *was_f_called, prog_stack_t *expr_progs);
 
 
 /**
@@ -461,6 +474,11 @@ void error_unexpected_token(parser_t *parser, char * expected, token_t t);
  * @param t the token which we got
  * */
 void error_semantic(parser_t *parser, const char * _Format, ...);
+
+/**
+ * @brief Prints message in internal error format
+ */ 
+void int_error(const char * _Format, ...);
 
 
 /**

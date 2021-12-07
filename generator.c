@@ -591,7 +591,8 @@ void generate_value_push(prog_t *dst,  sym_type_t type, sym_dtype_t dtype, const
             if(errno == ERANGE) { //Prevent inf
                 if(GEN_WARNING) {
                     fprintf(stderr, "\t|\033[1;33m Warning: \033[0m");
-                    fprintf(stderr, "Numeric literal '\033[1;33m%s\033[0m' is out of compilers range. It will be truncated to '%e'\n", token, DBL_MAX);
+                    fprintf(stderr, "Numeric literal '\033[1;33m%s\033[0m' is out of compilers range. It will be truncated to %e\n", token, DBL_MAX);
+                    fprintf(stderr, "\t| Check your interpret if it supports as big numbers as this!\n");
                 }
                 
                 num = DBL_MAX;

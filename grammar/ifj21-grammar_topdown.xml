@@ -32,6 +32,8 @@
 <value-assignment>      -> [eps]
 <value-assignment>      -> = <expression>
 
+a, b = 1, 2
+
 <!-- Assignment to variable(s) -->
 <statement>             -> <assignment>
 <assignment>            -> <id-list> = <expression-list>
@@ -62,6 +64,11 @@
 <argument-list-1>       -> , <argument> <argument-list-1>
 <argument-list-1>       -> [eps]
 <argument>              -> <expression>
+
+<function-call> -> [function-id]( <argument-list> )
+<argument-list> -> <argument> <argument-list>
+<argument-list> -> [eps]
+<argument>      -> <expression>
 
 <!--FUNCTIONS DEFINITION-->
 <global-statement-list> -> <global-statement> <global-statement-list>

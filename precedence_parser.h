@@ -5,7 +5,7 @@
  *          Authors: Vojtěch Dvořák (xdvora3o), Juraj Dědič (xdedic07)
  *            Purpose: Header file of precedence parsing functions
  * 
- *                        Last change: 25. 11. 2021
+ *                      Last change: 7. 12. 2021
  *****************************************************************************/ 
 
 /**
@@ -218,12 +218,20 @@ int parse_arg_expr(size_t *arg_cnt, prog_t *dst_code,
                    symbol_tables_t *syms, tok_buffer_t *tok_b, 
                    tree_node_t *symbol);
 
+/**
+ * @brief Parses character after argument (can be ')' or ',')
+ * @return EXPRESSION_SUCCESS if there was expected character
+ */ 
+int after_argument(bool *closing_bracket, tree_node_t *symbol, 
+                   size_t cnt, tok_buffer_t *tok_b);
 
 /**
  * @brief Parses arguments in function call in expression (checks separators and expressions)
  */ 
-int argument_parser(prog_t *dst_code, tree_node_t *symbol, 
-                    symbol_tables_t *syms, tok_buffer_t *tok_b);
+int argument_parser(prog_t *dst_code, 
+                    tree_node_t *symbol,
+                    symbol_tables_t *syms,
+                    tok_buffer_t *tok_b);
 
 /**
  * @brief Parses function call inside expression (check if there is '(' whe nfunction is called)

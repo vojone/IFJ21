@@ -2,12 +2,12 @@
  *                                  IFJ21
  *                                  main.c
  * 
- *          Authors: Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
- *                   Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
+ *      Authors: Radek Marek (xmarek77), Vojtěch Dvořák (xdvora3o), 
+ *                Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  * 
- *                   Purpose: Main function of compiler
+ *                    Purpose: Main function of compiler
  * 
- *                    Last change: 25. 11. 2021
+ *                        Last change: 7. 12. 2021
  *****************************************************************************/
 
 /**
@@ -21,9 +21,6 @@
 #include "parser_topdown.h"
 #include "scanner.h"
 
-/**
- * @brief User for custom input into the parser
- */ 
 
 int main() {
     scanner_t scanner;
@@ -32,7 +29,9 @@ int main() {
     }
 
     parser_t parser;
-    parser_setup(&parser, &scanner);
+    if(parser_setup(&parser, &scanner) != EXIT_SUCCESS) {
+        return INTERNAL_ERROR;
+    }
 
     int return_value = parse_program(&parser);
 
