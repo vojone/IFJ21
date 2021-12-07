@@ -359,7 +359,6 @@ bool check_builtin(char *key, symtab_t *dst) {
 
     if(bfunc_data_ptr) {
         insert_sym(dst, to_str(&bfunc_data_ptr->name), *bfunc_data_ptr);
-
         return true;
     }
     else {

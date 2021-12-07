@@ -60,6 +60,14 @@ typedef struct program {
 
 DSTACK_DECL(prog_t, prog)
 
+/**
+ * @brief stores pair of function name and pointer to function which should be generated in order to use it in the target code
+ */
+typedef struct funtions_array {
+    char *name;
+    void (*function_ptr)();
+} function_name_t;
+
 
 /**
  * @brief Creates new empty intruction
@@ -172,6 +180,11 @@ void print_program(prog_t *source);
  * @brief inicializes the code
  */ 
 void generate_init(prog_t *dst);
+
+/**
+ * @brief generates builtin functions if they are in symtab
+ */ 
+int generate_builtin(prog_t *dst, symtab_t *symtab);
 
 /**
  * *---------FUNCTIONS---------

@@ -193,12 +193,16 @@ int parse_program(parser_t *parser) {
     debug_print("Finished! return code: %i, at: (%lu, %lu)\n", res, parser->scanner->cursor_pos[ROW], parser->scanner->cursor_pos[COL]);
 
     res = (res == PARSE_SUCCESS) ? check_if_defined(parser) : res;
+    
+    //check which builtin functions are called
+    generate_builtin(&parser->dst_code,&parser->sym.global);
 
     parser_dtor(parser);
 
     if(parser->return_code != 0) {
         res = parser->return_code;
     }
+
 
     //Print generated code
     print_program(&parser->dst_code);
@@ -1005,8 +1009,6 @@ int parse_function_dec(parser_t *parser) {
         return SYNTAX_ERROR;
     }
     
-    //!probably not because we ignore declarations
-    //generate code for start,
     //generate_start_function(get_attr(&id_fc, scanner));
     
     tok_push(&parser->decl_func, id_fc); //For checking if function is defined
