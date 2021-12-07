@@ -870,6 +870,10 @@ CREATEFRAME
 PUSHFRAME
 CALL $FUN$$BUILTIN$forcefloats
 POPFRAME
+# $OP$checkzero_float()
+PUSHFRAME
+CALL $FUN$$OP$checkzero_float
+POPFRAME
 #define param B
 DEFVAR TF@&VAR&B
 POPS TF@&VAR&B
@@ -877,6 +881,46 @@ POPS TF@&VAR&B
 DEFVAR TF@&VAR&A
 POPS TF@&VAR&A
 DEFVAR TF@&VAR&negative
+MOVE TF@&VAR&negative bool@false
+DEFVAR TF@&VAR&A_TYPE
+DEFVAR TF@&VAR&B_TYPE
+TYPE TF@&VAR&A_TYPE TF@&VAR&A
+TYPE TF@&VAR&B_TYPE TF@&VAR&B
+PUSHS TF@&VAR&A
+PUSHS float@0x0p+0
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<B
+LTS
+# end operator A<B
+PUSHS bool@true
+JUMPIFNEQS $SKIP_A_FLOAT$
+MUL TF@&VAR&A TF@&VAR&A float@-0x1p+0
+LABEL $SKIP_A_FLOAT$
+PUSHS TF@&VAR&B
+PUSHS float@0x0p+0
+# $OP$checknil_double()
+PUSHFRAME
+CALL $FUN$$OP$checknil_double
+POPFRAME
+# $BUILTIN$sametypes()
+PUSHFRAME
+CALL $FUN$$BUILTIN$sametypes
+POPFRAME
+# start operator A<B
+LTS
+# end operator A<B
+PUSHS bool@true
+JUMPIFNEQS $SKIP_B_FLOAT$
+MOVE TF@&VAR&negative bool@true
+MUL TF@&VAR&B TF@&VAR&B float@-0x1p+0
+LABEL $SKIP_B_FLOAT$
 LABEL $MOD_CYCLE$
 PUSHS TF@&VAR&A
 PUSHS TF@&VAR&B
@@ -897,19 +941,14 @@ SUB TF@&VAR&A TF@&VAR&A TF@&VAR&B
 JUMP $MOD_CYCLE$
 LABEL $MOD_CYCLE_END$
 PUSHS TF@&VAR&A
+JUMPIFNEQ $SKIP_NEGATIVE$ bool@true TF@&VAR&negative
+PUSHS float@-0x1p+0
+MULS
+LABEL $SKIP_NEGATIVE$
 
 
 RETURN
 LABEL $END_FUN$$BUILTIN_MOD$
 
-PUSHS int@2
-PUSHS int@6
-# start operator A^B
-# $BUILTIN_POW$()
-PUSHFRAME
-CALL $FUN$$BUILTIN_POW$
-POPFRAME
-# write()
-PUSHFRAME
-CALL $FUN$write
-POPFRAME
+PUSHS int@5
+PUSHS float@0x1.0666666666666p+2
