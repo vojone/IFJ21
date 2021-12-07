@@ -32,7 +32,6 @@
 <value-assignment>      -> [eps]
 <value-assignment>      -> = <expression>
 
-a, b = 1, 2
 
 <!-- Assignment to variable(s) -->
 <statement>             -> <assignment>

@@ -107,7 +107,7 @@ int parser_setup(parser_t *parser, scanner_t *scanner) {
     parser->reached_EOF = false;
     parser->found_return = false;
 
-    parser->return_code = 0;
+    parser->return_code = PARSE_SUCCESS;
 
     //Initialization of internal reprezentation for code generator
     prog_t dst_code;
@@ -473,6 +473,7 @@ int assignment_expr(size_t *cnt, parser_t *parser,
         return expr_retval;
     }
 
+    str_dtor(&ret_types);
     return PARSE_SUCCESS;
 }
 
@@ -725,7 +726,7 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
         }
 
         if(!is_valid_assign(&parser->dst_code, dtype, prim_dtype(&ret_types))) { //Check of data type compatibility in initialization
-            error_semantic(parser, "Incomatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
+            error_semantic(parser, "Incompatible data types in initialization of variable '\033[1;33m%s\033[0m'\n", id_char);
             str_dtor(&ret_types);
             return SEMANTIC_ERROR_ASSIGNMENT;
         }
@@ -792,6 +793,12 @@ int parse_local_var(parser_t *parser) {
         return SYNTAX_ERROR;
     }
 
+    //There must be data type
+    retval = local_var_datatype(parser, &t, &var_type);
+    if(retval != EXPRESSION_SUCCESS) {
+        return retval;
+    }
+
     if(search(&parser->sym.symtab, get_attr(&var_id, parser->scanner))) { //Variable is declared in current scope
         error_semantic(parser, "Redeclaration of variable \033[1;33m%s\033[0m!", 
                        get_attr(&var_id, parser->scanner));
@@ -805,10 +812,6 @@ int parse_local_var(parser_t *parser) {
 
         return SEMANTIC_ERROR_DEFINITION;
     }
-
-
-    //There must be data type
-    retval = local_var_datatype(parser, &t, &var_type);
 
     //Insert to symtab and generate code
     ins_var(parser, &var_id, status, var_type);
