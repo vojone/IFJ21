@@ -1,3 +1,3 @@
 require "ifj21"
 
-write(2^6)
+write(5^4.1)

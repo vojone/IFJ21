@@ -871,27 +871,42 @@ void generate_operation_function_mod(prog_t *dst){
     generate_start_function(dst,"$BUILTIN_MOD$");
 
     generate_call_function(dst,"$BUILTIN$forcefloats");
-    //checkzero decide type
-
-    // app_instr(dst,"LABEL $MOD$call_checkzero_int");
-
-
-    // app_instr(dst,"LABEL $MOD$call_checkzero_int");
-    // generate_call_function(dst,"$OP$checkzero_int");
+    generate_call_function(dst,"$OP$checkzero_float");
 
     generate_parameter(dst,"B");
     generate_parameter(dst,"A");
     app_instr(dst,"DEFVAR %snegative",VAR_FORMAT);
+    app_instr(dst,"MOVE %snegative bool@false",VAR_FORMAT);
+    app_instr(dst,"DEFVAR %sA_TYPE",VAR_FORMAT);
+    app_instr(dst,"DEFVAR %sB_TYPE",VAR_FORMAT);
+    //check for type of A
+    app_instr(dst,"TYPE %sA_TYPE %sA",VAR_FORMAT,VAR_FORMAT);
+    //check for type of B
+    app_instr(dst,"TYPE %sB_TYPE %sB",VAR_FORMAT,VAR_FORMAT);
 
-    // app_instr(dst,"PUSHS %sA",VAR_FORMAT);
-    // app_instr(dst,"PUSHS ",-1.0f);
-    // generate_operation_lt(dst);
-    // app_instr(dst,"PUSHS bool@true");
-    // app_instr(dst,"JUMPIFNEQ $MOD$SKIP_A");
+    ;
+    //if A < 0.0f => A*-1.0f
+    app_instr(dst,"PUSHS %sA",VAR_FORMAT);
+    app_instr(dst,"PUSHS float@%a",0.0f);
+    generate_operation_lt(dst);
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFNEQS $SKIP_A_FLOAT$");
+    app_instr(dst,"MUL %sA %sA float@%a",VAR_FORMAT,VAR_FORMAT,-1.0f);
+    app_instr(dst,"LABEL $SKIP_A_FLOAT$");
 
-    // app_instr(dst,"MUL %sA int@",VAR_FORMAT);
-    // app_instr(dst,"LABEL $MOD$SKIP_A");
 
+    //if B < 0.0f => B*-1.0f
+    app_instr(dst,"PUSHS %sB",VAR_FORMAT);
+    app_instr(dst,"PUSHS float@%a",0.0f);
+    generate_operation_lt(dst);
+    app_instr(dst,"PUSHS bool@true");
+    app_instr(dst,"JUMPIFNEQS $SKIP_B_FLOAT$");
+    app_instr(dst,"MOVE %snegative bool@true",VAR_FORMAT);
+    app_instr(dst,"MUL %sB %sB float@%a",VAR_FORMAT,VAR_FORMAT,-1.0f);
+    app_instr(dst,"LABEL $SKIP_B_FLOAT$");
+
+
+    //cycle
     app_instr(dst,"LABEL $MOD_CYCLE$");
     app_instr(dst,"PUSHS %sA",VAR_FORMAT);
     app_instr(dst,"PUSHS %sB",VAR_FORMAT);
@@ -906,6 +921,14 @@ void generate_operation_function_mod(prog_t *dst){
 
     app_instr(dst,"PUSHS %sA",VAR_FORMAT);
 
+
+
+    //if negative == true
+    app_instr(dst,"JUMPIFNEQ $SKIP_NEGATIVE$ bool@true %snegative",VAR_FORMAT);
+        //MULS -1*(stack top)
+        app_instr(dst,"PUSHS float@%a",-1.0f);
+        app_instr(dst,"MULS");
+    app_instr(dst,"LABEL $SKIP_NEGATIVE$");
 
     generate_end_function(dst,"$BUILTIN_MOD$");
 }
