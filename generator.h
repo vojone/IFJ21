@@ -5,7 +5,7 @@
  *          Authors: Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  *                    Purpose: Header file of code generator
  * 
- *                    Last change: 25. 11. 2021
+ *                        Last change: 8. 12. 2021
  *****************************************************************************/
 
 /**
@@ -133,7 +133,7 @@ instr_t *get_prev(instr_t *instr);
  * @brief Appends new instruction to given program
  * @note It's variadic function, so it can be used as standard printf
  */ 
-int app_instr(prog_t *dst, const char *const _Format, ...);
+void app_instr(prog_t *dst, const char *const _Format, ...);
 
 /**
  * @brief Appends program (instruction sequence) to another program
@@ -146,7 +146,7 @@ void app_prog(prog_t *dst, prog_t *prog);
  * @note It's variadic function, so it can be used as standard printf
  * @warning If given pointer to instruction in argument is NULL it does nothing
  */ 
-int ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...);
+void ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...);
 
 
 /**
@@ -154,7 +154,7 @@ int ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...);
  * @note It's variadic function, so it can be used as standard printf
  * @warning If given pointer to instruction in argument is NULL it does nothing
  */
-int ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...);
+void ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...);
 
 
 /**

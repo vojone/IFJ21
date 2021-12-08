@@ -34,7 +34,6 @@ instr_t *new_instruction() {
     instr = (instr_t *)malloc(sizeof(instr_t));
     if(!instr) {
         fprintf(stderr,"Allocation error!\n");
-        exit(INTERNAL_ERROR);
         return NULL;
     }
 
@@ -128,18 +127,18 @@ instr_t *get_prev(instr_t *instr) {
 }
 
 
-int app_instr(prog_t *dst, const char *const _Format, ...) {
+void app_instr(prog_t *dst, const char *const _Format, ...) {
     //Creation of new instruction
     instr_t *new_instr = new_instruction();
     if(new_instr == NULL) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_list args;
     va_start(args, _Format);
 
     if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_end(args);
@@ -155,7 +154,6 @@ int app_instr(prog_t *dst, const char *const _Format, ...) {
 
     dst->last_instr = new_instr;
 
-    return EXIT_SUCCESS;
 }
 
 
@@ -176,22 +174,22 @@ void app_prog(prog_t *dst, prog_t *prog) {
 }
 
 
-int ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
+void ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
     if(instr == NULL) {
-        return EXIT_SUCCESS;
+        return;
     }
 
     //Creation of new instruction
     instr_t *new_instr  = new_instruction();
     if(new_instr == NULL) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_list args;
     va_start(args, _Format);
 
     if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_end(args);
@@ -209,26 +207,24 @@ int ins_after(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
         dst->last_instr = new_instr;
         new_instr->next = NULL;
     }
-
-    return EXIT_SUCCESS;
 }
 
 
-int ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
+void ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
     if(instr == NULL) {
-        return EXIT_SUCCESS;
+        return;
     }
 
     instr_t *new_instr  = new_instruction();
     if(new_instr == NULL) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_list args;
     va_start(args, _Format);
 
     if(set_instruction(new_instr, _Format, args) != EXIT_SUCCESS) {
-        return INTERNAL_ERROR;
+        exit(INTERNAL_ERROR);
     }
 
     va_end(args);
@@ -246,8 +242,6 @@ int ins_before(prog_t *dst, instr_t *instr, const char *const _Format, ...) {
         dst->first_instr = new_instr;
         new_instr->prev = NULL;
     }
-
-    return EXIT_SUCCESS;
 }
 
 
@@ -530,7 +524,6 @@ void generate_declare_variable(prog_t *dst,  void *sym_stack,symtab_t *symtab , 
     }
     else{ 
         //if we are in a while loop we insert it before the while loops start
-        fprintf(stderr,"declaring var nest level: %li\n",dst->cycle_nest_lvl);
         ins_before(dst,instr_top(&dst->cycle_stack),"DEFVAR %s%s",VAR_FORMAT,name.str);
         ins_before(dst,instr_top(&dst->cycle_stack),"MOVE %s%s nil@nil",VAR_FORMAT,name.str);
         //will actually print them in reverse order because we are using ins_before

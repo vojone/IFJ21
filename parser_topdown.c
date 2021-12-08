@@ -205,7 +205,9 @@ int parse_program(parser_t *parser) {
 
 
     //Print generated code
-    print_program(&parser->dst_code);
+    if(res == PARSE_SUCCESS && parser->return_code == PARSE_SUCCESS) {
+        print_program(&parser->dst_code);
+    }
 
     program_dtor(&parser->dst_code);
 

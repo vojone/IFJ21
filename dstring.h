@@ -6,7 +6,7 @@
  *  Purpose: Declaration of basic functions to process (dynamic) string
  *              Inspired by 'str' module from example IFJ project
  *
- *                       Last change: 25. 11. 2021
+ *                        Last change: 8. 12. 2021
  *****************************************************************************/ 
 
 /**
