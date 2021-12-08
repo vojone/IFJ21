@@ -6,7 +6,7 @@
  *              Purpose: Implementation of code generating functions
  *               For function description see correspoding .h file
  * 
- *                       Last change: 25. 11. 2021
+ *                       Last change: 8. 12. 2021
  *****************************************************************************/
 
 /**
@@ -1535,8 +1535,13 @@ void generate_int2num(prog_t *dst_code) {
     app_instr(dst_code, "TYPE TF@$TYPE$ %sTMP", VAR_FORMAT);
     
     app_instr(dst_code, "PUSHS %sTMP", VAR_FORMAT);
+
     app_instr(dst_code, "PUSHS TF@$TYPE$");
     app_instr(dst_code, "PUSHS string@nil");
+    app_instr(dst_code, "JUMPIFEQS $int2numSKIPCONVERSION$");
+
+    app_instr(dst_code, "PUSHS TF@$TYPE$");
+    app_instr(dst_code, "PUSHS string@float"); //Prevent 53 error
     app_instr(dst_code, "JUMPIFEQS $int2numSKIPCONVERSION$");
 
     app_instr(dst_code, "INT2FLOATS");

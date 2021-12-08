@@ -8,7 +8,7 @@
  *              Purpose: Source file for recursive descent parser
  *                        (For more documentation parser_topdown.h)
  * 
- *                       Last change: 7. 12. 2021
+ *                       Last change: 8. 12. 2021
  *****************************************************************************/
 
 /**
@@ -304,9 +304,11 @@ int statement(parser_t *parser) {
     return res;
 }
 
+
 bool is_convertable(sym_dtype_t var_type, sym_dtype_t r_side_type) {
     return var_type == NUM && r_side_type == INT;
 }
+
 
 bool is_valid_assign(prog_t *dst_code, sym_dtype_t var_type, sym_dtype_t r_side_type) {
     if(var_type == r_side_type || r_side_type == NIL) { //Types are same or rvalue type is nil
@@ -427,8 +429,9 @@ int assignment_expr(size_t *cnt, parser_t *parser,
 
     int expr_retval = parse_expression(parser->scanner, &parser->sym, &ret_types, was_f_called, &cur_expr);
     debug_print("RET_TYPES: %s\n", to_str(&ret_types));
+    debug_print("%d %d\n", *cnt, id_number);
+    size_t u = 0;
     if(expr_retval == EXPRESSION_SUCCESS && *cnt < id_number) {
-        size_t u = 0;
         for(; to_str(&ret_types)[u] != '\0' && u + *cnt < id_number; u++) { //If there is only function, it can return more than one values
             sym_dtype_t cur_dtype = char_to_dtype(to_str(&ret_types)[u]);
             sym_dtype_t should_be = char_to_dtype(id_types->str[*cnt + u]);
@@ -454,14 +457,26 @@ int assignment_expr(size_t *cnt, parser_t *parser,
                 }
                 //Assignment is ok
             }
+
+            if(lookahead_token_attr(parser, SEPARATOR, ",")) { //If there is, after function call, only first return value is used
+                generate_dump_values(&cur_expr, 1, len(&ret_types) - 1);
+                u = 1;
+                break;
+            }
         }
+
+
+        if(u < len(&ret_types) && !lookahead_token_attr(parser, SEPARATOR, ",")) { //Discard values that won't be used from stack
+            generate_dump_values(&cur_expr, u, len(&ret_types) - u);
+        }
+
 
         if(!prog_push(expr_progs, cur_expr)) { //Saving expression code to stack
             str_dtor(&ret_types);
             return INTERNAL_ERROR;
         }
 
-        *cnt += (u > 0) ? (u - 1) : u; //If there was one return value, don't icrement, because i increments
+        *cnt += u; //Increment rside value counter by return type amount
     }
     else if(expr_retval == EXPRESSION_SUCCESS) {
         program_dtor(&cur_expr);
@@ -522,7 +537,7 @@ int assignment_rside(parser_t *parser, string_t *id_types, string_t *rside) {
         }
         else {
             found_end = true;
-            if(i + 1 < id_number) {
+            if(i < id_number) {
                 prog_stack_deep_dtor(&expr_progs);
 
                 if(f_call) {
@@ -535,8 +550,6 @@ int assignment_rside(parser_t *parser, string_t *id_types, string_t *rside) {
                 }
             }
         }
-        
-        i++;
     }
 
     while(!prog_is_empty(&expr_progs)) { //Apends expression to main program (to evaluate it from right to left)
@@ -716,7 +729,6 @@ int local_var_assignment(parser_t *parser, sym_status_t *status,
         str_init(&ret_types);
         bool was_f_called;
         int return_val = parse_expression(parser->scanner, &parser->sym, &ret_types, &was_f_called, &parser->dst_code);
-    
         if(return_val != EXPRESSION_SUCCESS) { //Check of return code of parsing expression
             str_dtor(&ret_types);
             return return_val;

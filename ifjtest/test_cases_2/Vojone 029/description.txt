@@ -1,0 +1,1 @@
+Assignment with function without return value
