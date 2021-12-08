@@ -1,3 +1,9 @@
 require "ifj21"
 
--- write("a")
+function main()
+
+    local a : number = 4
+
+    write(a)
+
+end

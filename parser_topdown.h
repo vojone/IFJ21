@@ -37,7 +37,7 @@
 #include "dstack.h"
 
 
-#define DEBUG true /**< If true, prints debug log to stderr */
+#define DEBUG false /**< If true, prints debug log to stderr */
 #define PRINT_WARNINGS true /**< If true, prints warning to stderr about some implicit actions (see documentation for more)*/
 
 /**

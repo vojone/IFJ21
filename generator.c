@@ -17,16 +17,6 @@
  * @authors Juraj Dědič (xdedic07), Tomáš Dvořák (xdvora3r)
  */ 
 
-//?done:TODO work on function calling with arguments
-//TODO write tests (probably not in Google Tests)
-//?done:TODO return null implicitly
-//?done:todo variables assigned nil implicitly
-//?done:todo checkzero for operations
-//?done:todo checknil for operation
-//todo builtin functions
-//?done//todo cycle declaration
-//?done//todo write "nil" when input nil
-
 #include "generator.h"
 #define VAR_FORMAT "TF@&VAR&"
 
@@ -43,6 +33,8 @@ instr_t *new_instruction() {
 
     instr = (instr_t *)malloc(sizeof(instr_t));
     if(!instr) {
+        fprintf(stderr,"Allocation error!\n");
+        exit(INTERNAL_ERROR);
         return NULL;
     }
 
@@ -406,7 +398,6 @@ int generate_builtin(prog_t *dst, symtab_t *symtab){
     {
         /* code */
         sym_data_t *data = builtin_functions(i);
-        tree_node_t *func_valid = search(symtab, data->name.str);
         if(search(symtab, data->name.str) != NULL) {
             //if used we generate it
             function_name_t *func = get_builtin_by_name(data->name.str);
@@ -414,11 +405,7 @@ int generate_builtin(prog_t *dst, symtab_t *symtab){
                 return INTERNAL_ERROR;
             }else{
                 func->function_ptr(dst);
-                fprintf(stderr,"Generating %s\n",data->name.str);
             }
-        }
-        if(func_valid == NULL){
-            fprintf(stderr,"%s not found\n",data->name.str);
         }
     }
     return 0;
@@ -638,7 +625,6 @@ void generate_else_end(prog_t *dst, size_t n){
 void generate_while_condition_beginning(prog_t *dst, size_t n){
     app_instr(dst,"#while %i, nest level %i",n,dst->cycle_nest_lvl);
     app_instr(dst,"LABEL $WHILE$COND$%i",n);
-    //todo not generating other while structures
     if(dst->cycle_nest_lvl == 0){
         instr_push(&dst->cycle_stack, get_last(dst));
     }
@@ -1580,10 +1566,7 @@ void code_print(prog_t *dst, const char *const _Format, ...) {
     va_start(args, _Format);
     vfprintf(stderr, _Format, args);
 
-    // app_instr(dst,_Format,args);
     va_end(args);
-    //use variable argument printf
-    // fprintf(stdout,"\n");
 }
 
 string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, scanner_t * scanner ){
@@ -1593,12 +1576,12 @@ string_t get_unique_name( void *sym_stack,symtab_t *symtab , token_t *var_id, sc
 
     //search it in the table
     tree_node_t *name_element = deep_search(sym_stack, symtab, name);
-    if(name_element == NULL)
-        fprintf(stderr,"!CODE GENERATION ERROR! ID %s not in SYMTAB!\n",name);
-        
+    if(name_element == NULL){
+        exit(INTERNAL_ERROR);
+    }
+    
     string_t name_unique = name_element->data.name;
     return name_unique;
-
 }
 
 bool is_prefix_of(char * prefix, char * str){
