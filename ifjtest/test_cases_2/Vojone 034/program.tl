@@ -12,17 +12,16 @@ function main()
     local a : integer
     local b : number
 
-    a, b = f1(), f2(), f2()
+    a, b = f1(), f2()
     write(a, b)
-    write()
-    --[[a, b = f1()
+    a, b = f1()
     write(a, b)
     a, b = f1(), 3
     write(a, b)
     
     local c : integer
     a, c, b = f1(), f2()
-    write(a, c, b, "\n")]]
+    write(a, c, b, "\n")
 
 end
 main()
