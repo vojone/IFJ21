@@ -7,7 +7,7 @@ COMPILER="../IFJ21"
 # You don't have to change these
 INTERPRETER="./ic21int"
 
-TEST_DIR="test_cases_2"
+TEST_DIR="test_cases"
 TMP_DIR="tmp"
 
 
