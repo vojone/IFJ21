@@ -22,7 +22,10 @@ INZIP = *.c *.h Makefile rozdeleni rozsireni dokumentace.pdf README.md
 
 #testing framework path
 TESTLIB_NAME = libgtest
-TEST_DIR = googletest-master/googletest/
+TEST_DIR = googletest/googletest/
+
+INT_TEST = ifjtest
+INT_TEST_DIR = ifjtest/
 
 CXX = g++
 CXXFLAGS := -Werror -Wall -pedantic -std=c++11
@@ -50,7 +53,7 @@ OBJS = $(PARSER).o $(PP_PARSER).o $(SCANNER).o $(SYMTAB).o \
 EXES = $(EXECUTABLE) $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 	   $(SYMTAB_TEST_BIN) $(GEN_TEST_NAME) $(PARSER_EXE)
 
-.PHONY: all parser generator clean unit_tests
+.PHONY: all parser generator clean unit_tests test
 
 all : $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXECUTABLE) $^
@@ -77,6 +80,9 @@ unit_tests:  $(PARSER_TEST_BIN) $(SCAN_TEST_BIN) $(PP_TEST_BIN) \
 #			./$(SYMTAB_TEST_BIN)
 
 
+$(TEST_DIR) :
+	git clone https://github.com/google/googletest.git
+
 
 #--------------------- PARSER - TOPDOWN TESTS-----------------------------
 
@@ -90,8 +96,6 @@ $(PARSER_TEST_BIN) : $(PARSER).o $(PARSER_TEST_BIN).o $(SCANNER).o $(SYMTAB).o \
 $(PARSER_TEST_BIN).o : CXXFLAGS := $(CXXFLAGS) -I$(TEST_DIR)include
 $(PARSER_TEST_BIN).o : $(PARSER_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 
-$(TEST_DIR)lib/%.a :
-	cd $(TEST_DIR) && cmake .. && make -s
 
 
 #------------------------------SCANNER TESTS-----------------------------------
@@ -133,7 +137,7 @@ $(PP_TEST_BIN).o : $(SCAN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 #------------------------------------------------------------------------------
 
 
-#---------------------PRECEDENCE PARSER (PP) TESTS-----------------------------
+#-----------------------------GENERATOR (PP) TESTS-----------------------------
 
 #linking binary with test
 $(GEN_TEST_BIN) : LDLIBS := -L$(TEST_DIR)lib -lgtest -lpthread -lstdc++ -lm
@@ -147,7 +151,7 @@ $(GEN_TEST_BIN).o : $(GEN_TEST_NAME).cpp $(TEST_DIR)lib/$(TESTLIB_NAME).a
 
 #------------------------------------------------------------------------------
 
-$(TEST_DIR)lib/%.a :
+$(TEST_DIR)lib/%.a : $(TEST_DIR)
 	cd $(TEST_DIR) && cmake .. && make -s
 
 #------------------------------------------------------------------------------

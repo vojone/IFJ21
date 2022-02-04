@@ -1,1 +1,0 @@
-Calculating sqrt using Newton's method.

@@ -1,1 +1,0 @@
-Calling a function with returns outside of main

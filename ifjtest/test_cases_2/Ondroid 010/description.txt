@@ -1,1 +1,0 @@
-Ifs with == operator with all combinations of ints floats.

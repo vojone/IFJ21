@@ -1,1 +1,0 @@
-Redefine variable inside a block.

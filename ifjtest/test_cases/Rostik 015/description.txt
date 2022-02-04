@@ -1,1 +1,0 @@
-Function without return returning nothing with return.

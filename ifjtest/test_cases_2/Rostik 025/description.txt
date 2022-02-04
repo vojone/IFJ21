@@ -1,1 +1,0 @@
-Testing escape sequence characters in string.

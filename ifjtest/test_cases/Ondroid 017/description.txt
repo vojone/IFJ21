@@ -1,1 +1,0 @@
-Simple while cycle with integer.

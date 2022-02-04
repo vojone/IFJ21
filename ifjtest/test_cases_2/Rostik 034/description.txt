@@ -1,1 +1,0 @@
-Creating local var. in global frame.

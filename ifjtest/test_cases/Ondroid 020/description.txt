@@ -1,1 +1,0 @@
-A local variable declaration inside while loop.

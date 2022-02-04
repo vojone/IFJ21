@@ -1,1 +1,0 @@
-Compare two integers with < operator, one of the integers is nil.

@@ -1,4 +1,12 @@
 scanner-test
+pp_tests
+symtable_tests
+scanner-tests
+gen_tests
+
+generator
+
+googletest/
 
 #ignore .o files
 *.o
